@@ -2,7 +2,7 @@
   <nav class="navbar navbar-expand-lg navbar-dark bg-transparent shadow-sm fixed-top">
     <div class="container">
       <!-- 로고 -->
-      <router-link class="navbar-brand fw-bold d-flex align-items-center" to="/">
+      <router-link class="navbar-brand fw-bold d-flex align-items-center" :to="{ name: 'Home' }">
         <img src="/flixnchill.png" alt="FLIX n CHILL" class="logo-image me-2">
         <span style="color: #db0000;">FLIXnCHILL</span>
       </router-link>
@@ -23,12 +23,12 @@
       <div class="collapse navbar-collapse" :class="{ show: isMobileMenuOpen }">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
           <li class="nav-item">
-            <router-link class="nav-link" to="/" @click="closeMobileMenu">
+            <router-link class="nav-link" :to="{ name: 'Home' }" @click="closeMobileMenu">
               <i class="bi bi-house me-1"></i>Home
             </router-link>
           </li>
           <li class="nav-item">
-            <router-link class="nav-link" to="/search" @click="closeMobileMenu">
+            <router-link class="nav-link" :to="{ name: 'Search' }" @click="closeMobileMenu">
               <i class="bi bi-search me-1"></i>Search
             </router-link>
           </li>
@@ -43,17 +43,20 @@
               <i class="bi bi-collection me-1"></i>Genre
             </a>
             <ul class="dropdown-menu" :class="{ show: isGenreDropdownOpen }" style="background-color: black;">
-              <li><router-link class="dropdown-item" to="/genre/action" @click="closeAllDropdowns" style="color: lightgrey;">액션</router-link></li>
-              <li><router-link class="dropdown-item" to="/genre/comedy" @click="closeAllDropdowns" style="color: lightgrey;">코미디</router-link></li>
-              <li><router-link class="dropdown-item" to="/genre/drama" @click="closeAllDropdowns" style="color: lightgrey;">드라마</router-link></li>
-              <li><router-link class="dropdown-item" to="/genre/horror" @click="closeAllDropdowns" style="color: lightgrey;">호러</router-link></li>
-              <li><router-link class="dropdown-item" to="/genre/adventure" @click="closeAllDropdowns" style="color: lightgrey;">모험</router-link></li>
-              <li><router-link class="dropdown-item" to="/genre/family" @click="closeAllDropdowns" style="color: lightgrey;">가족</router-link></li>
-              <li><router-link class="dropdown-item" to="/genre/romance" @click="closeAllDropdowns" style="color: lightgrey;">로맨스</router-link></li>
+              <li v-for="genre in genreList" :key="genre.type">
+                <router-link 
+                  class="dropdown-item" 
+                  :to="{ name: 'Genre', query: { type: genre.type } }" 
+                  @click="closeAllDropdowns" 
+                  style="color: lightgrey;"
+                >
+                  {{ genre.name }}
+                </router-link>
+              </li>
             </ul>
           </li>
           <li class="nav-item" v-if="isLoggedIn">
-            <router-link class="nav-link" to="/my-page" @click="closeMobileMenu">
+            <router-link class="nav-link" :to="{ name: 'MyPage' }" @click="closeMobileMenu">
               <i class="bi bi-person me-1"></i>My Page
             </router-link>
           </li>
@@ -63,10 +66,10 @@
         <div class="d-flex align-items-center">
           <!-- 비로그인 상태 -->
           <div v-if="!isLoggedIn" class="d-flex gap-2">
-            <router-link to="/login" class="btn btn-sm signin-btn" @click="closeMobileMenu">
+            <router-link :to="{ name: 'Login' }" class="btn btn-sm signin-btn" @click="closeMobileMenu">
               Sign in
             </router-link>
-            <router-link to="/signup" class="btn btn-sm signup-btn" @click="closeMobileMenu">
+            <router-link :to="{ name: 'Signup' }" class="btn btn-sm signup-btn" @click="closeMobileMenu">
               Sign up
             </router-link>
           </div>
@@ -89,12 +92,12 @@
             </button>
             <ul class="dropdown-menu dropdown-menu-end" :class="{ show: isUserDropdownOpen }">
               <li>
-                <router-link to="/my-page" class="dropdown-item" @click="closeAllDropdowns">
+                <router-link :to="{ name: 'MyPage' }" class="dropdown-item" @click="closeAllDropdowns">
                   <i class="bi bi-person me-2"></i>My page
                 </router-link>
               </li>
               <li>
-                <router-link to="/settings" class="dropdown-item" @click="closeAllDropdowns">
+                <router-link :to="{ name: 'Settings' }" class="dropdown-item" @click="closeAllDropdowns">
                   <i class="bi bi-gear me-2"></i>Settings
                 </router-link>
               </li>
@@ -123,7 +126,18 @@ export default {
       // 임시 사용자 데이터 (실제로는 Vuex나 API에서 가져옴)
       isLoggedIn: false,
       userName: '홍혜린',
-      userProfileImage: 'https://via.placeholder.com/32x32/db0000/ffffff?text=H'
+      userProfileImage: 'https://via.placeholder.com/32x32/db0000/ffffff?text=H',
+      
+      // 장르 목록 (GenrePage와 동일하게 유지)
+      genreList: [
+        { type: 'action', name: '액션' },
+        { type: 'comedy', name: '코미디' },
+        { type: 'drama', name: '드라마' },
+        { type: 'horror', name: '호러' },
+        { type: 'adventure', name: '모험' },
+        { type: 'family', name: '가족' },
+        { type: 'romance', name: '로맨스' }
+      ]
     }
   },
   methods: {
@@ -155,7 +169,8 @@ export default {
       this.isLoggedIn = false;
       this.closeAllDropdowns();
       // 실제로는 API 호출하여 로그아웃 처리
-      this.$router.push('/');
+      localStorage.setItem('isLoggedIn', 'false'); // localStorage도 업데이트
+      this.$router.push({ name: 'Home' });
     },
     // 외부 클릭 시 드롭다운 닫기
     handleClickOutside(event) {
@@ -188,6 +203,14 @@ export default {
 
 .navbar-brand:hover {
   color: #ffffff !important;
+}
+
+/* 로고 이미지 스타일 */
+.logo-image {
+  height: 40px;
+  width: auto;
+  max-width: 50px;
+  object-fit: contain;
 }
 
 /* 모든 네비게이션 링크를 흰색으로 */
@@ -328,12 +351,5 @@ export default {
 
 .navbar-toggler-icon {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
-}
-
-.logo-image {
-  height: 40px;
-  width: auto;
-  max-width: 50px;
-  object-fit: contain;
 }
 </style>
