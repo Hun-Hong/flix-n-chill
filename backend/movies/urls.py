@@ -19,5 +19,7 @@ from . import views
 
 urlpatterns = [
     path("collect/", view=views.movie_collect),
+    path("list/", view=views.MovieListView.as_view()),
+    path("list/<str:genre_name>/", view=views.MovieGenreListView.as_view()),
     # path("providers/", view=views.collect_provider),
 ]

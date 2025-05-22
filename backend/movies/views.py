@@ -4,9 +4,11 @@ import requests
 from .serializer import MovieSerializer, ProviderSerilizer
 from .models import Movie, Genre, MovieProvider
 import json
+from .models import Genre
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.generics import ListAPIView
 
 # Create your views here.
 
@@ -42,7 +44,7 @@ def movie_collect(request):
                         detail_data = detail_response.json()
                     else:
                         continue
-                    
+
                     provider_url = (
                         f"https://api.themoviedb.org/3/movie/{tmdb_id}/watch/providers"
                     )
@@ -98,6 +100,51 @@ def movie_collect(request):
         "data": provider_data,
     }
     return Response(context, status.HTTP_200_OK)
+
+
+# @api_view(["GET"])
+# def movie_list(request):
+#     top_movies = Movie.objects.order_by('-vote_average')
+
+#     serializer = MovieSerializer(top_movies, many=True)
+
+#     return Response(serializer.data)
+
+
+class MovieListView(ListAPIView):
+    serializer_class = MovieSerializer
+    
+    def get_queryset(self):
+        ordering = self.request.query_params.get('ordering', 'latest')
+        if ordering == 'top':
+            return Movie.objects.order_by("-vote_average")
+        else:
+            return Movie.objects.order_by("-release_date")
+
+
+
+class MovieGenreListView(ListAPIView):
+    serializer_class = MovieSerializer
+
+    def get_queryset(self):
+        name_to_id = {
+        "action": 1,
+        "comedy": 4,
+        "drama": 7,
+        "horror": 11,
+        "adventure": 2,
+        "family": 8,
+        "romance": 14,
+        }
+        genre_name = self.kwargs.get("genre_name")
+        ordering = self.request.query_params.get('ordering', 'latest')
+        genre = Genre.objects.get(id=name_to_id[genre_name])
+        
+        if ordering == 'top':
+            return Movie.objects.filter(genres=genre).order_by("-vote_average")
+        else:
+            return Movie.objects.filter(genres=genre).order_by("-release_date")
+        
 
 
 ## provider DB 수집을 위해 작동하였습니다.
