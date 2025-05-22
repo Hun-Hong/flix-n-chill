@@ -9,6 +9,8 @@ class Movie(models.Model):
     
     overview = models.TextField(blank=True)
     
+    providers = models.ManyToManyField("movies.movieprovider", blank=True)
+    
     adult = models.BooleanField()
     budget = models.PositiveIntegerField()
     genres = models.ManyToManyField("movies.genre", blank=True)
@@ -31,5 +33,7 @@ class Genre(models.Model):
     name = models.CharField(max_length=50)
     tmdb_id = models.PositiveIntegerField()
 
-class OTTAvailability(models.Model):
-    platform_name = models.CharField(max_length=50)
+class MovieProvider(models.Model):
+    name = models.CharField(max_length=50)
+    tmdb_id = models.PositiveIntegerField()
+    logo_path = models.CharField(max_length=100)

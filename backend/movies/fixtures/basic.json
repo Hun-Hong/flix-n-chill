@@ -1,0 +1,370 @@
+[
+{
+  "model": "movies.genre",
+  "pk": 1,
+  "fields": {
+    "name": "액션",
+    "tmdb_id": 28
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 2,
+  "fields": {
+    "name": "모험",
+    "tmdb_id": 12
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 3,
+  "fields": {
+    "name": "애니메이션",
+    "tmdb_id": 16
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 4,
+  "fields": {
+    "name": "코미디",
+    "tmdb_id": 35
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 5,
+  "fields": {
+    "name": "범죄",
+    "tmdb_id": 80
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 6,
+  "fields": {
+    "name": "다큐멘터리",
+    "tmdb_id": 99
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 7,
+  "fields": {
+    "name": "드라마",
+    "tmdb_id": 18
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 8,
+  "fields": {
+    "name": "가족",
+    "tmdb_id": 10751
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 9,
+  "fields": {
+    "name": "판타지",
+    "tmdb_id": 14
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 10,
+  "fields": {
+    "name": "역사",
+    "tmdb_id": 36
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 11,
+  "fields": {
+    "name": "공포",
+    "tmdb_id": 27
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 12,
+  "fields": {
+    "name": "음악",
+    "tmdb_id": 10402
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 13,
+  "fields": {
+    "name": "미스터리",
+    "tmdb_id": 9648
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 14,
+  "fields": {
+    "name": "로맨스",
+    "tmdb_id": 10749
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 15,
+  "fields": {
+    "name": "SF",
+    "tmdb_id": 878
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 16,
+  "fields": {
+    "name": "TV 영화",
+    "tmdb_id": 10770
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 17,
+  "fields": {
+    "name": "스릴러",
+    "tmdb_id": 53
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 18,
+  "fields": {
+    "name": "전쟁",
+    "tmdb_id": 10752
+  }
+},
+{
+  "model": "movies.genre",
+  "pk": 19,
+  "fields": {
+    "name": "서부",
+    "tmdb_id": 37
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 1,
+  "fields": {
+    "name": "Google Play Movies",
+    "tmdb_id": 3,
+    "logo_path": "/8z7rC8uIDaTM91X0ZfkRf04ydj2.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 2,
+  "fields": {
+    "name": "Netflix",
+    "tmdb_id": 8,
+    "logo_path": "/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 3,
+  "fields": {
+    "name": "MUBI",
+    "tmdb_id": 11,
+    "logo_path": "/fj9Y8iIMFUC6952HwxbGixTQPb7.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 4,
+  "fields": {
+    "name": "Watcha",
+    "tmdb_id": 97,
+    "logo_path": "/5gmEivxOGPdq4Afpq1f8ktLtEW1.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 5,
+  "fields": {
+    "name": "Amazon Prime Video",
+    "tmdb_id": 119,
+    "logo_path": "/pvske1MyAoymrs5bguRfVqYiM9a.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 6,
+  "fields": {
+    "name": "Curiosity Stream",
+    "tmdb_id": 190,
+    "logo_path": "/oR1aNm1Qu9jQBkW4VrGPWhqbC3P.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 7,
+  "fields": {
+    "name": "Crunchyroll",
+    "tmdb_id": 283,
+    "logo_path": "/fzN5Jok5Ig1eJ7gyNGoMhnLSCfh.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 8,
+  "fields": {
+    "name": "Sun Nxt",
+    "tmdb_id": 309,
+    "logo_path": "/6KEQzITx2RrCAQt5Nw9WrL1OI8z.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 9,
+  "fields": {
+    "name": "Hoichoi",
+    "tmdb_id": 315,
+    "logo_path": "/u7dwMceEbjxd1N3TLEUBILSK2x6.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 10,
+  "fields": {
+    "name": "Disney Plus",
+    "tmdb_id": 337,
+    "logo_path": "/97yvRBw1GzX7fXprcF80er19ot.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 11,
+  "fields": {
+    "name": "Apple TV+",
+    "tmdb_id": 350,
+    "logo_path": "/2E03IAZsX4ZaUqM7tXlctEPMGWS.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 12,
+  "fields": {
+    "name": "wavve",
+    "tmdb_id": 356,
+    "logo_path": "/hPcjSaWfMwEqXaCMu7Fkb529Dkc.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 13,
+  "fields": {
+    "name": "Dekkoo",
+    "tmdb_id": 444,
+    "logo_path": "/x6nRFzF32hCzMHaVM4RHRo7lsgS.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 14,
+  "fields": {
+    "name": "DOCSVILLE",
+    "tmdb_id": 475,
+    "logo_path": "/5zqbck5mo8PuVbGu2ngBUdn5Yga.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 15,
+  "fields": {
+    "name": "Plex",
+    "tmdb_id": 538,
+    "logo_path": "/vLZKlXUNDcZR7ilvfY9Wr9k80FZ.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 16,
+  "fields": {
+    "name": "WOW Presents Plus",
+    "tmdb_id": 546,
+    "logo_path": "/6dET59jNU0ADysghEjl8Unuc7Ca.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 17,
+  "fields": {
+    "name": "Magellan TV",
+    "tmdb_id": 551,
+    "logo_path": "/mSH24WQcRDJ2fsL5iucXqqRnSRb.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 18,
+  "fields": {
+    "name": "BroadwayHD",
+    "tmdb_id": 554,
+    "logo_path": "/6IYZ4NjwPikxN7J9cfSmuyeHeMm.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 19,
+  "fields": {
+    "name": "Cultpix",
+    "tmdb_id": 692,
+    "logo_path": "/uauVx3dGWt0GICqdMCBYJObd3Mo.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 20,
+  "fields": {
+    "name": "FilmBox+",
+    "tmdb_id": 701,
+    "logo_path": "/fbveJTcro9Xw2KuPIIoPPePHiwy.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 21,
+  "fields": {
+    "name": "Netflix Standard with Ads",
+    "tmdb_id": 1796,
+    "logo_path": "/dpR8r13zWDeUR0QkzWidrdMxa56.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 22,
+  "fields": {
+    "name": "Coupang Play",
+    "tmdb_id": 1881,
+    "logo_path": "/vpBRsCSyuwxwGDB2JeqyBVECUYF.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 23,
+  "fields": {
+    "name": "TVING",
+    "tmdb_id": 1883,
+    "logo_path": "/qHThQdkJuROK0k5QTCrknaNukWe.jpg"
+  }
+},
+{
+  "model": "movies.movieprovider",
+  "pk": 24,
+  "fields": {
+    "name": "JustWatchTV",
+    "tmdb_id": 2285,
+    "logo_path": "/uCMLyl8jGIbInVyDeCeV6kpciFm.jpg"
+  }
+}
+]
