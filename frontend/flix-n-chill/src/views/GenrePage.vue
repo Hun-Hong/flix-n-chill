@@ -112,6 +112,9 @@
         </div>
       </div>
     </div>
+    <!-- 영화 상세 모달 -->
+    <MovieDetailModal :is-visible="showModal" :movie-id="selectedMovieId" @close="closeModal"
+      @toggle-watchlist="handleModalToggleWatchlist" @toggle-like="handleModalToggleLike" @play="handleModalPlay" />
   </div>
 </template>
 
@@ -120,6 +123,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MovieCard from '@/components/MovieCard.vue'
 import { useMovieStore } from '@/stores/movie'
+import MovieDetailModal from '@/components/MovieDetailModal.vue'
 
 // Router 사용
 const route = useRoute()
@@ -132,7 +136,11 @@ const store = useMovieStore()
 const sortBy = ref('rating')
 const filterYear = ref('')
 
-// 장르 정보 (공주님이 만드신 예쁜 색상들 그대로!)
+// 모달 상태
+const showModal = ref(false)
+const selectedMovieId = ref(null)
+
+// 장르 정보
 const genreList = ref([
   {
     type: 'action',
@@ -223,12 +231,12 @@ const changeGenre = (genreType) => {
 
 const loadGenreMovies = async () => {
   console.log('🎬 loadGenreMovies 호출 - 장르:', currentGenreType.value)
-  
+
   try {
     // 🚀 비동기 API 호출!
     await store.fetchMoviesByGenre(currentGenreType.value)
     console.log('🎬 API 호출 완료!')
-    
+
   } catch (error) {
     console.error('🚨 영화 데이터 로드 실패:', error)
   }
@@ -255,11 +263,42 @@ const handleToggleLike = (movie) => {
   store.toggleLike(movie.id)
 }
 
+// 영화 클릭 이벤트 - 모달 열기
 const handleMovieClick = (movie) => {
-  console.log('🎬 영화 클릭:', movie.title)
-  // 실제로는 영화 상세 페이지로 이동
-  // router.push({ name: 'MovieDetail', params: { id: movie.id } })
+  console.log('🎬 영화 클릭 이벤트:', movie)  // 전체 movie 객체 확인
+  console.log('🎬 영화 ID:', movie.id)        // id 값 확인
+  
+  // id가 없으면 경고하고 리턴
+  if (!movie.id) {
+    console.error('🚨 영화 ID가 없습니다:', movie)
+    return
+  }
+  
+  selectedMovieId.value = movie.id
+  showModal.value = true
+  
+  console.log('🎬 모달 열림 - 선택된 ID:', selectedMovieId.value)
 }
+
+// 모달 관련 이벤트
+const closeModal = () => {
+  showModal.value = false
+  selectedMovieId.value = null
+}
+
+const handleModalToggleWatchlist = (movie) => {
+  store.toggleWatchlist(movie.id)
+}
+
+const handleModalToggleLike = (movie) => {
+  store.toggleLike(movie.id)
+}
+
+const handleModalPlay = (movie) => {
+  // 재생 로직
+}
+
+
 
 // 컴포넌트 마운트 시
 onMounted(() => {
@@ -403,7 +442,8 @@ onMounted(() => {
 }
 
 /* 로딩 & 에러 섹션 */
-.loading-section, .error-section {
+.loading-section,
+.error-section {
   text-align: center;
   padding: 3rem 0;
 }
