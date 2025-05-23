@@ -70,24 +70,17 @@
           </div>
         </div>
   
-        <!-- 검색 결과 -->
+        <!-- 검색 결과 - MovieCard 컴포넌트 사용 -->
         <div v-else-if="hasSearched && searchResults.length > 0" class="search-results">
           <div class="movies-grid">
             <div class="row g-4">
               <div v-for="movie in searchResults" :key="movie.id" class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6">
-                <div class="movie-card" @click="handleMovieClick(movie)">
-                  <div class="movie-poster">
-                    <img :src="movie.poster || '/api/placeholder/300/450'" :alt="movie.title" />
-                  </div>
-                  <div class="movie-info">
-                    <h5 class="movie-title">{{ movie.title }}</h5>
-                    <p class="movie-year">{{ movie.year }}</p>
-                    <div class="movie-rating" v-if="movie.rating">
-                      <i class="bi bi-star-fill"></i>
-                      {{ movie.rating }}
-                    </div>
-                  </div>
-                </div>
+                <MovieCard
+                  :movie="movie"
+                  @play="handlePlayMovie"
+                  @toggle-like="handleToggleLike"
+                  @click="handleMovieClick"
+                />
               </div>
             </div>
           </div>
@@ -108,6 +101,7 @@
       </div>
     </div>
   </template>
+  
   
   <script setup>
   import { ref, onMounted } from 'vue'
@@ -137,7 +131,7 @@
     try {
       const response = await axios.get(`${API_BASE_URL}/movies/search/`, {
         params: {
-          title: query  // 제목으로만 검색
+          query: query  // 제목으로만 검색
         }
       })
       
@@ -147,7 +141,7 @@
         title: movie.title,
         rating: movie.vote_average,
         year: movie.release_date ? new Date(movie.release_date).getFullYear() : 2024,
-        genre: 'search', // 검색 결과로 표시
+        genre: movie.genre, // 검색 결과로 표시
         poster: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '/api/placeholder/300/450',
         isInWatchlist: false,
         isLiked: false
@@ -227,10 +221,10 @@
     console.log('🎬 영화 재생:', movie.title)
   }
   
-  const handleToggleWatchlist = (movie) => {
-    console.log('🎬 찜하기 토글:', movie.title)
-    store.toggleWatchlist(movie.id)
-  }
+//   const handleToggleWatchlist = (movie) => {
+//     console.log('🎬 찜하기 토글:', movie.title)
+//     store.toggleWatchlist(movie.id)
+//   }
   
   const handleToggleLike = (movie) => {
     console.log('🎬 좋아요 토글:', movie.title)
