@@ -1,14 +1,14 @@
 from django.shortcuts import render
 from django.conf import settings
 import requests
-from .serializers import MovieSerializer, ProviderSerilizer
+from .serializers import MovieListSerializer, MovieDetailSerializer, ProviderSerilizer
 from .models import Movie, Genre, MovieProvider
 import json
 from .models import Genre
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 
 # Create your views here.
 
@@ -54,7 +54,7 @@ def movie_collect(request):
                     else:
                         provider_data = {}
 
-                    serializer = MovieSerializer(
+                    serializer = MovieDetailSerializer(
                         data={
                             "tmdb_id": tmdb_id,
                             "title": detail_data.get("title", ""),
@@ -102,6 +102,7 @@ def movie_collect(request):
     return Response(context, status.HTTP_200_OK)
 
 
+# 함수 방식
 # @api_view(["GET"])
 # def movie_list(request):
 #     top_movies = Movie.objects.order_by('-vote_average')
@@ -110,9 +111,9 @@ def movie_collect(request):
 
 #     return Response(serializer.data)
 
-
+# 클래스 방식
 class MovieListView(ListAPIView):
-    serializer_class = MovieSerializer
+    serializer_class = MovieListSerializer
     
     def get_queryset(self):
         ordering = self.request.query_params.get('ordering', 'latest')
@@ -122,9 +123,13 @@ class MovieListView(ListAPIView):
             return Movie.objects.order_by("-release_date")
 
 
+class MovieDetailView(RetrieveAPIView):
+    serializer_class = MovieDetailSerializer
+    queryset = Movie.objects.all()
+
 
 class MovieGenreListView(ListAPIView):
-    serializer_class = MovieSerializer
+    serializer_class = MovieListSerializer
 
     def get_queryset(self):
         name_to_id = {
