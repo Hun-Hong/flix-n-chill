@@ -1,14 +1,16 @@
 from django.shortcuts import render
 from django.conf import settings
 import requests
-from .serializer import MovieSerializer, ProviderSerilizer
+from .serializers import MovieListSerializer, MovieCreateSerializer, MovieDetailSerializer, ProviderSerilizer
 from .models import Movie, Genre, MovieProvider
 import json
 from .models import Genre
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import api_view
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView
+from django.db.models import Q
 
 # Create your views here.
 
@@ -19,7 +21,7 @@ def movie_collect(request):
     # url = "https://api.themoviedb.org/3/genre/movie/list?language=ko"
 
     saved = 0
-    for page_idx in range(1, 6):
+    for page_idx in range(1, 26):
         list_url = f"https://api.themoviedb.org/3/movie/top_rated?language=ko-KR&page={page_idx}"
 
         headers = {
@@ -54,7 +56,7 @@ def movie_collect(request):
                     else:
                         provider_data = {}
 
-                    serializer = MovieSerializer(
+                    serializer = MovieCreateSerializer(
                         data={
                             "tmdb_id": tmdb_id,
                             "title": detail_data.get("title", ""),
@@ -102,6 +104,7 @@ def movie_collect(request):
     return Response(context, status.HTTP_200_OK)
 
 
+# 함수 방식
 # @api_view(["GET"])
 # def movie_list(request):
 #     top_movies = Movie.objects.order_by('-vote_average')
@@ -110,9 +113,9 @@ def movie_collect(request):
 
 #     return Response(serializer.data)
 
-
+# 클래스 방식
 class MovieListView(ListAPIView):
-    serializer_class = MovieSerializer
+    serializer_class = MovieListSerializer
     
     def get_queryset(self):
         ordering = self.request.query_params.get('ordering', 'latest')
@@ -122,9 +125,13 @@ class MovieListView(ListAPIView):
             return Movie.objects.order_by("-release_date")
 
 
+class MovieDetailView(RetrieveAPIView):
+    serializer_class = MovieDetailSerializer
+    queryset = Movie.objects.all()
+
 
 class MovieGenreListView(ListAPIView):
-    serializer_class = MovieSerializer
+    serializer_class = MovieListSerializer
 
     def get_queryset(self):
         name_to_id = {
@@ -144,7 +151,23 @@ class MovieGenreListView(ListAPIView):
             return Movie.objects.filter(genres=genre).order_by("-vote_average")
         else:
             return Movie.objects.filter(genres=genre).order_by("-release_date")
+
+
+class MovieSearchView(ListAPIView):
+    serializer_class = MovieListSerializer
+
+    def get_queryset(self):
+        query = self.request.query_params.get('query', '').strip()
+
+        if not query:
+            return Movie.objects.none()
         
+        if len(query) < 2:
+            raise ValidationError("검색어는 최소 2자 이상이어야 합니다.")
+
+        return Movie.objects.filter(
+            Q(title__icontains=query) | Q(original_title__icontains=query) | Q(overview__icontains=query) | Q(tagline__icontains=query)
+            ).order_by('-release_date')
 
 
 ## provider DB 수집을 위해 작동하였습니다.
