@@ -25,7 +25,7 @@
             <p class="movie-year" v-if="movie.year">{{ movie.year }}년</p>
             
             <!-- 장르 -->
-            <p class="movie-genre" v-if="movie.genre">{{ movie.genre }}</p>
+            <p class="movie-genre" v-if="movie.genre">{{ getKoreanGenre(movie.genre) }}</p>
             
             <!-- 액션 버튼들 -->
             <div class="movie-actions">
@@ -36,21 +36,21 @@
               >
                 <i class="bi bi-play-fill"></i>
               </button>
-              <button 
+              <!-- <button 
                 class="btn btn-sm btn-outline-light me-2" 
                 @click.stop="toggleWatchlist"
                 :class="{ 'btn-danger': movie.isInWatchlist }"
                 :title="movie.isInWatchlist ? '찜 해제' : '찜하기'"
               >
                 <i :class="movie.isInWatchlist ? 'bi bi-heart-fill' : 'bi bi-plus'"></i>
-              </button>
+              </button> -->
               <button 
                 class="btn btn-sm btn-outline-light" 
                 @click.stop="toggleLike"
-                :class="{ 'btn-success': movie.isLiked }"
+                :class="{ 'btn-danger': movie.isLiked }"
                 title="좋아요"
               >
-                <i :class="movie.isLiked ? 'bi bi-hand-thumbs-up-fill' : 'bi bi-hand-thumbs-up'"></i>
+                <i :class="movie.isLiked ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
               </button>
             </div>
           </div>
@@ -80,6 +80,15 @@
   </template>
   
   <script>
+  const genreKorean = {
+    romance: '로맨스',
+    action: '액션',
+    drama: '드라마',
+    family: '가족',
+    horror: '호러',
+    adventure: '모험',
+    comedy: '코미디'
+  }
   export default {
     name: 'MovieCard',
     props: {
@@ -121,12 +130,18 @@
         this.$emit('play', this.movie)
         console.log('영화 재생:', this.movie.title)
       },
+
+      getKoreanGenre(genre) {
+        const lowerGenre = genre?.toLowerCase()
+        return genreKorean[lowerGenre] || genre || '영화'
+      },
+
       
       // 찜하기 토글
-      toggleWatchlist() {
-        this.$emit('toggle-watchlist', this.movie)
-        console.log('찜하기 토글:', this.movie.title)
-      },
+      // toggleWatchlist() {
+      //   this.$emit('toggle-watchlist', this.movie)
+      //   console.log('찜하기 토글:', this.movie.title)
+      // },
       
       // 좋아요 토글
       toggleLike() {
