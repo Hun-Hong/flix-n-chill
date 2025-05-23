@@ -20,6 +20,7 @@ export const useMovieStore = defineStore('movie', () => {
   const fetchMoviesByGenre = async (genreType) => {
     console.log('🎬 비동기 함수 호출 - genreType:', genreType)
     
+    
     // 이미 해당 장르 데이터가 있으면 API 호출 안 함
     if (moviesByGenre.value[genreType] && moviesByGenre.value[genreType].length > 0) {
       console.log('🎬 캐시된 데이터 사용:', moviesByGenre.value[genreType])
@@ -35,7 +36,7 @@ export const useMovieStore = defineStore('movie', () => {
       
       // Django 데이터를 MovieCard에 맞게 변환
       const transformedMovies = response.data.results.map(movie => ({
-        id: movie.id,
+        id: movie.pk,
         title: movie.title,
         rating: movie.vote_average,
         year: movie.release_date ? new Date(movie.release_date).getFullYear() : 2024,
