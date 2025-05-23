@@ -33,14 +33,37 @@ export const useMovieStore = defineStore('movie', () => {
     try {
       const response = await axios.get(`http://127.0.0.1:8000/api/v1/movies/list/${genreType}/`)
       console.log('🎬 API 응답:', response.data)
+
+      const genreList = {
+        "1": "액션",
+        "2": "모험",
+        "3": "애니메이션",
+        "4": "코미디",
+        "5": "범죄",
+        "6": "다큐멘터리",
+        "7": "드라마",
+        "8": "가족",
+        "9": "판타지",
+        "10": "역사",
+        "11": "공포",
+        "12": "음악",
+        "13": "미스터리",
+        "14": "로맨스",
+        "15": "SF",
+        "16": "TV 영화",
+        "17": "스릴러",
+        "18": "전쟁",
+        "19": "서부"
+      }
+
       
       // Django 데이터를 MovieCard에 맞게 변환
       const transformedMovies = response.data.results.map(movie => ({
-        id: movie.pk,
+        id: movie.id,
         title: movie.title,
         rating: movie.vote_average,
         year: movie.release_date ? new Date(movie.release_date).getFullYear() : 2024,
-        genre: genreType, // 실제 장르명 사용
+        genre: movie.genres.map((genreCode) => genreList[genreCode]), // [1, 2, 3, 4]
         poster: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '/api/placeholder/300/450',
         isInWatchlist: false,
         isLiked: false

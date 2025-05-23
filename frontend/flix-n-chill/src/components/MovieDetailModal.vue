@@ -58,7 +58,7 @@
                 <!-- 장르 -->
                 <div class="movie-genres" v-if="movieDetail.genres && movieDetail.genres.length">
                   <span v-for="genre in movieDetail.genres" :key="genre.id" class="genre-tag">
-                    {{ genre.name }}
+                    {{ genre }}
                   </span>
                 </div>
   
@@ -69,11 +69,11 @@
                     재생
                   </button>
                   
-                  <button @click="handleToggleWatchlist" 
+                  <!-- <button @click="handleToggleWatchlist" 
                           class="btn btn-outline-light action-btn"
                           :class="{ 'active': movieDetail.isInWatchlist }">
                     <i class="bi" :class="movieDetail.isInWatchlist ? 'bi-bookmark-fill' : 'bi-bookmark'"></i>
-                  </button>
+                  </button> -->
                   
                   <button @click="handleToggleLike" 
                           class="btn btn-outline-light action-btn"
@@ -101,9 +101,9 @@
                   <span class="label">개봉일</span>
                   <span class="value">{{ formatDate(movieDetail.release_date) }}</span>
                 </div>
-                <div class="detail-item" v-if="movieDetail.original_language">
-                  <span class="label">언어</span>
-                  <span class="value">{{ getLanguageName(movieDetail.original_language) }}</span>
+                <div class="detail-item" v-if="movieDetail.providers">
+                  <span class="label">감상 링크</span>
+                  <span class="value">{{ movieDetail.providers }}</span>
                 </div>
                 <div class="detail-item" v-if="movieDetail.vote_count">
                   <span class="label">평점 참여</span>
@@ -112,21 +112,6 @@
                 <div class="detail-item" v-if="movieDetail.budget && movieDetail.budget > 0">
                   <span class="label">제작비</span>
                   <span class="value">${{ (movieDetail.budget / 1000000).toFixed(1) }}M</span>
-                </div>
-              </div>
-            </div>
-  
-            <!-- 출연진 (임시 데이터) -->
-            <div class="section" v-if="movieDetail.cast && movieDetail.cast.length">
-              <h3 class="section-title">주요 출연진</h3>
-              <div class="cast-grid">
-                <div v-for="actor in movieDetail.cast.slice(0, 6)" :key="actor.id" class="cast-item">
-                  <img :src="actor.profile_path ? `https://image.tmdb.org/t/p/w185${actor.profile_path}` : '/api/placeholder/100/150'" 
-                       :alt="actor.name" class="cast-photo" />
-                  <div class="cast-info">
-                    <div class="cast-name">{{ actor.name }}</div>
-                    <div class="cast-character">{{ actor.character }}</div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -171,6 +156,28 @@
       // Django API 호출
       const response = await axios.get(`http://127.0.0.1:8000/api/v1/movies/${props.movieId}/`)
       
+      const genreList = {
+        "1": "액션",
+        "2": "모험",
+        "3": "애니메이션",
+        "4": "코미디",
+        "5": "범죄",
+        "6": "다큐멘터리",
+        "7": "드라마",
+        "8": "가족",
+        "9": "판타지",
+        "10": "역사",
+        "11": "공포",
+        "12": "음악",
+        "13": "미스터리",
+        "14": "로맨스",
+        "15": "SF",
+        "16": "TV 영화",
+        "17": "스릴러",
+        "18": "전쟁",
+        "19": "서부"
+      }
+
       // 데이터 변환
       const movie = response.data
       movieDetail.value = {
@@ -183,13 +190,12 @@
         year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
         release_date: movie.release_date,
         runtime: movie.runtime,
-        genres: movie.genres || [],
+        genres: movie.genres.map((genreCode) => genreList[genreCode]) || [],
         original_language: movie.original_language,
         vote_count: movie.vote_count,
         budget: movie.budget,
-        cast: movie.cast || [], // 출연진 정보 (백엔드에서 제공하는 경우)
-        isInWatchlist: false, // 실제로는 사용자 상태에 따라
-        isLiked: false // 실제로는 사용자 상태에 따라
+        isLiked: false, // 실제로는 사용자 상태에 따라
+        providers: movie.providers
       }
       
     } catch (err) {
@@ -229,11 +235,6 @@
     emit('play', movieDetail.value)
   }
   
-  const handleToggleWatchlist = () => {
-    movieDetail.value.isInWatchlist = !movieDetail.value.isInWatchlist
-    emit('toggle-watchlist', movieDetail.value)
-  }
-  
   const handleToggleLike = () => {
     movieDetail.value.isLiked = !movieDetail.value.isLiked
     emit('toggle-like', movieDetail.value)
@@ -250,18 +251,7 @@
     })
   }
   
-  const getLanguageName = (code) => {
-    const languages = {
-      'ko': '한국어',
-      'en': '영어',
-      'ja': '일본어',
-      'zh': '중국어',
-      'fr': '프랑스어',
-      'es': '스페인어',
-      'de': '독일어'
-    }
-    return languages[code] || code.toUpperCase()
-  }
+  
   
   // 컴포넌트 제거 시 스크롤 복원
   onBeforeUnmount(() => {

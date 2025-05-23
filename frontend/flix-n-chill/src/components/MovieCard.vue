@@ -25,7 +25,7 @@
           <p class="movie-year" v-if="movie.year">{{ movie.year }}년</p>
           
           <!-- 장르 -->
-          <p class="movie-genre" v-if="movie.genre">{{ getKoreanGenre(movie.genre) }}</p>
+          <p class="movie-genre" v-if="movie.genre">{{ getKoreanGenre(movie.genre[0]) }}</p>
           
           <!-- 액션 버튼들 -->
           <div class="movie-actions">
@@ -101,6 +101,7 @@ const props = defineProps({
 
 // Emits
 const emit = defineEmits(['play', 'toggle-watchlist', 'toggle-like', 'click'])
+
 
 // 장르 한국어 매핑
 const genreKorean = {
