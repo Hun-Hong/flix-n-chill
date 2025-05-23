@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.conf import settings
 import requests
-from .serializers import MovieListSerializer, MovieDetailSerializer, ProviderSerilizer
+from .serializers import MovieListSerializer, MovieCreateSerializer, MovieDetailSerializer, ProviderSerilizer
 from .models import Movie, Genre, MovieProvider
 import json
 from .models import Genre
@@ -21,7 +21,7 @@ def movie_collect(request):
     # url = "https://api.themoviedb.org/3/genre/movie/list?language=ko"
 
     saved = 0
-    for page_idx in range(1, 6):
+    for page_idx in range(1, 26):
         list_url = f"https://api.themoviedb.org/3/movie/top_rated?language=ko-KR&page={page_idx}"
 
         headers = {
@@ -56,7 +56,7 @@ def movie_collect(request):
                     else:
                         provider_data = {}
 
-                    serializer = MovieDetailSerializer(
+                    serializer = MovieCreateSerializer(
                         data={
                             "tmdb_id": tmdb_id,
                             "title": detail_data.get("title", ""),
