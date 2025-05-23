@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.conf import settings
 import requests
-from .serializer import MovieSerializer, ProviderSerilizer
+from .serializers import MovieSerializer, ProviderSerilizer
 from .models import Movie, Genre, MovieProvider
 import json
 from .models import Genre
