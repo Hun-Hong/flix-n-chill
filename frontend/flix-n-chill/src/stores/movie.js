@@ -63,7 +63,7 @@ export const useMovieStore = defineStore('movie', () => {
         title: movie.title,
         rating: movie.vote_average,
         year: movie.release_date ? new Date(movie.release_date).getFullYear() : 2024,
-        genre: movie.genres.map((genreCode) => genreList[genreCode]), // [1, 2, 3, 4]
+        genre: movie.genres.map((genre) => genre.name), // [1, 2, 3, 4]
         poster: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '/api/placeholder/300/450',
         isInWatchlist: false,
         isLiked: false
