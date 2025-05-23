@@ -7,8 +7,10 @@ import json
 from .models import Genre
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import api_view
 from rest_framework.generics import ListAPIView, RetrieveAPIView
+from django.db.models import Q
 
 # Create your views here.
 
@@ -149,7 +151,23 @@ class MovieGenreListView(ListAPIView):
             return Movie.objects.filter(genres=genre).order_by("-vote_average")
         else:
             return Movie.objects.filter(genres=genre).order_by("-release_date")
+
+
+class MovieSearchView(ListAPIView):
+    serializer_class = MovieListSerializer
+
+    def get_queryset(self):
+        query = self.request.query_params.get('query', '').strip()
+
+        if not query:
+            return Movie.objects.none()
         
+        if len(query) < 2:
+            raise ValidationError("검색어는 최소 2자 이상이어야 합니다.")
+
+        return Movie.objects.filter(
+            Q(title__icontains=query) | Q(original_title__icontains=query) | Q(overview__icontains=query) | Q(tagline__icontains=query)
+            ).order_by('-release_date')
 
 
 ## provider DB 수집을 위해 작동하였습니다.
