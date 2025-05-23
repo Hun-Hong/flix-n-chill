@@ -4,7 +4,7 @@ from .models import Movie, MovieProvider
 class MovieListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
-        fields = ("vote_average", "poster_path", "release_date", "genres", "title", "original_title")
+        fields = ("id", "vote_average", "poster_path", "release_date", "genres", "title", "original_title")
         read_only_field = ("genres")
 
 class MovieDetailSerializer(serializers.ModelSerializer):
