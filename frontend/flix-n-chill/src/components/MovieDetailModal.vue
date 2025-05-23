@@ -57,7 +57,7 @@
                 
                 <!-- 장르 -->
                 <div class="movie-genres" v-if="movieDetail.genres && movieDetail.genres.length">
-                  <span v-for="genre in movieDetail.genres" :key="genre.id" class="genre-tag">
+                  <span v-for="genre in movieDetail.genres" :key="genre" class="genre-tag">
                     {{ genre }}
                   </span>
                 </div>
@@ -68,12 +68,6 @@
                     <i class="bi bi-play-fill me-2"></i>
                     재생
                   </button>
-                  
-                  <!-- <button @click="handleToggleWatchlist" 
-                          class="btn btn-outline-light action-btn"
-                          :class="{ 'active': movieDetail.isInWatchlist }">
-                    <i class="bi" :class="movieDetail.isInWatchlist ? 'bi-bookmark-fill' : 'bi-bookmark'"></i>
-                  </button> -->
                   
                   <button @click="handleToggleLike" 
                           class="btn btn-outline-light action-btn"
@@ -93,6 +87,27 @@
               <p class="overview">{{ movieDetail.overview }}</p>
             </div>
   
+            <!-- 감상 가능한 플랫폼 -->
+            <div class="section" v-if="movieDetail.providers && movieDetail.providers.length">
+              <h3 class="section-title">감상 가능한 플랫폼</h3>
+              <div class="providers-container">
+                <div 
+                  v-for="provider in movieDetail.providers" 
+                  :key="provider.id" 
+                  class="provider-item"
+                >
+                  <div class="provider-logo">
+                    <img 
+                      :src="provider.logo_path ? `https://image.tmdb.org/t/p/w92${provider.logo_path}` : '/api/placeholder/40/40'" 
+                      :alt="provider.name"
+                      @error="handleImageError"
+                    />
+                  </div>
+                  <span class="provider-name">{{ provider.name }}</span>
+                </div>
+              </div>
+            </div>
+  
             <!-- 상세 정보 -->
             <div class="section">
               <h3 class="section-title">상세 정보</h3>
@@ -101,9 +116,9 @@
                   <span class="label">개봉일</span>
                   <span class="value">{{ formatDate(movieDetail.release_date) }}</span>
                 </div>
-                <div class="detail-item" v-if="movieDetail.providers">
-                  <span class="label">감상 링크</span>
-                  <span class="value">{{ movieDetail.providers }}</span>
+                <div class="detail-item" v-if="movieDetail.original_language">
+                  <span class="label">원어</span>
+                  <span class="value">{{ getLanguageName(movieDetail.original_language) }}</span>
                 </div>
                 <div class="detail-item" v-if="movieDetail.vote_count">
                   <span class="label">평점 참여</span>
@@ -177,7 +192,7 @@
         "18": "전쟁",
         "19": "서부"
       }
-
+  
       // 데이터 변환
       const movie = response.data
       movieDetail.value = {
@@ -240,6 +255,29 @@
     emit('toggle-like', movieDetail.value)
   }
   
+  // 이미지 로딩 실패 시 처리
+  const handleImageError = (event) => {
+    event.target.style.display = 'none'
+    event.target.parentElement.style.background = 'linear-gradient(135deg, #666, #888)'
+    event.target.parentElement.innerHTML = '<i class="bi bi-play-circle" style="color: white; font-size: 20px;"></i>'
+  }
+  
+  // 언어 코드를 한국어로 변환
+  const getLanguageName = (code) => {
+    const languages = {
+      'ko': '한국어',
+      'en': '영어',
+      'ja': '일본어',
+      'zh': '중국어',
+      'fr': '프랑스어',
+      'de': '독일어',
+      'es': '스페인어',
+      'it': '이탈리아어',
+      'ru': '러시아어'
+    }
+    return languages[code] || code.toUpperCase()
+  }
+  
   // 유틸리티 함수들
   const formatDate = (dateString) => {
     if (!dateString) return ''
@@ -250,8 +288,6 @@
       day: 'numeric'
     })
   }
-  
-  
   
   // 컴포넌트 제거 시 스크롤 복원
   onBeforeUnmount(() => {
@@ -523,6 +559,59 @@
     color: rgba(255, 255, 255, 0.9);
   }
   
+  /* 감상 플랫폼 스타일 */
+  .providers-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .provider-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-width: 140px;
+  }
+  
+  .provider-item:hover {
+    background: linear-gradient(135deg, rgba(219, 0, 0, 0.15), rgba(255, 71, 87, 0.1));
+    border-color: rgba(219, 0, 0, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(219, 0, 0, 0.2);
+  }
+  
+  .provider-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+  }
+  
+  .provider-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+  }
+  
+  .provider-name {
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 0.95rem;
+  }
+  
   /* 상세 정보 그리드 */
   .details-grid {
     display: grid;
@@ -548,38 +637,6 @@
   .value {
     font-weight: 500;
     color: #ffffff;
-  }
-  
-  /* 출연진 그리드 */
-  .cast-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 1rem;
-  }
-  
-  .cast-item {
-    text-align: center;
-  }
-  
-  .cast-photo {
-    width: 80px;
-    height: 120px;
-    object-fit: cover;
-    border-radius: 8px;
-    margin-bottom: 0.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  
-  .cast-name {
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: #ffffff;
-    margin-bottom: 0.25rem;
-  }
-  
-  .cast-character {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.7);
   }
   
   /* 반응형 디자인 */
@@ -616,8 +673,18 @@
       grid-template-columns: 1fr;
     }
     
-    .cast-grid {
-      grid-template-columns: repeat(3, 1fr);
+    .provider-item {
+      min-width: 120px;
+      padding: 0.6rem 0.8rem;
+    }
+    
+    .provider-logo {
+      width: 32px;
+      height: 32px;
+    }
+    
+    .provider-name {
+      font-size: 0.85rem;
     }
   }
   
@@ -632,10 +699,6 @@
     
     .modal-body {
       padding: 1rem;
-    }
-    
-    .cast-grid {
-      grid-template-columns: repeat(2, 1fr);
     }
   }
   </style>
