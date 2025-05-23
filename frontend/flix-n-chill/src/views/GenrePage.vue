@@ -204,11 +204,66 @@ const currentGenre = computed(() => {
 
 // 🎯 동기 함수를 사용해서 리액티브 데이터 가져오기
 const currentMovies = computed(() => {
-  console.log('🎬 computed 실행 - currentGenreType:', currentGenreType.value)
-  const movies = store.getMoviesByGenreSync(currentGenreType.value)
-  console.log('🎬 computed에서 받은 영화들:', movies)
-  return movies
+  let movies = store.getMoviesByGenreSync(currentGenreType.value)
+  
+  // 1️⃣ 연도 필터링 적용
+  if (filterYear.value) {
+    if (filterYear.value === '2020') {
+      // 2020년 이전
+      movies = movies.filter(movie => {
+        const year = Number(movie.year) || 0
+        return year <= 2020
+      })
+    } else {
+      // 특정 연도
+      movies = movies.filter(movie => {
+        const year = Number(movie.year) || 0
+        return year.toString() === filterYear.value
+      })
+    }
+  }
+  
+  // 2️⃣ 정렬 적용
+  const sortedMovies = [...movies].sort((a, b) => {
+    switch (sortBy.value) {
+      case 'rating':
+        // 평점 높은순 (내림차순)
+        return (b.vote_average || b.rating || b.imdbRating || 0) - (a.vote_average || a.rating || a.imdbRating || 0)
+        
+      case 'rating-low':
+        // 평점 낮은순 (오름차순)
+        return (a.vote_average || a.rating || a.imdbRating || 0) - (b.vote_average || b.rating || b.imdbRating || 0)
+        
+      case 'year':
+        // 최신순 (내림차순)
+        const yearA = Number(a.year) || 0
+        const yearB = Number(b.year) || 0
+        return yearB - yearA
+        
+      case 'year-old':
+        // 오래된순 (오름차순)
+        const oldYearA = Number(a.year) || 0
+        const oldYearB = Number(b.year) || 0
+        return oldYearA - oldYearB
+        
+      case 'title':
+        // 제목순 (가나다순)
+        const titleA = (a.title || a.name || '').toLowerCase()
+        const titleB = (b.title || b.name || '').toLowerCase()
+        return titleA.localeCompare(titleB, 'ko')
+        
+      default:
+        return 0
+    }
+  })
+  
+  return sortedMovies
 })
+
+// 정렬/필터 변경 감지
+watch([sortBy, filterYear], () => {
+  // 정렬/필터 변경 시 자동으로 computed가 재실행됨
+}, { immediate: true })
 
 const totalMovies = computed(() => {
   return currentMovies.value.length
