@@ -119,7 +119,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MovieCard from '@/components/MovieCard.vue'
-import { useMovieStore } from '@/stores/counter'
+import { useMovieStore } from '@/stores/movie'
 
 // Router 사용
 const route = useRoute()
