@@ -48,7 +48,7 @@
                   class="dropdown-item" 
                   :to="{ name: 'Genre', query: { type: genre.type } }" 
                   @click="closeAllDropdowns" 
-                  style="color: lightgrey;"
+                  style="color: #FAF8F1;"
                 >
                   {{ genre.name }}
                 </router-link>
@@ -290,7 +290,7 @@ export default {
 }
 
 .dropdown-item:hover {
-  background-color: #f8f9fa;
+  background-color: #780909;
   color: #db0000;
 }
 

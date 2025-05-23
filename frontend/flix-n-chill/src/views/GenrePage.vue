@@ -132,7 +132,7 @@ const store = useMovieStore()
 const sortBy = ref('rating')
 const filterYear = ref('')
 
-// 장르 정보 (공주님이 만드신 예쁜 색상들 그대로!)
+// 장르 정보
 const genreList = ref([
   {
     type: 'action',
@@ -194,7 +194,7 @@ const currentGenre = computed(() => {
   return genreList.value.find(genre => genre.type === currentGenreType.value) || genreList.value[0]
 })
 
-// 🎯 핵심 수정! 동기 함수를 사용해서 리액티브 데이터 가져오기
+// 🎯 동기 함수를 사용해서 리액티브 데이터 가져오기
 const currentMovies = computed(() => {
   console.log('🎬 computed 실행 - currentGenreType:', currentGenreType.value)
   const movies = store.getMoviesByGenreSync(currentGenreType.value)
@@ -268,7 +268,6 @@ onMounted(() => {
 })
 </script>
 
-<!-- 공주님의 아름다운 스타일은 그대로 유지! -->
 <style scoped>
 /* 페이지 기본 스타일 */
 .genre-page {
