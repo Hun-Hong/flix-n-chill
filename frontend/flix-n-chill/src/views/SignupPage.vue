@@ -349,19 +349,20 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import axios from 'axios'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/accounts'
 
-// store
+// 라우터와 스토어
+const router = useRouter()
 const userStore = useUserStore()
 
 // 폼 데이터
 const formData = ref({
-	email: '',
-	password: '',
-	confirmPassword: '',
-	nickname: '',
-	birthdate: ''
+  email: '',
+  password: '',
+  confirmPassword: '',
+  nickname: '',
+  birthdate: ''
 })
 
 // 상태 관리
@@ -376,235 +377,425 @@ const showSuccessPopup = ref(false)
 const showTermsModal = ref(false)
 const showPrivacyModal = ref(false)
 
+// 취약한 비밀번호 패턴 데이터베이스
+const weakPasswordPatterns = [
+  // 일반적인 패스워드
+  'password', 'admin', 'user', 'login', 'root', 'guest', 'test', 'demo',
+  // 순차적 패턴
+  '12345', '123456', '1234567', '12345678', '123456789',
+  'abcdef', 'abcdefg', 'abcdefgh',
+  // 키보드 패턴
+  'qwerty', 'qwertyui', 'asdfgh', 'zxcvbn',
+  // 반복 패턴
+  'aaaa', 'bbbb', 'cccc', '1111', '2222', '3333',
+  // 흔한 조합
+  'admin123', 'password123', 'user123', 'test123', 'login123'
+]
+
+// 약관 동의 함수들
 const agreeToTerms = () => {
-	agreeTerms.value = true
-	showTermsModal.value = false
-	clearError('terms')
+  agreeTerms.value = true
+  showTermsModal.value = false
+  clearError('terms')
 }
 
 const agreeToPrivacy = () => {
-	agreeTerms.value = true
-	showPrivacyModal.value = false
-	clearError('terms')
+  agreeTerms.value = true
+  showPrivacyModal.value = false
+  clearError('terms')
 }
 
 // 이메일 유효성 검사
 const isEmailValid = computed(() => {
-	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-	return emailRegex.test(formData.value.email)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(formData.value.email)
 })
+
+// 취약한 패턴 체크 함수
+const checkWeakPatterns = (password) => {
+  const lowerPassword = password.toLowerCase()
+  
+  // 취약한 패턴 포함 여부 체크
+  for (const pattern of weakPasswordPatterns) {
+    if (lowerPassword.includes(pattern)) {
+      return `"${pattern}" 패턴이 포함되어 보안에 취약합니다`
+    }
+  }
+  
+  // 3자리 이상 연속된 숫자 체크 (111, 222, 333...)
+  if (/(\d)\1{2,}/.test(password)) {
+    return '같은 숫자가 3번 이상 연속됩니다'
+  }
+  
+  // 3자리 이상 연속된 문자 체크 (abc, bcd, cde...)
+  for (let i = 0; i < password.length - 2; i++) {
+    const char1 = password.charCodeAt(i)
+    const char2 = password.charCodeAt(i + 1)
+    const char3 = password.charCodeAt(i + 2)
+    
+    if (char2 === char1 + 1 && char3 === char2 + 1) {
+      return '연속된 문자가 포함되어 보안에 취약합니다'
+    }
+  }
+  
+  // 생년월일 패턴 체크 (1990, 2000 등)
+  if (/19\d{2}|20\d{2}/.test(password)) {
+    return '생년월일이 포함된 것 같습니다'
+  }
+  
+  return null // 취약한 패턴 없음
+}
+
+// 개선된 비밀번호 강도 계산
+const getPasswordStrength = () => {
+  const password = formData.value.password
+  if (!password) return 0
+  
+  // 먼저 취약한 패턴 체크
+  const weaknessCheck = checkWeakPatterns(password)
+  if (weaknessCheck) {
+    return 0 // 취약한 패턴이 있으면 무조건 0점
+  }
+  
+  let strength = 0
+  
+  // 기본 길이 체크
+  if (password.length >= 8) strength++
+  if (password.length >= 12) strength++ // 긴 비밀번호 보너스
+  
+  // 문자 종류 다양성
+  if (/[a-z]/.test(password)) strength++
+  if (/[A-Z]/.test(password)) strength++
+  if (/[0-9]/.test(password)) strength++
+  if (/[^A-Za-z0-9]/.test(password)) strength++
+  
+  // 복잡성 보너스
+  if (password.length >= 10 && /[^A-Za-z0-9]/.test(password)) {
+    strength++ // 10자 이상 + 특수문자 보너스
+  }
+  
+  return Math.min(strength, 5) // 최대 5점
+}
+
+// 개선된 강도 텍스트
+const getPasswordStrengthText = () => {
+  const password = formData.value.password
+  if (!password) return ''
+  
+  // 취약한 패턴 체크 먼저
+  const weaknessCheck = checkWeakPatterns(password)
+  if (weaknessCheck) {
+    return '취약함'
+  }
+  
+  const strength = getPasswordStrength()
+  const texts = [
+    '매우 약함',  // 0점
+    '약함',       // 1점
+    '보통',       // 2점
+    '안전함',     // 3점 - 통과 기준
+    '강함',       // 4점
+    '매우 강함'   // 5점
+  ]
+  return texts[strength] || '매우 약함'
+}
+
+// 개선된 강도 클래스
+const getPasswordStrengthClass = () => {
+  const password = formData.value.password
+  if (!password) return 'very-weak'
+  
+  // 취약한 패턴이 있으면 빨간색
+  const weaknessCheck = checkWeakPatterns(password)
+  if (weaknessCheck) {
+    return 'very-weak'
+  }
+  
+  const strength = getPasswordStrength()
+  const classes = [
+    'very-weak',   // 0점
+    'weak',        // 1점
+    'medium',      // 2점
+    'safe',        // 3점 - 새로운 클래스
+    'strong',      // 4점
+    'very-strong'  // 5점
+  ]
+  return classes[strength] || 'very-weak'
+}
 
 // 폼 전체 유효성 검사
 const isFormValid = computed(() => {
-	return isEmailValid.value &&
-		formData.value.password.length >= 8 &&
-		formData.value.password === formData.value.confirmPassword &&
-		formData.value.nickname.length >= 2 &&
-		formData.value.birthdate &&
-		agreeTerms.value &&
-		emailCheckResult.value &&
-		Object.keys(errors.value).length === 0
+  const password = formData.value.password
+  const weaknessCheck = checkWeakPatterns(password)
+  const strength = getPasswordStrength()
+  
+  return isEmailValid.value &&
+    password.length >= 8 &&
+    !weaknessCheck && // 취약한 패턴 없어야 함
+    strength >= 3 && // 3점 이상
+    formData.value.password === formData.value.confirmPassword &&
+    formData.value.nickname.length >= 2 &&
+    formData.value.birthdate &&
+    agreeTerms.value &&
+    emailCheckResult.value &&
+    Object.keys(errors.value).length === 0
 })
 
 // 에러 클리어
 const clearError = (field) => {
-	if (errors.value[field]) {
-		delete errors.value[field]
-	}
+  if (errors.value[field]) {
+    delete errors.value[field]
+  }
 }
 
 // 이메일 유효성 검사
 const validateEmail = () => {
-	if (!formData.value.email) {
-		errors.value.email = '이메일을 입력해주세요'
-	} else if (!isEmailValid.value) {
-		errors.value.email = '올바른 이메일 형식이 아닙니다'
-	} else {
-		clearError('email')
-	}
+  if (!formData.value.email) {
+    errors.value.email = '이메일을 입력해주세요'
+  } else if (!isEmailValid.value) {
+    errors.value.email = '올바른 이메일 형식이 아닙니다'
+  } else {
+    clearError('email')
+  }
 }
 
 // 이메일 중복 확인
 const checkEmailDuplicate = async () => {
-	if (!isEmailValid.value) return
+  if (!isEmailValid.value) return
 
-	isCheckingEmail.value = true
-	emailCheckResult.value = ''
+  isCheckingEmail.value = true
+  emailCheckResult.value = ''
 
-	try {
-		// 실제 API 호출 시뮬레이션
-		await new Promise(resolve => setTimeout(resolve, 1000))
+  try {
+    // 실제 API 호출로 교체 필요
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
-		const isDuplicate = Math.random() > 0.7 // 30% 확률로 중복
+    const isDuplicate = Math.random() > 0.7 // 30% 확률로 중복 (테스트용)
 
-		if (isDuplicate) {
-			errors.value.email = '이미 사용 중인 이메일입니다'
-			emailCheckResult.value = ''
-		} else {
-			clearError('email')
-			emailCheckResult.value = '사용 가능한 이메일입니다'
-		}
-	} catch (error) {
-		errors.value.email = '이메일 확인 중 오류가 발생했습니다'
-	} finally {
-		isCheckingEmail.value = false
-	}
+    if (isDuplicate) {
+      errors.value.email = '이미 사용 중인 이메일입니다'
+      emailCheckResult.value = ''
+    } else {
+      clearError('email')
+      emailCheckResult.value = '사용 가능한 이메일입니다'
+    }
+  } catch (error) {
+    errors.value.email = '이메일 확인 중 오류가 발생했습니다'
+  } finally {
+    isCheckingEmail.value = false
+  }
 }
 
-// 비밀번호 강도 계산
-const getPasswordStrength = () => {
-	const password = formData.value.password
-	let strength = 0
-
-	if (password.length >= 8) strength++
-	if (/[a-z]/.test(password)) strength++
-	if (/[A-Z]/.test(password)) strength++
-	if (/[0-9]/.test(password)) strength++
-	if (/[^A-Za-z0-9]/.test(password)) strength++
-
-	return Math.min(strength, 4)
-}
-
-const getPasswordStrengthText = () => {
-	const strength = getPasswordStrength()
-	const texts = ['매우 약함', '약함', '보통', '강함', '매우 강함']
-	return texts[strength] || '매우 약함'
-}
-
-const getPasswordStrengthClass = () => {
-	const strength = getPasswordStrength()
-	const classes = ['very-weak', 'weak', 'medium', 'strong', 'very-strong']
-	return classes[strength] || 'very-weak'
-}
-
-// 비밀번호 유효성 검사
+// 개선된 비밀번호 유효성 검사
 const validatePassword = () => {
-	if (!formData.value.password) {
-		errors.value.password = '비밀번호를 입력해주세요'
-	} else if (formData.value.password.length < 8) {
-		errors.value.password = '비밀번호는 8자 이상이어야 합니다'
-	} else {
-		clearError('password')
-	}
+  const password = formData.value.password
+  
+  if (!password) {
+    errors.value.password = '비밀번호를 입력해주세요'
+    return
+  }
+  
+  if (password.length < 8) {
+    errors.value.password = '비밀번호는 8자 이상이어야 합니다'
+    return
+  }
+  
+  // 취약한 패턴 체크
+  const weaknessCheck = checkWeakPatterns(password)
+  if (weaknessCheck) {
+    errors.value.password = weaknessCheck
+    return
+  }
+  
+  const strength = getPasswordStrength()
+  if (strength < 3) {
+    errors.value.password = '더 안전한 비밀번호를 사용해주세요 (대소문자, 숫자 포함 권장)'
+    return
+  }
+  
+  clearError('password')
 }
 
 // 비밀번호 확인 검사
 const validateConfirmPassword = () => {
-	if (!formData.value.confirmPassword) {
-		errors.value.confirmPassword = '비밀번호 확인을 입력해주세요'
-	} else if (formData.value.password !== formData.value.confirmPassword) {
-		errors.value.confirmPassword = '비밀번호가 일치하지 않습니다'
-	} else {
-		clearError('confirmPassword')
-	}
+  if (!formData.value.confirmPassword) {
+    errors.value.confirmPassword = '비밀번호 확인을 입력해주세요'
+  } else if (formData.value.password !== formData.value.confirmPassword) {
+    errors.value.confirmPassword = '비밀번호가 일치하지 않습니다'
+  } else {
+    clearError('confirmPassword')
+  }
 }
 
 // 닉네임 유효성 검사
 const validateNickname = () => {
-	if (!formData.value.nickname) {
-		errors.value.nickname = '닉네임을 입력해주세요'
-	} else if (formData.value.nickname.length < 2) {
-		errors.value.nickname = '닉네임은 2자 이상이어야 합니다'
-	} else if (formData.value.nickname.length > 20) {
-		errors.value.nickname = '닉네임은 20자 이하여야 합니다'
-	} else {
-		clearError('nickname')
-	}
+  if (!formData.value.nickname) {
+    errors.value.nickname = '닉네임을 입력해주세요'
+  } else if (formData.value.nickname.length < 2) {
+    errors.value.nickname = '닉네임은 2자 이상이어야 합니다'
+  } else if (formData.value.nickname.length > 20) {
+    errors.value.nickname = '닉네임은 20자 이하여야 합니다'
+  } else {
+    clearError('nickname')
+  }
 }
 
 // 생년월일 유효성 검사
 const validateBirthdate = () => {
-	if (!formData.value.birthdate) {
-		errors.value.birthdate = '생년월일을 입력해주세요'
-	} else {
-		const birthDate = new Date(formData.value.birthdate)
-		const today = new Date()
-		const age = today.getFullYear() - birthDate.getFullYear()
+  if (!formData.value.birthdate) {
+    errors.value.birthdate = '생년월일을 입력해주세요'
+  } else {
+    const birthDate = new Date(formData.value.birthdate)
+    const today = new Date()
+    const age = today.getFullYear() - birthDate.getFullYear()
 
-		if (age < 14) {
-			errors.value.birthdate = '14세 이상만 가입 가능합니다'
-		} else if (age > 120) {
-			errors.value.birthdate = '올바른 생년월일을 입력해주세요'
-		} else {
-			clearError('birthdate')
-		}
-	}
+    if (age < 14) {
+      errors.value.birthdate = '14세 이상만 가입 가능합니다'
+    } else if (age > 120) {
+      errors.value.birthdate = '올바른 생년월일을 입력해주세요'
+    } else {
+      clearError('birthdate')
+    }
+  }
 }
 
-
-// 폼 제출
+// 폼 제출 (Pinia Store와 연동)
 const handleSubmit = async () => {
-	// 유효성 검사
-	validateEmail()
-	validatePassword()
-	validateConfirmPassword()
-	validateNickname()
-	validateBirthdate()
+  console.log('🚀 회원가입 시도:', formData.value.email)
+  
+  // 유효성 검사
+  validateEmail()
+  validatePassword()
+  validateConfirmPassword()
+  validateNickname()
+  validateBirthdate()
 
+  // 약관 동의 체크
+  if (!agreeTerms.value) {
+    errors.value.terms = '약관에 동의해주세요'
+  }
 
-	// 약관 동의 체크
-	if (!agreeTerms.value) {
-		errors.value.terms = '약관에 동의해주세요'
-	}
+  // 유효성 검사 통과 여부
+  if (!isFormValid.value) {
+    console.log('❌ 폼 유효성 검사 실패')
+    return
+  }
 
-	// 유효성 검사 통과 여부
-	if (!isFormValid.value) return
+  isSubmitting.value = true
 
-	isSubmitting.value = true
+  try {
+    // Pinia Store를 사용한 회원가입 (만약 있다면)
+    if (userStore.signup) {
+      const result = await userStore.signup({
+        email: formData.value.email,
+        password: formData.value.password,
+        confirmPassword: formData.value.confirmPassword,
+        nickname: formData.value.nickname,
+        birthdate: formData.value.birthdate
+      })
 
-	const payload = {
-		username: formData.value.email,
-		email: formData.value.email,
-		password1: formData.value.password,
-		password2: formData.value.confirmPassword
-	}
+      if (result.success) {
+        console.log('✅ 회원가입 성공!')
+        showSuccessPopup.value = true
+      } else {
+        console.error('❌ 회원가입 실패:', result.error)
+        
+        // 에러 처리
+        if (result.error.email) {
+          errors.value.email = Array.isArray(result.error.email) 
+            ? result.error.email.join(' ') 
+            : result.error.email
+        }
+        if (result.error.password1) {
+          errors.value.password = Array.isArray(result.error.password1) 
+            ? result.error.password1.join(' ') 
+            : result.error.password1
+        }
+        if (result.error.non_field_errors) {
+          errors.value.api = result.error.non_field_errors.join(' ')
+        }
+      }
+    } else {
+      // 기존 axios 방식 (Store에 signup이 없는 경우)
+      const payload = {
+        username: formData.value.email,
+        email: formData.value.email,
+        password1: formData.value.password,
+        password2: formData.value.confirmPassword
+      }
 
-	axios({
-		method: 'post',
-		url: 'http://127.0.0.1:8000/accounts/registration/',
-		headers: {
-			'Content-Type': 'application/json'
-		},
-		data: payload
-	})
-		.then(response => {
-			const token = response.data.key
-			localStorage.setItem('authToken', token)
+      const response = await fetch('http://127.0.0.1:8000/accounts/registration/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
 
-			console.log('회원가입 성공, 토큰:', token)
-			userStore.token = token
-			showSuccessPopup.value = true
-		})
-		.catch(error => {
-			console.error('회원가입 실패:', error)
-
-			if (error.response?.data) {
-				errors.value.api = error.response.data
-			} else {
-				errors.value.api = { detail: '알 수 없는 오류가 발생했습니다.' }
-			}
-		})
-		.finally(() => {
-			isSubmitting.value = false
-		})
+      if (response.ok) {
+        const data = await response.json()
+        const token = data.key
+        
+        console.log('✅ 회원가입 성공, 토큰:', token)
+        
+        // Store에 토큰 설정
+        if (userStore.setToken) {
+          await userStore.setToken(token)
+        } else {
+          userStore.token = token
+          localStorage.setItem('authToken', token)
+        }
+        
+        showSuccessPopup.value = true
+      } else {
+        const errorData = await response.json()
+        console.error('❌ 회원가입 실패:', errorData)
+        
+        // 에러 처리
+        if (errorData.email) {
+          errors.value.email = Array.isArray(errorData.email) 
+            ? errorData.email.join(' ') 
+            : errorData.email
+        }
+        if (errorData.password1) {
+          errors.value.password = Array.isArray(errorData.password1) 
+            ? errorData.password1.join(' ') 
+            : errorData.password1
+        }
+        if (errorData.non_field_errors) {
+          errors.value.api = errorData.non_field_errors.join(' ')
+        }
+      }
+    }
+  } catch (error) {
+    console.error('💥 회원가입 처리 중 예외 발생:', error)
+    errors.value.api = '회원가입 처리 중 오류가 발생했습니다. 다시 시도해주세요.'
+  } finally {
+    isSubmitting.value = false
+  }
 }
-
 
 // 성공 팝업 닫기
 const closeSuccessPopup = () => {
-	showSuccessPopup.value = false
+  showSuccessPopup.value = false
 }
 
 // 로그인 페이지로 이동
 const goToLogin = () => {
-	closeSuccessPopup()
-	// 여기서 로그인 페이지로 라우팅
-	console.log('로그인 페이지로 이동')
+  closeSuccessPopup()
+  router.push('/login')
 }
 
 // 이메일 변경 시 중복확인 결과 초기화
 watch(() => formData.value.email, () => {
-	emailCheckResult.value = ''
+  emailCheckResult.value = ''
+})
+
+// 비밀번호 입력 시 실시간 검사
+watch(() => formData.value.password, () => {
+  if (formData.value.password) {
+    validatePassword()
+  }
 })
 </script>
 
@@ -1995,6 +2186,14 @@ watch(() => formData.value.email, () => {
 .modal-btn:focus-visible {
 	outline: 2px solid rgba(138, 43, 226, 0.8);
 	outline-offset: 2px;
+}
+
+.strength-fill.safe {
+  background: linear-gradient(90deg, #74b9ff, #0984e3);
+}
+
+.strength-text.safe {
+  color: #74b9ff;
 }
 
 /* 다크모드 최적화 */
