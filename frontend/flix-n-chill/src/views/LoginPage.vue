@@ -154,6 +154,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useUserStore } from '@/stores/accounts'
+import axios from 'axios'
 
 // 폼 데이터
 const formData = ref({
@@ -219,43 +221,45 @@ const validatePassword = () => {
 }
 
 // 로그인 폼 제출
-const handleSubmit = async () => {
-    // 모든 필드 유효성 검사
-    validateEmail()
-    validatePassword()
+const handleSubmit = () => {
+  validateEmail()
+  validatePassword()
 
-    if (!isFormValid.value) return
+  if (!isFormValid.value) return
 
-    isSubmitting.value = true
+  isSubmitting.value = true
 
-    try {
-        // 실제 API 호출 시뮬레이션
-        await new Promise(resolve => setTimeout(resolve, 2000))
+  const payload = {
+    username: formData.value.email,
+    password: formData.value.password
+  }
 
-        // 여기서 실제 로그인 API를 호출하세요
-        console.log('로그인 데이터:', {
-            email: formData.value.email,
-            password: formData.value.password,
-            rememberMe: rememberMe.value
-        })
+  axios({
+    method: 'post',
+    url: 'http://127.0.0.1:8000/accounts/login/',
+    headers: { 'Content-Type': 'application/json' },
+    data: payload
+  })
+    .then(response => {
+      // rest-auth 기본 응답: { key: '...' }
+      const token = response.data.key
+      const userStore = useUserStore()
+      userStore.token = token
 
-        // 로그인 실패 시뮬레이션 (30% 확률)
-        const loginSuccess = Math.random() > 0.3
-
-        if (loginSuccess) {
-            // 성공 팝업 표시
-            showSuccessPopup.value = true
-        } else {
-            // 로그인 실패
-            errors.value.password = '이메일 또는 비밀번호가 올바르지 않습니다'
-        }
-
-    } catch (error) {
-        console.error('로그인 실패:', error)
-        errors.value.password = '로그인 중 오류가 발생했습니다'
-    } finally {
-        isSubmitting.value = false
-    }
+      showSuccessPopup.value = true
+    })
+    .catch(error => {
+      if (error.response?.data?.non_field_errors) {
+        errors.value.password = error.response.data.non_field_errors.join(' ')
+      } else if (error.response?.data?.password) {
+        errors.value.password = error.response.data.password.join(' ')
+      } else {
+        errors.value.password = '이메일 또는 비밀번호가 올바르지 않습니다'
+      }
+    })
+    .finally(() => {
+      isSubmitting.value = false
+    })
 }
 
 // 비밀번호 재설정 이메일 전송
