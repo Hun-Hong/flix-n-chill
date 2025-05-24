@@ -425,31 +425,39 @@ const validateEmail = () => {
 }
 
 // 이메일 중복 확인
+
 const checkEmailDuplicate = async () => {
-	if (!isEmailValid.value) return
+  if (!isEmailValid.value) return
 
-	isCheckingEmail.value = true
-	emailCheckResult.value = ''
+  isCheckingEmail.value = true
+  emailCheckResult.value = ''
 
-	try {
-		// 실제 API 호출 시뮬레이션
-		await new Promise(resolve => setTimeout(resolve, 1000))
+  try {
+    const response = await axios({
+      method: 'get',
+      url: 'http://127.0.0.1:8000/auth/email_check/',
+      params: {
+        email: formData.value.email  // 또는 원하는 이메일 변수
+      }
+    })
 
-		const isDuplicate = Math.random() > 0.7 // 30% 확률로 중복
+    const isDuplicate = response.data.is_duplicate
 
-		if (isDuplicate) {
-			errors.value.email = '이미 사용 중인 이메일입니다'
-			emailCheckResult.value = ''
-		} else {
-			clearError('email')
-			emailCheckResult.value = '사용 가능한 이메일입니다'
-		}
-	} catch (error) {
-		errors.value.email = '이메일 확인 중 오류가 발생했습니다'
-	} finally {
-		isCheckingEmail.value = false
-	}
+    if (isDuplicate) {
+      errors.value.email = '이미 사용 중인 이메일입니다'
+      emailCheckResult.value = ''
+    } else {
+      clearError('email')
+      emailCheckResult.value = '사용 가능한 이메일입니다'
+    }
+  } catch (error) {
+    console.error(error)
+    errors.value.email = '이메일 확인 중 오류가 발생했습니다'
+  } finally {
+    isCheckingEmail.value = false
+  }
 }
+
 
 // 비밀번호 강도 계산
 const getPasswordStrength = () => {
