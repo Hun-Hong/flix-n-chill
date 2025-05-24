@@ -42,7 +42,7 @@
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits, defineExpose } from 'vue'
+import { ref, watch } from 'vue'
 
 // Props 정의
 const props = defineProps({
