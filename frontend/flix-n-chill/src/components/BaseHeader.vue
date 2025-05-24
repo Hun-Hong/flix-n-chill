@@ -185,13 +185,80 @@ const isLoggingOut = ref(false)
 
 // 사용자 프로필 이미지 계산
 const userProfileImage = computed(() => {
+  // 1. 사용자가 업로드한 프로필 이미지가 있는 경우
   if (userStore.currentUser?.profile_image) {
-    return userStore.currentUser.profile_image
+    // 상대 경로인 경우 절대 경로로 변환
+    if (userStore.currentUser.profile_image.startsWith('/')) {
+      return `http://127.0.0.1:8000${userStore.currentUser.profile_image}`
+    }
+    // 이미 절대 경로인 경우 그대로 사용
+    if (userStore.currentUser.profile_image.startsWith('http')) {
+      return userStore.currentUser.profile_image
+    }
+    // 상대 경로인 경우 미디어 URL과 결합
+    return `http://127.0.0.1:8000/media/${userStore.currentUser.profile_image}`
   }
-  // 기본 프로필 이미지 (사용자 이름 첫 글자 사용)
+
   const firstLetter = userStore.userName ? userStore.userName.charAt(0).toUpperCase() : 'U'
-  return `https://via.placeholder.com/32x32/db0000/ffffff?text=${firstLetter}`
+  const colors = [
+    { bg: 'db0000', text: 'ffffff' }, // 브랜드 레드
+    { bg: '2563eb', text: 'ffffff' }, // 블루
+    { bg: '7c3aed', text: 'ffffff' }, // 바이올렛
+    { bg: 'dc2626', text: 'ffffff' }, // 레드
+    { bg: 'ea580c', text: 'ffffff' }, // 오렌지
+    { bg: '16a34a', text: 'ffffff' }, // 그린
+  ]
+  
+  // 사용자 이름 기반으로 색상 선택 (일관성 유지)
+  const userName = userStore.userName || 'User'
+  const colorIndex = userName.charCodeAt(0) % colors.length
+  const selectedColor = colors[colorIndex]
+  
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(firstLetter)}&background=${selectedColor.bg}&color=${selectedColor.text}&size=128&font-size=0.6&bold=true`
 })
+
+// 🔧 이미지 로드 에러 처리를 위한 함수 추가
+const handleImageError = (event) => {
+  console.log('프로필 이미지 로드 실패, 기본 이미지로 교체')
+  const firstLetter = userStore.userName ? userStore.userName.charAt(0).toUpperCase() : 'U'
+  const userName = userStore.userName || 'User'
+  const colorIndex = userName.charCodeAt(0) % 6
+  const colors = ['db0000', '2563eb', '7c3aed', 'dc2626', 'ea580c', '16a34a']
+  const selectedColor = colors[colorIndex]
+  
+  event.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(firstLetter)}&background=${selectedColor}&color=ffffff&size=128&font-size=0.6&bold=true`
+}
+
+// 🔧 프로필 이미지 관련 유틸리티 함수들 추가
+const getInitials = (name) => {
+  if (!name) return 'U'
+  
+  const words = name.trim().split(' ')
+  if (words.length === 1) {
+    return words[0].charAt(0).toUpperCase()
+  }
+  
+  // 두 단어 이상인 경우 첫 글자들 조합
+  return words.slice(0, 2).map(word => word.charAt(0).toUpperCase()).join('')
+}
+
+const generateAvatarUrl = (name, size = 128) => {
+  const initials = getInitials(name)
+  const userName = name || 'User'
+  const colors = [
+    { bg: 'db0000', text: 'ffffff' }, // 브랜드 컬러
+    { bg: '2563eb', text: 'ffffff' },
+    { bg: '7c3aed', text: 'ffffff' },
+    { bg: 'dc2626', text: 'ffffff' },
+    { bg: 'ea580c', text: 'ffffff' },
+    { bg: '16a34a', text: 'ffffff' },
+  ]
+  
+  const colorIndex = userName.charCodeAt(0) % colors.length
+  const selectedColor = colors[colorIndex]
+  
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${selectedColor.bg}&color=${selectedColor.text}&size=${size}&font-size=0.6&bold=true&rounded=true`
+}
 
 // 장르 목록
 const genreList = [
@@ -783,6 +850,8 @@ onUnmounted(() => {
   left: 100%;
 }
 
+
+
 /* 모바일에서 네비게이션 간격 조정 */
 @media (max-width: 991.98px) {
   .navbar-nav {
@@ -892,4 +961,6 @@ onUnmounted(() => {
     transition-duration: 0.01ms !important;
   }
 }
+
+
 </style>
