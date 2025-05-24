@@ -567,7 +567,7 @@ const checkEmailDuplicate = async () => {
   emailCheckResult.value = ''
 
   try {
-    // 실제 API 호출로 교체 필요
+    // TODO: 실제 API로 교체 - 현재는 테스트용
     await new Promise(resolve => setTimeout(resolve, 1000))
 
     const isDuplicate = Math.random() > 0.7 // 30% 확률로 중복 (테스트용)
@@ -580,6 +580,7 @@ const checkEmailDuplicate = async () => {
       emailCheckResult.value = '사용 가능한 이메일입니다'
     }
   } catch (error) {
+    console.error('이메일 중복 확인 오류:', error)
     errors.value.email = '이메일 확인 중 오류가 발생했습니다'
   } finally {
     isCheckingEmail.value = false
@@ -659,7 +660,7 @@ const validateBirthdate = () => {
   }
 }
 
-// 폼 제출 (Pinia Store와 연동)
+// 폼 제출 (재시도 기능 포함)
 const handleSubmit = async () => {
   console.log('🚀 회원가입 시도:', formData.value.email)
   
@@ -681,11 +682,18 @@ const handleSubmit = async () => {
     return
   }
 
+  // 🎯 중요: isSubmitting을 try 블록 시작 전에 설정
   isSubmitting.value = true
+  
+  // 기존 API 에러 메시지 초기화
+  if (errors.value.api) {
+    delete errors.value.api
+  }
 
   try {
     // Pinia Store를 사용한 회원가입 (만약 있다면)
     if (userStore.signup) {
+      console.log('📡 Pinia Store signup 사용')
       const result = await userStore.signup({
         email: formData.value.email,
         password: formData.value.password,
@@ -697,6 +705,8 @@ const handleSubmit = async () => {
       if (result.success) {
         console.log('✅ 회원가입 성공!')
         showSuccessPopup.value = true
+        // 🎯 성공 시에만 버튼을 비활성화 상태로 유지 (팝업이 닫힐 때까지)
+        return // early return으로 finally에서 isSubmitting을 false로 만들지 않음
       } else {
         console.error('❌ 회원가입 실패:', result.error)
         
@@ -714,9 +724,13 @@ const handleSubmit = async () => {
         if (result.error.non_field_errors) {
           errors.value.api = result.error.non_field_errors.join(' ')
         }
+        if (result.error.detail) {
+          errors.value.api = result.error.detail
+        }
       }
     } else {
-      // 기존 axios 방식 (Store에 signup이 없는 경우)
+      // 기존 fetch 방식
+      console.log('📡 직접 API 호출 사용')
       const payload = {
         username: formData.value.email,
         email: formData.value.email,
@@ -747,11 +761,13 @@ const handleSubmit = async () => {
         }
         
         showSuccessPopup.value = true
+        // 🎯 성공 시에만 버튼을 비활성화 상태로 유지
+        return // early return
       } else {
         const errorData = await response.json()
         console.error('❌ 회원가입 실패:', errorData)
         
-        // 에러 처리
+        // 상세한 에러 처리
         if (errorData.email) {
           errors.value.email = Array.isArray(errorData.email) 
             ? errorData.email.join(' ') 
@@ -762,41 +778,116 @@ const handleSubmit = async () => {
             ? errorData.password1.join(' ') 
             : errorData.password1
         }
+        if (errorData.password2) {
+          errors.value.confirmPassword = Array.isArray(errorData.password2) 
+            ? errorData.password2.join(' ') 
+            : errorData.password2
+        }
         if (errorData.non_field_errors) {
           errors.value.api = errorData.non_field_errors.join(' ')
+        }
+        if (errorData.detail) {
+          errors.value.api = errorData.detail
+        }
+        
+        // 일반적인 에러 메시지가 없는 경우
+        if (!errors.value.api && !errors.value.email && !errors.value.password && !errors.value.confirmPassword) {
+          errors.value.api = '회원가입 중 오류가 발생했습니다. 입력 정보를 확인해주세요.'
         }
       }
     }
   } catch (error) {
     console.error('💥 회원가입 처리 중 예외 발생:', error)
-    errors.value.api = '회원가입 처리 중 오류가 발생했습니다. 다시 시도해주세요.'
+    
+    // 네트워크 오류 등의 경우
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      errors.value.api = '네트워크 연결을 확인해주세요. 잠시 후 다시 시도해주세요.'
+    } else {
+      errors.value.api = '예상치 못한 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
+    }
   } finally {
+    // 🎯 핵심: 실패한 경우에만 버튼을 다시 활성화
+    // 성공한 경우는 early return으로 여기까지 오지 않음
     isSubmitting.value = false
   }
 }
 
-// 성공 팝업 닫기
+// 성공 팝업 닫기 - 재시도 가능하도록 수정
 const closeSuccessPopup = () => {
   showSuccessPopup.value = false
+  // 🎯 팝업을 닫을 때 버튼 다시 활성화
+  isSubmitting.value = false
 }
 
-// 로그인 페이지로 이동
+// 로그인 페이지로 이동 - 재시도 가능하도록 수정
 const goToLogin = () => {
-  closeSuccessPopup()
+  showSuccessPopup.value = false
+  // 🎯 페이지 이동 시에도 버튼 활성화 (혹시 모를 경우 대비)
+  isSubmitting.value = false
   router.push('/login')
 }
 
 // 이메일 변경 시 중복확인 결과 초기화
 watch(() => formData.value.email, () => {
   emailCheckResult.value = ''
+  // 이메일이 변경되면 이메일 관련 에러도 초기화
+  if (errors.value.email) {
+    clearError('email')
+  }
 })
 
 // 비밀번호 입력 시 실시간 검사
 watch(() => formData.value.password, () => {
   if (formData.value.password) {
-    validatePassword()
+    // 입력 중일 때는 에러를 바로 지우지 않고, 유효해지면 지움
+    const weaknessCheck = checkWeakPatterns(formData.value.password)
+    const strength = getPasswordStrength()
+    
+    if (!weaknessCheck && strength >= 3 && formData.value.password.length >= 8) {
+      clearError('password')
+    }
   }
 })
+
+// 비밀번호 확인 입력 시 실시간 검사
+watch(() => formData.value.confirmPassword, () => {
+  if (formData.value.confirmPassword && formData.value.password === formData.value.confirmPassword) {
+    clearError('confirmPassword')
+  }
+})
+
+// 닉네임 입력 시 실시간 검사
+watch(() => formData.value.nickname, () => {
+  if (formData.value.nickname && formData.value.nickname.length >= 2 && formData.value.nickname.length <= 20) {
+    clearError('nickname')
+  }
+})
+
+// 생년월일 입력 시 실시간 검사
+watch(() => formData.value.birthdate, () => {
+  if (formData.value.birthdate) {
+    const birthDate = new Date(formData.value.birthdate)
+    const today = new Date()
+    const age = today.getFullYear() - birthDate.getFullYear()
+    
+    if (age >= 14 && age <= 120) {
+      clearError('birthdate')
+    }
+  }
+})
+
+// 디버깅용 - 개발 환경에서만 활성화
+if (import.meta.env.DEV) {
+  // 폼 상태 모니터링
+  watch([formData, errors, isFormValid], ([newFormData, newErrors, newIsFormValid]) => {
+    console.log('📋 폼 상태 업데이트:', {
+      formData: newFormData,
+      errors: newErrors,
+      isFormValid: newIsFormValid,
+      isSubmitting: isSubmitting.value
+    })
+  }, { deep: true })
+}
 </script>
 
 <style scoped>
