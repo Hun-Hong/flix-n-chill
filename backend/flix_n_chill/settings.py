@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-^u3)hmt^il3*l2cg9ac7xc(sm5^9uw8_t&*8yx11nm)5nvl!ck
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['1.0.0.127.in-addr.arpa', '127.0.0.1']
 
 
 # Application definition
@@ -168,3 +168,7 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# settings.py
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # 이메일 인증 비활성화
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # 콘솔 출력
