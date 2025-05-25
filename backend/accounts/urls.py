@@ -19,5 +19,6 @@ from . import views
 
 
 urlpatterns = [
-    path("email_check/", view=views.EmailDuplicateCheckView.as_view())
+    path("email_check/", view=views.EmailDuplicateCheckView.as_view()),
+    path("<int:user_pk>/follow/", view=views.follow)
 ]

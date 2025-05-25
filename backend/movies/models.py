@@ -28,6 +28,7 @@ class Review(models.Model):
     rating = models.FloatField()
     comment = models.CharField(max_length=50)
     created_at = models.DateTimeField(auto_now_add=True)
+    unique_together = ('user', 'movie')
 
 class Genre(models.Model):
     name = models.CharField(max_length=50)
