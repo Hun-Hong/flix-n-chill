@@ -22,6 +22,8 @@ urlpatterns = [
     path("list/", view=views.MovieListView.as_view()),
     path("list/<str:genre_name>/", view=views.MovieGenreListView.as_view()),
     path("<int:pk>/", view=views.MovieDetailView.as_view()),
+    path("<int:pk>/like/", view=views.movie_like),
+    path("<int:pk>/review/", view=views.create_review),
     path("search/", view=views.MovieSearchView.as_view()),
     # path("providers/", view=views.collect_provider),
 ]

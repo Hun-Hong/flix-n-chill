@@ -69,7 +69,8 @@
                     재생
                   </button>
                   
-                  <button @click="handleToggleLike" 
+                  <button v-if="isAuth"
+                  @click="handleToggleLike" 
                           class="btn btn-outline-light action-btn"
                           :class="{ 'active': movieDetail.isLiked }">
                     <i class="bi" :class="movieDetail.isLiked ? 'bi-heart-fill' : 'bi-heart'"></i>
@@ -149,6 +150,10 @@
     movieId: {
       type: [Number, String],
       required: true
+    },
+    isAuth: {
+      type: Boolean,
+      default: false
     }
   })
   
