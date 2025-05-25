@@ -1,16 +1,17 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.conf import settings
 import requests
-from .serializers import MovieListSerializer, MovieCreateSerializer, MovieDetailSerializer, ProviderSerilizer
+from .serializers import MovieListSerializer, MovieCreateSerializer, MovieDetailSerializer, ReviewSerializer 
 from .models import Movie, Genre, MovieProvider
 import json
 from .models import Genre
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.exceptions import ValidationError
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from django.db.models import Q
+from datetime import datetime
 
 # Create your views here.
 
@@ -119,10 +120,32 @@ class MovieListView(ListAPIView):
     
     def get_queryset(self):
         ordering = self.request.query_params.get('ordering', 'latest')
+        year = self.request.query_params.get('year', None)
+
+        queryset = Movie.objects.all()
+
+        # 연도 필터
+        if year:
+            try:
+                year = int(year)
+                start_date = datetime(year, 1, 1)
+                end_date = datetime(year, 12, 31)
+                queryset = queryset.filter(release_date__range=(start_date, end_date))
+            except ValueError:
+                pass  # year가 숫자가 아닌 경우 무시
+
         if ordering == 'top':
-            return Movie.objects.order_by("-vote_average")
+            queryset = queryset.order_by("-vote_average")
+        elif ordering == 'bottom':
+            queryset = queryset.order_by("vote_average")
+        elif ordering == 'oldest':
+            queryset = queryset.order_by("release_date")
+        elif ordering == 'title':
+            queryset = queryset.order_by("title")
         else:
-            return Movie.objects.order_by("-release_date")
+            queryset = queryset.order_by("-release_date")
+
+        return queryset
 
 
 class MovieDetailView(RetrieveAPIView):
@@ -135,22 +158,51 @@ class MovieGenreListView(ListAPIView):
 
     def get_queryset(self):
         name_to_id = {
-        "action": 1,
-        "comedy": 4,
-        "drama": 7,
-        "horror": 11,
-        "adventure": 2,
-        "family": 8,
-        "romance": 14,
+            "action": 1,
+            "comedy": 4,
+            "drama": 7,
+            "horror": 11,
+            "adventure": 2,
+            "family": 8,
+            "romance": 14,
         }
+
         genre_name = self.kwargs.get("genre_name")
         ordering = self.request.query_params.get('ordering', 'latest')
-        genre = Genre.objects.get(id=name_to_id[genre_name])
-        
+        year = self.request.query_params.get('year', None)
+
+        # 장르 존재 확인
+        genre_id = name_to_id.get(genre_name)
+        if genre_id is None:
+            return Movie.objects.none()
+
+        genre = Genre.objects.get(id=genre_id)
+
+        queryset = Movie.objects.filter(genres=genre)
+
+        # 연도 필터링
+        if year:
+            try:
+                year = int(year)
+                start_date = datetime(year, 1, 1)
+                end_date = datetime(year, 12, 31)
+                queryset = queryset.filter(release_date__range=(start_date, end_date))
+            except ValueError:
+                pass  # 숫자가 아닌 경우 무시
+
+        # 정렬
         if ordering == 'top':
-            return Movie.objects.filter(genres=genre).order_by("-vote_average")
+            queryset = queryset.order_by("-vote_average")
+        elif ordering == 'bottom':
+            queryset = queryset.order_by("vote_average")
+        elif ordering == 'oldest':
+            queryset = queryset.order_by("release_date")
+        elif ordering == 'title':
+            queryset = queryset.order_by("title")
         else:
-            return Movie.objects.filter(genres=genre).order_by("-release_date")
+            queryset = queryset.order_by("-release_date")
+
+        return queryset
 
 
 class MovieSearchView(ListAPIView):
@@ -168,6 +220,31 @@ class MovieSearchView(ListAPIView):
         return Movie.objects.filter(
             Q(title__icontains=query) | Q(original_title__icontains=query) | Q(overview__icontains=query) | Q(tagline__icontains=query)
             ).order_by('-release_date')
+
+@api_view(["POST", "DELETE"])
+@permission_classes([permissions.IsAuthenticated])
+def movie_like(request, pk):
+    movie = get_object_or_404(Movie, pk=pk)
+    user = request.user
+
+    if request.method == "POST":
+        movie.liked_user.add(user)
+        return Response({"detail": "liked"},status=status.HTTP_201_CREATED)
+    elif request.method == "DELETE":
+        movie.liked_user.remove(user)
+        return Response({"detail": "unliked"},status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def create_review(request, movie_id):
+    movie = get_object_or_404(Movie, pk=movie_id)
+    serializer = ReviewSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(user=request.user, movie=movie)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 ## provider DB 수집을 위해 작동하였습니다.

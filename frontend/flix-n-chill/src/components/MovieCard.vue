@@ -37,6 +37,7 @@
               <i class="bi bi-play-fill"></i>
             </button>
             <button 
+              v-if="isAuth"
               class="btn btn-sm btn-outline-light" 
               @click.stop="toggleLike"
               :class="{ 'btn-danger': movie.isLiked }"
@@ -96,6 +97,10 @@ const props = defineProps({
     type: String,
     default: 'medium', // 'small', 'medium', 'large'
     validator: (value) => ['small', 'medium', 'large'].includes(value)
+  },
+  isAuth: {
+    type: Boolean,
+    default: false,
   }
 })
 

@@ -47,20 +47,14 @@
           <div class="col-md-6">
             <div class="filter-controls">
               <select v-model="sortBy" class="form-select me-2">
-                <option value="rating">평점 높은순</option>
-                <option value="rating-low">평점 낮은순</option>
-                <option value="year">최신순</option>
-                <option value="year-old">오래된순</option>
+                <option value="top">평점 높은순</option>
+                <option value="bottom">평점 낮은순</option>
+                <option value="latest">최신순</option>
+                <option value="oldest">오래된순</option>
                 <option value="title">제목순</option>
               </select>
-              <select v-model="filterYear" class="form-select">
-                <option value="">전체 연도</option>
-                <option value="2024">2024년</option>
-                <option value="2023">2023년</option>
-                <option value="2022">2022년</option>
-                <option value="2021">2021년</option>
-                <option value="2020">2020년 이전</option>
-              </select>
+              <input class="form-input" type="number" v-model="filterYear" min="1900" max="2025" step="1"
+                placeholder="전체 연도" style="max-width: 120px;"/>
             </div>
           </div>
         </div>
@@ -93,7 +87,7 @@
       <div v-else-if="currentMovies.length > 0" class="movies-grid">
         <div class="row g-4">
           <div v-for="movie in currentMovies" :key="movie.id" class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6">
-            <MovieCard :movie="movie" :show-details="false" @play="handlePlayMovie"
+            <MovieCard :movie="movie" :is-auth="userStore.isAuthenticated" :show-details="false" @play="handlePlayMovie"
               @toggle-watchlist="handleToggleWatchlist" @toggle-like="handleToggleLike" @click="handleMovieClick" />
           </div>
         </div>
@@ -113,7 +107,7 @@
       </div>
     </div>
     <!-- 영화 상세 모달 -->
-    <MovieDetailModal :is-visible="showModal" :movie-id="selectedMovieId" @close="closeModal"
+    <MovieDetailModal :is-visible="showModal" :is-auth="userStore.isAuthenticated" :movie-id="selectedMovieId" @close="closeModal"
       @toggle-watchlist="handleModalToggleWatchlist" @toggle-like="handleModalToggleLike" @play="handleModalPlay" />
   </div>
 </template>
@@ -124,6 +118,8 @@ import { useRoute, useRouter } from 'vue-router'
 import MovieCard from '@/components/MovieCard.vue'
 import { useMovieStore } from '@/stores/movie'
 import MovieDetailModal from '@/components/MovieDetailModal.vue'
+import { useUserStore } from '@/stores/accounts'
+
 
 // Router 사용
 const route = useRoute()
@@ -131,14 +127,16 @@ const router = useRouter()
 
 // Store 사용
 const store = useMovieStore()
+const userStore = useUserStore()
 
 // 반응형 데이터
-const sortBy = ref('rating')
+const sortBy = ref('top')
 const filterYear = ref('')
 
 // 모달 상태
 const showModal = ref(false)
 const selectedMovieId = ref(null)
+
 
 // 장르 정보
 const genreList = ref([
@@ -204,11 +202,10 @@ const currentGenre = computed(() => {
 
 // 🎯 동기 함수를 사용해서 리액티브 데이터 가져오기
 const currentMovies = computed(() => {
-  console.log('🎬 computed 실행 - currentGenreType:', currentGenreType.value)
-  const movies = store.getMoviesByGenreSync(currentGenreType.value)
-  console.log('🎬 computed에서 받은 영화들:', movies)
-  return movies
+  return store.getMoviesByGenreSync(currentGenreType.value, sortBy.value, filterYear.value)
+
 })
+
 
 const totalMovies = computed(() => {
   return currentMovies.value.length
@@ -234,13 +231,19 @@ const loadGenreMovies = async () => {
 
   try {
     // 🚀 비동기 API 호출!
-    await store.fetchMoviesByGenre(currentGenreType.value)
+    await store.fetchMoviesByGenre(currentGenreType.value, sortBy.value, filterYear.value)
     console.log('🎬 API 호출 완료!')
 
   } catch (error) {
     console.error('🚨 영화 데이터 로드 실패:', error)
   }
 }
+
+// 정렬/필터 변경 감지
+watch([sortBy, filterYear], () => {
+  // 정렬/필터 변경 시 자동으로 API 재 요청
+  loadGenreMovies()
+}, { immediate: true })
 
 const resetFilters = () => {
   sortBy.value = 'rating'
@@ -267,16 +270,16 @@ const handleToggleLike = (movie) => {
 const handleMovieClick = (movie) => {
   console.log('🎬 영화 클릭 이벤트:', movie)  // 전체 movie 객체 확인
   console.log('🎬 영화 ID:', movie.id)        // id 값 확인
-  
+
   // id가 없으면 경고하고 리턴
   if (!movie.id) {
     console.error('🚨 영화 ID가 없습니다:', movie)
     return
   }
-  
+
   selectedMovieId.value = movie.id
   showModal.value = true
-  
+
   console.log('🎬 모달 열림 - 선택된 ID:', selectedMovieId.value)
 }
 
@@ -439,6 +442,31 @@ onMounted(() => {
   background: #2c3e50;
   color: #ffffff;
 }
+
+.form-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  border-radius: 0.375rem;
+
+  backdrop-filter: blur(10px);
+  width: auto;
+  min-width: 140px;
+
+}
+
+.form-input:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #db0000;
+  color: #ffffff;
+  box-shadow: 0 0 0 0.2rem rgba(219, 0, 0, 0.25);
+}
+
+.form-input::placeholder {
+  color: #dddddd;
+  opacity: 1;
+}
+
 
 /* 로딩 & 에러 섹션 */
 .loading-section,

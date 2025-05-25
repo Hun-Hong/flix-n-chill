@@ -1,125 +1,136 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import axios from 'axios'
+import { useUserStore } from './accounts'
 
 export const useMovieStore = defineStore('movie', () => {
-  // 🎯 상태 관리
-  const movies = ref([])
-  const moviesByGenre = ref({}) // 장르별로 영화 저장
+  const moviesByGenre = ref({})  // { userKey: { cacheKey: [...] } }
   const loading = ref(false)
   const error = ref(null)
 
-  // 🎯 동기적으로 특정 장르 영화 가져오기 (computed에서 사용)
-  const getMoviesByGenreSync = (genreType) => {
-    console.log('🎬 동기 함수 호출 - genreType:', genreType)
-    console.log('🎬 현재 moviesByGenre 상태:', moviesByGenre.value)
-    return moviesByGenre.value[genreType] || []
+
+  // const userStore = useUserStore()
+  // watch(
+  //   () => userStore.user?.id, // userId가 바뀌면(로그인/로그아웃)
+  //   () => {
+  //     moviesByGenre.value = {} // 캐시 초기화!
+  //   }
+  // )
+
+
+  const getUserKey = () => {
+    const userStore = useUserStore()
+    return userStore.user?.id ? `user_${userStore.user.id}` : 'anonymous'
   }
 
-  // 🎯 비동기 API 호출 - 장르별 영화 가져오기 (메서드에서 호출)
-  const fetchMoviesByGenre = async (genreType) => {
-    console.log('🎬 비동기 함수 호출 - genreType:', genreType)
-    
-    
-    // 이미 해당 장르 데이터가 있으면 API 호출 안 함
-    if (moviesByGenre.value[genreType] && moviesByGenre.value[genreType].length > 0) {
-      console.log('🎬 캐시된 데이터 사용:', moviesByGenre.value[genreType])
-      return moviesByGenre.value[genreType]
-    }
+  const getCacheKey = (genreType, ordering, year) => {
+    return `${genreType}-${ordering}-${year || ''}`
+  }
+
+  const getMoviesByGenreSync = (genreType, ordering, year) => {
+    const userKey = getUserKey()
+    const cacheKey = getCacheKey(genreType, ordering, year)
+    return moviesByGenre.value[userKey]?.[cacheKey] || []
+  }
+
+  const fetchMoviesByGenre = async (genreType, ordering = "top", year = "") => {
+    const userKey = getUserKey()
+    const cacheKey = getCacheKey(genreType, ordering, year)
+
+    // if (
+    //   moviesByGenre.value[userKey] &&
+    //   moviesByGenre.value[userKey][cacheKey] &&
+    //   moviesByGenre.value[userKey][cacheKey].length > 0
+    // ) {
+    //   return moviesByGenre.value[userKey][cacheKey]
+    // }
 
     loading.value = true
     error.value = null
-    
+
+    const userStore = useUserStore()
+    const headers = {}
+    if (userStore.token) {
+      headers['Authorization'] = `Token ${userStore.token}`
+    }
+
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/v1/movies/list/${genreType}/`)
-      console.log('🎬 API 응답:', response.data)
+      const response = await axios({
+        method: 'get',
+        url: `http://127.0.0.1:8000/api/v1/movies/list/${genreType}/`,
+        params: { ordering, year },
+        headers,
+      })
 
-      const genreList = {
-        "1": "액션",
-        "2": "모험",
-        "3": "애니메이션",
-        "4": "코미디",
-        "5": "범죄",
-        "6": "다큐멘터리",
-        "7": "드라마",
-        "8": "가족",
-        "9": "판타지",
-        "10": "역사",
-        "11": "공포",
-        "12": "음악",
-        "13": "미스터리",
-        "14": "로맨스",
-        "15": "SF",
-        "16": "TV 영화",
-        "17": "스릴러",
-        "18": "전쟁",
-        "19": "서부"
-      }
-
-      
-      // Django 데이터를 MovieCard에 맞게 변환
       const transformedMovies = response.data.results.map(movie => ({
         id: movie.id,
         title: movie.title,
         rating: movie.vote_average,
         year: movie.release_date ? new Date(movie.release_date).getFullYear() : 2024,
-        genre: movie.genres.map((genre) => genre.name), // [1, 2, 3, 4]
-        poster: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '/api/placeholder/300/450',
+        genre: movie.genres.map((genre) => genre.name),
+        poster: movie.poster_path
+          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+          : '/api/placeholder/300/450',
         isInWatchlist: false,
-        isLiked: false
+        isLiked: movie.is_liked,
+        like_count: movie.like_count,
       }))
-      
-      console.log('🎬 변환된 데이터:', transformedMovies)
-      
-      // 장르별로 데이터 저장
-      moviesByGenre.value[genreType] = transformedMovies
-      
+
+      // 유저별 캐시에 저장
+      if (!moviesByGenre.value[userKey]) moviesByGenre.value[userKey] = {}
+      moviesByGenre.value[userKey][cacheKey] = transformedMovies
+
       return transformedMovies
-      
+
     } catch (err) {
-      console.error('🚨 API 에러:', err)
       error.value = err.message
-      moviesByGenre.value[genreType] = []
+      if (!moviesByGenre.value[userKey]) moviesByGenre.value[userKey] = {}
+      moviesByGenre.value[userKey][cacheKey] = []
       return []
     } finally {
       loading.value = false
     }
   }
 
-  // 🎯 찜하기 토글
-  const toggleWatchlist = (movieId) => {
-    // 모든 장르에서 해당 영화 찾아서 업데이트
-    Object.keys(moviesByGenre.value).forEach(genre => {
-      const movie = moviesByGenre.value[genre].find(m => m.id === movieId)
-      if (movie) {
-        movie.isInWatchlist = !movie.isInWatchlist
-        console.log('🎬 찜하기 토글:', movie.title, movie.isInWatchlist)
+  // 좋아요 토글 후엔 캐시 지우고 새로 fetch
+  const toggleLike = async (movieId, genreType, ordering, year) => {
+    const userStore = useUserStore()
+    const headers = {}
+    if (userStore.token) {
+      headers['Authorization'] = `Token ${userStore.token}`
+    }
+    try {
+      // 현재 영화 상태 찾기 (캐시 구조상 모든 캐시에서 찾아도 됨)
+      const userKey = getUserKey()
+      // (여기서는 메인 리스트 파라미터만 새로고침)
+      await axios({
+        method: "post", // or "delete"는 FE에서 판단 or 서버에서 토글 지원
+        url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/like/`,
+        headers,
+      })
+      // **관련 캐시 무효화**
+      if (moviesByGenre.value[userKey]) {
+        // 캐시 전체 삭제(또는 일부만 삭제)
+        Object.keys(moviesByGenre.value[userKey]).forEach(cacheKey => {
+          // 캐시 무효화 기준을 더 세밀하게 하고 싶으면 cacheKey에 movieId 포함 여부 판단 가능
+          delete moviesByGenre.value[userKey][cacheKey]
+        })
       }
-    })
+      // **현재 파라미터에 맞는 리스트만 새로 받아오기**
+      await fetchMoviesByGenre(genreType, ordering, year)
+    } catch (err) {
+      // 실패시 에러 핸들링
+    }
   }
 
-  // 🎯 좋아요 토글
-  const toggleLike = (movieId) => {
-    // 모든 장르에서 해당 영화 찾아서 업데이트
-    Object.keys(moviesByGenre.value).forEach(genre => {
-      const movie = moviesByGenre.value[genre].find(m => m.id === movieId)
-      if (movie) {
-        movie.isLiked = !movie.isLiked
-        console.log('🎬 좋아요 토글:', movie.title, movie.isLiked)
-      }
-    })
-  }
+  // ... (찜 토글도 같은 방식 적용)
 
   return {
-    // 상태
-    movies,
     moviesByGenre,
     loading,
     error,
-    // 메서드
     getMoviesByGenreSync,
     fetchMoviesByGenre,
-    toggleWatchlist,
-    toggleLike
+    toggleLike,
   }
 })

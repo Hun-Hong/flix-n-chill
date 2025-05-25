@@ -125,6 +125,11 @@ DATABASES = {
 
 AUTH_USER_MODEL = "accounts.user"
 
+# MEDIA setting
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 
 
 
