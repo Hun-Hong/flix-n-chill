@@ -47,20 +47,14 @@
           <div class="col-md-6">
             <div class="filter-controls">
               <select v-model="sortBy" class="form-select me-2">
-                <option value="rating">평점 높은순</option>
-                <option value="rating-low">평점 낮은순</option>
-                <option value="year">최신순</option>
-                <option value="year-old">오래된순</option>
+                <option value="top">평점 높은순</option>
+                <option value="bottom">평점 낮은순</option>
+                <option value="latest">최신순</option>
+                <option value="oldest">오래된순</option>
                 <option value="title">제목순</option>
               </select>
-              <select v-model="filterYear" class="form-select">
-                <option value="">전체 연도</option>
-                <option value="2024">2024년</option>
-                <option value="2023">2023년</option>
-                <option value="2022">2022년</option>
-                <option value="2021">2021년</option>
-                <option value="2020">2020년 이전</option>
-              </select>
+              <input class="form-input" type="number" v-model="filterYear" min="1900" max="2025" step="1"
+                placeholder="전체 연도" style="max-width: 120px;"/>
             </div>
           </div>
         </div>
@@ -133,12 +127,13 @@ const router = useRouter()
 const store = useMovieStore()
 
 // 반응형 데이터
-const sortBy = ref('rating')
+const sortBy = ref('top')
 const filterYear = ref('')
 
 // 모달 상태
 const showModal = ref(false)
 const selectedMovieId = ref(null)
+
 
 // 장르 정보
 const genreList = ref([
@@ -204,66 +199,10 @@ const currentGenre = computed(() => {
 
 // 🎯 동기 함수를 사용해서 리액티브 데이터 가져오기
 const currentMovies = computed(() => {
-  let movies = store.getMoviesByGenreSync(currentGenreType.value)
-  
-  // 1️⃣ 연도 필터링 적용
-  if (filterYear.value) {
-    if (filterYear.value === '2020') {
-      // 2020년 이전
-      movies = movies.filter(movie => {
-        const year = Number(movie.year) || 0
-        return year <= 2020
-      })
-    } else {
-      // 특정 연도
-      movies = movies.filter(movie => {
-        const year = Number(movie.year) || 0
-        return year.toString() === filterYear.value
-      })
-    }
-  }
-  
-  // 2️⃣ 정렬 적용
-  const sortedMovies = [...movies].sort((a, b) => {
-    switch (sortBy.value) {
-      case 'rating':
-        // 평점 높은순 (내림차순)
-        return (b.vote_average || b.rating || b.imdbRating || 0) - (a.vote_average || a.rating || a.imdbRating || 0)
-        
-      case 'rating-low':
-        // 평점 낮은순 (오름차순)
-        return (a.vote_average || a.rating || a.imdbRating || 0) - (b.vote_average || b.rating || b.imdbRating || 0)
-        
-      case 'year':
-        // 최신순 (내림차순)
-        const yearA = Number(a.year) || 0
-        const yearB = Number(b.year) || 0
-        return yearB - yearA
-        
-      case 'year-old':
-        // 오래된순 (오름차순)
-        const oldYearA = Number(a.year) || 0
-        const oldYearB = Number(b.year) || 0
-        return oldYearA - oldYearB
-        
-      case 'title':
-        // 제목순 (가나다순)
-        const titleA = (a.title || a.name || '').toLowerCase()
-        const titleB = (b.title || b.name || '').toLowerCase()
-        return titleA.localeCompare(titleB, 'ko')
-        
-      default:
-        return 0
-    }
-  })
-  
-  return sortedMovies
+  return store.getMoviesByGenreSync(currentGenreType.value, sortBy.value, filterYear.value)
+
 })
 
-// 정렬/필터 변경 감지
-watch([sortBy, filterYear], () => {
-  // 정렬/필터 변경 시 자동으로 computed가 재실행됨
-}, { immediate: true })
 
 const totalMovies = computed(() => {
   return currentMovies.value.length
@@ -289,13 +228,19 @@ const loadGenreMovies = async () => {
 
   try {
     // 🚀 비동기 API 호출!
-    await store.fetchMoviesByGenre(currentGenreType.value)
+    await store.fetchMoviesByGenre(currentGenreType.value, sortBy.value, filterYear.value)
     console.log('🎬 API 호출 완료!')
 
   } catch (error) {
     console.error('🚨 영화 데이터 로드 실패:', error)
   }
 }
+
+// 정렬/필터 변경 감지
+watch([sortBy, filterYear], () => {
+  // 정렬/필터 변경 시 자동으로 API 재 요청
+  loadGenreMovies()
+}, { immediate: true })
 
 const resetFilters = () => {
   sortBy.value = 'rating'
@@ -322,16 +267,16 @@ const handleToggleLike = (movie) => {
 const handleMovieClick = (movie) => {
   console.log('🎬 영화 클릭 이벤트:', movie)  // 전체 movie 객체 확인
   console.log('🎬 영화 ID:', movie.id)        // id 값 확인
-  
+
   // id가 없으면 경고하고 리턴
   if (!movie.id) {
     console.error('🚨 영화 ID가 없습니다:', movie)
     return
   }
-  
+
   selectedMovieId.value = movie.id
   showModal.value = true
-  
+
   console.log('🎬 모달 열림 - 선택된 ID:', selectedMovieId.value)
 }
 
@@ -494,6 +439,31 @@ onMounted(() => {
   background: #2c3e50;
   color: #ffffff;
 }
+
+.form-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  border-radius: 0.375rem;
+
+  backdrop-filter: blur(10px);
+  width: auto;
+  min-width: 140px;
+
+}
+
+.form-input:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #db0000;
+  color: #ffffff;
+  box-shadow: 0 0 0 0.2rem rgba(219, 0, 0, 0.25);
+}
+
+.form-input::placeholder {
+  color: #dddddd;
+  opacity: 1;
+}
+
 
 /* 로딩 & 에러 섹션 */
 .loading-section,

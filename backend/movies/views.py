@@ -140,6 +140,8 @@ class MovieListView(ListAPIView):
             queryset = queryset.order_by("vote_average")
         elif ordering == 'oldest':
             queryset = queryset.order_by("release_date")
+        elif ordering == 'title':
+            queryset = queryset.order_by("title")
         else:
             queryset = queryset.order_by("-release_date")
 
@@ -195,6 +197,8 @@ class MovieGenreListView(ListAPIView):
             queryset = queryset.order_by("vote_average")
         elif ordering == 'oldest':
             queryset = queryset.order_by("release_date")
+        elif ordering == 'title':
+            queryset = queryset.order_by("title")
         else:
             queryset = queryset.order_by("-release_date")
 

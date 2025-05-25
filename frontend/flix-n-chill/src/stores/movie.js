@@ -9,54 +9,73 @@ export const useMovieStore = defineStore('movie', () => {
   const loading = ref(false)
   const error = ref(null)
 
+
+const getCacheKey = (genreType, ordering, year) => {
+      return `${genreType}-${ordering}-${year || ''}`;
+    }
+
+
   // 🎯 동기적으로 특정 장르 영화 가져오기 (computed에서 사용)
-  const getMoviesByGenreSync = (genreType) => {
+  const getMoviesByGenreSync = (genreType, ordering, year) => {
     console.log('🎬 동기 함수 호출 - genreType:', genreType)
-    console.log('🎬 현재 moviesByGenre 상태:', moviesByGenre.value)
-    return moviesByGenre.value[genreType] || []
+    const cacheKey = getCacheKey(genreType, ordering, year);
+    console.log(cacheKey)
+    console.log('🎬 현재 moviesByGenre 상태:', moviesByGenre.value[cacheKey])
+    return moviesByGenre.value[cacheKey] || []
+    
   }
 
   // 🎯 비동기 API 호출 - 장르별 영화 가져오기 (메서드에서 호출)
-  const fetchMoviesByGenre = async (genreType) => {
+  const fetchMoviesByGenre = async (genreType, ordering = "top", year = "") => {
     console.log('🎬 비동기 함수 호출 - genreType:', genreType)
-    
-    
+
+    const cacheKey = getCacheKey(genreType, ordering, year);
+
+
     // 이미 해당 장르 데이터가 있으면 API 호출 안 함
-    if (moviesByGenre.value[genreType] && moviesByGenre.value[genreType].length > 0) {
-      console.log('🎬 캐시된 데이터 사용:', moviesByGenre.value[genreType])
-      return moviesByGenre.value[genreType]
+    if (moviesByGenre.value[cacheKey] && moviesByGenre.value[cacheKey].length > 0) {
+      console.log('🎬 캐시 hit:', cacheKey);
+      return moviesByGenre.value[cacheKey];
     }
 
     loading.value = true
     error.value = null
-    
+
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/v1/movies/list/${genreType}/`)
+      const response = await axios({
+        method: 'get',
+        url: `http://127.0.0.1:8000/api/v1/movies/list/${genreType}/`,
+        params: {
+          ordering: ordering,
+          year: year
+        }
+      })
+
       console.log('🎬 API 응답:', response.data)
 
-      const genreList = {
-        "1": "액션",
-        "2": "모험",
-        "3": "애니메이션",
-        "4": "코미디",
-        "5": "범죄",
-        "6": "다큐멘터리",
-        "7": "드라마",
-        "8": "가족",
-        "9": "판타지",
-        "10": "역사",
-        "11": "공포",
-        "12": "음악",
-        "13": "미스터리",
-        "14": "로맨스",
-        "15": "SF",
-        "16": "TV 영화",
-        "17": "스릴러",
-        "18": "전쟁",
-        "19": "서부"
-      }
+      // const genreList = {
+      //   "1": "액션",
+      //   "2": "모험",
+      //   "3": "애니메이션",
+      //   "4": "코미디",
+      //   "5": "범죄",
+      //   "6": "다큐멘터리",
+      //   "7": "드라마",
+      //   "8": "가족",
+      //   "9": "판타지",
+      //   "10": "역사",
+      //   "11": "공포",
+      //   "12": "음악",
+      //   "13": "미스터리",
+      //   "14": "로맨스",
+      //   "15": "SF",
+      //   "16": "TV 영화",
+      //   "17": "스릴러",
+      //   "18": "전쟁",
+      //   "19": "서부"
+      // }
 
-      
+
       // Django 데이터를 MovieCard에 맞게 변환
       const transformedMovies = response.data.results.map(movie => ({
         id: movie.id,
@@ -68,14 +87,14 @@ export const useMovieStore = defineStore('movie', () => {
         isInWatchlist: false,
         isLiked: false
       }))
-      
+
       console.log('🎬 변환된 데이터:', transformedMovies)
-      
+
       // 장르별로 데이터 저장
-      moviesByGenre.value[genreType] = transformedMovies
-      
+      moviesByGenre.value[cacheKey] = transformedMovies;
+
       return transformedMovies
-      
+
     } catch (err) {
       console.error('🚨 API 에러:', err)
       error.value = err.message
