@@ -8,6 +8,7 @@ import LoginPage from '@/views/LoginPage.vue'
 import SignupPage from '@/views/SignupPage.vue'
 import MyPage from '@/views/MyPage.vue'
 import SettingsPage from '@/views/SettingsPage.vue'
+import Profile from '@/views/Profile.vue'
 
 // 장르 페이지 - 하나로 통합
 import GenrePage from '@/views/GenrePage.vue'
@@ -86,6 +87,14 @@ const routes = [
     meta: {
       title: 'FLIXnCHILL - 영화 상세'
     }
+  },
+  {
+    path: '/profile/:userId',
+    name: 'user-profile',
+    component: Profile,
+    meta: {
+      title: '프로필 페이지'
+    }
   }
 ]
 
@@ -163,6 +172,14 @@ const router = createRouter({
       component: () => import('@/views/MovieDetailPage.vue'),
       meta: {
         title: 'FLIXnCHILL - 영화 상세'
+      }
+    },
+    {
+      path: '/profile/:userId',
+      name: 'user-profile',
+      component: Profile,
+      meta: {
+        title: '프로필 페이지'
       }
     }
   ]
