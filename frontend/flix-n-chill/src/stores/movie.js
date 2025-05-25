@@ -94,39 +94,45 @@ export const useMovieStore = defineStore('movie', () => {
 
   // 좋아요 토글 후엔 캐시 지우고 새로 fetch
   const toggleLike = async (movieId) => {
-    const userStore = useUserStore()
-    if (!userStore.token) return
+  const userStore = useUserStore()
+  if (!userStore.token) return
 
-    // 1) 캐시에서 해당 영화 객체 찾기
-    const userKey  = getUserKey()
-    const userCache = moviesByGenre.value[userKey] || {}
-    let movieRef = null
-    Object.values(userCache).some(arr => {
-      const m = arr.find(x => x.id === movieId)
-      if (m) { movieRef = m; return true }
+  // 1) 캐시에서 모든 배열 참조 가져오기
+  const userKey   = getUserKey()
+  const userCache = moviesByGenre.value[userKey] || {}
+  // 2) 현재 토글할 값 계산
+  //    (어차피 모든 배열의 movieRef.isLiked 값은 동일하다고 가정)
+  let currentLiked = null
+  Object.values(userCache).some(arr => {
+    const m = arr.find(x => x.id === movieId)
+    if (m) { currentLiked = m.isLiked; return true }
+  })
+  if (currentLiked === null) return
+  const nextLiked = !currentLiked
+
+  // 3) 서버에 요청 (POST/DELETE 분기)
+  try {
+    await axios({
+      method: nextLiked ? 'post' : 'delete',
+      url:   `http://127.0.0.1:8000/api/v1/movies/${movieId}/like/`,
+      headers: { Authorization: `Token ${userStore.token}` }
     })
-    if (!movieRef) return
 
-    // 2) 다음에 적용할 좋아요 상태
-    const nextLiked = !movieRef.isLiked
-
-    // 3) 서버에 POST/DELETE 요청
-    try {
-      await axios({
-        method: nextLiked ? 'post' : 'delete',
-        url:   `http://127.0.0.1:8000/api/v1/movies/${movieId}/like/`,
-        headers: { Authorization: `Token ${userStore.token}` }
+    // 4) 모든 캐시 배열 안에서 해당 영화만 업데이트
+    Object.values(userCache).forEach(arr => {
+      arr.forEach(movie => {
+        if (movie.id === movieId) {
+          movie.isLiked    = nextLiked
+          movie.like_count = (movie.like_count || 0) + (nextLiked ? 1 : -1)
+        }
       })
-
-      // 4) FE 에서 낙관적 업데이트
-      movieRef.isLiked    = nextLiked
-      movieRef.like_count = (movieRef.like_count || 0) + (nextLiked ? 1 : -1)
-    }
-    catch (e) {
-      console.error('좋아요 토글 실패', e)
-      error.value = e.message
-    }
+    })
   }
+  catch (e) {
+    console.error('좋아요 토글 실패', e)
+    error.value = e.message
+  }
+}
 
 
   // ... (찜 토글도 같은 방식 적용)
