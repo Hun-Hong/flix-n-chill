@@ -93,35 +93,47 @@ export const useMovieStore = defineStore('movie', () => {
   }
 
   // 좋아요 토글 후엔 캐시 지우고 새로 fetch
-  const toggleLike = async (movieId, genreType, ordering, year) => {
-    const userStore = useUserStore()
-    const headers = {}
-    if (userStore.token) {
-      headers['Authorization'] = `Token ${userStore.token}`
-    }
-    try {
-      // 현재 영화 상태 찾기 (캐시 구조상 모든 캐시에서 찾아도 됨)
-      const userKey = getUserKey()
-      // (여기서는 메인 리스트 파라미터만 새로고침)
-      await axios({
-        method: "post", // or "delete"는 FE에서 판단 or 서버에서 토글 지원
-        url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/like/`,
-        headers,
+  const toggleLike = async (movieId) => {
+  const userStore = useUserStore()
+  if (!userStore.token) return
+
+  // 1) 캐시에서 모든 배열 참조 가져오기
+  const userKey   = getUserKey()
+  const userCache = moviesByGenre.value[userKey] || {}
+  // 2) 현재 토글할 값 계산
+  //    (어차피 모든 배열의 movieRef.isLiked 값은 동일하다고 가정)
+  let currentLiked = null
+  Object.values(userCache).some(arr => {
+    const m = arr.find(x => x.id === movieId)
+    if (m) { currentLiked = m.isLiked; return true }
+  })
+  if (currentLiked === null) return
+  const nextLiked = !currentLiked
+
+  // 3) 서버에 요청 (POST/DELETE 분기)
+  try {
+    await axios({
+      method: nextLiked ? 'post' : 'delete',
+      url:   `http://127.0.0.1:8000/api/v1/movies/${movieId}/like/`,
+      headers: { Authorization: `Token ${userStore.token}` }
+    })
+
+    // 4) 모든 캐시 배열 안에서 해당 영화만 업데이트
+    Object.values(userCache).forEach(arr => {
+      arr.forEach(movie => {
+        if (movie.id === movieId) {
+          movie.isLiked    = nextLiked
+          movie.like_count = (movie.like_count || 0) + (nextLiked ? 1 : -1)
+        }
       })
-      // **관련 캐시 무효화**
-      if (moviesByGenre.value[userKey]) {
-        // 캐시 전체 삭제(또는 일부만 삭제)
-        Object.keys(moviesByGenre.value[userKey]).forEach(cacheKey => {
-          // 캐시 무효화 기준을 더 세밀하게 하고 싶으면 cacheKey에 movieId 포함 여부 판단 가능
-          delete moviesByGenre.value[userKey][cacheKey]
-        })
-      }
-      // **현재 파라미터에 맞는 리스트만 새로 받아오기**
-      await fetchMoviesByGenre(genreType, ordering, year)
-    } catch (err) {
-      // 실패시 에러 핸들링
-    }
+    })
   }
+  catch (e) {
+    console.error('좋아요 토글 실패', e)
+    error.value = e.message
+  }
+}
+
 
   // ... (찜 토글도 같은 방식 적용)
 
