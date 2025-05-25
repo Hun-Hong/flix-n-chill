@@ -87,7 +87,7 @@
       <div v-else-if="currentMovies.length > 0" class="movies-grid">
         <div class="row g-4">
           <div v-for="movie in currentMovies" :key="movie.id" class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6">
-            <MovieCard :movie="movie" :show-details="false" @play="handlePlayMovie"
+            <MovieCard :movie="movie" :is-auth="userStore.isAuthenticated" :show-details="false" @play="handlePlayMovie"
               @toggle-watchlist="handleToggleWatchlist" @toggle-like="handleToggleLike" @click="handleMovieClick" />
           </div>
         </div>
@@ -107,7 +107,7 @@
       </div>
     </div>
     <!-- 영화 상세 모달 -->
-    <MovieDetailModal :is-visible="showModal" :movie-id="selectedMovieId" @close="closeModal"
+    <MovieDetailModal :is-visible="showModal" :is-auth="userStore.isAuthenticated" :movie-id="selectedMovieId" @close="closeModal"
       @toggle-watchlist="handleModalToggleWatchlist" @toggle-like="handleModalToggleLike" @play="handleModalPlay" />
   </div>
 </template>
@@ -118,6 +118,8 @@ import { useRoute, useRouter } from 'vue-router'
 import MovieCard from '@/components/MovieCard.vue'
 import { useMovieStore } from '@/stores/movie'
 import MovieDetailModal from '@/components/MovieDetailModal.vue'
+import { useUserStore } from '@/stores/accounts'
+
 
 // Router 사용
 const route = useRoute()
@@ -125,6 +127,7 @@ const router = useRouter()
 
 // Store 사용
 const store = useMovieStore()
+const userStore = useUserStore()
 
 // 반응형 데이터
 const sortBy = ref('top')
