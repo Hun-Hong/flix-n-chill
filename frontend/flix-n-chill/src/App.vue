@@ -12,11 +12,11 @@ import { useUserStore } from './stores/accounts'
 
 const userStore = useUserStore()
 
-onMounted(() => {
-  if (localStorage.getItem('token')) {
-    userStore.restoreUser()
-  }
-})
+// onMounted(() => {
+//   if (localStorage.getItem('token')) {
+//     userStore.restoreUser()
+//   }
+// })
 </script>
 
 <style>

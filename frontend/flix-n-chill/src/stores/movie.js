@@ -67,7 +67,8 @@ export const useMovieStore = defineStore('movie', () => {
         title: movie.title,
         rating: movie.vote_average,
         year: movie.release_date ? new Date(movie.release_date).getFullYear() : 2024,
-        genre: movie.genres.map((genre) => genre.name),
+        genre: movie.genres[0].name,
+        genres: movie.genres.map((genre) => genre.name),
         poster: movie.poster_path
           ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
           : '/api/placeholder/300/450',

@@ -42,5 +42,26 @@ def follow(request, user_pk):
         user.followers.remove(request.user)
         return Response({'detail': "언팔로우 성공!"}, status=status.HTTP_204_NO_CONTENT)
 
+
 class CustomUserDetailsView(UserDetailsView):
     serializer_class = UserProfileSerializer
+
+@api_view(["GET"])
+def detail(request, user_pk):
+    user = get_object_or_404(User, pk=user_pk)
+    
+    # 디버깅 정보 출력
+    print(f"Request user: {request.user}")
+    print(f"Request user authenticated: {request.user.is_authenticated}")
+    print(f"Target user: {user}")
+    print(f"Target user's liked movies: {user.like_movie.all()}")
+    
+    # 특정 영화로 테스트
+    if user.like_movie.exists():
+        first_movie = user.like_movie.first()
+        print(f"First liked movie: {first_movie}")
+        print(f"Movie's liked_user field: {first_movie.liked_user.all()}")
+        print(f"Is request.user in liked_user? {first_movie.liked_user.filter(id=request.user.id).exists()}")
+    
+    serializer = UserProfileSerializer(user, context={'request': request})
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
