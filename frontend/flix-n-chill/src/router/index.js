@@ -9,6 +9,7 @@ import SignupPage from '@/views/SignupPage.vue'
 import MyPage from '@/views/MyPage.vue'
 import SettingsPage from '@/views/SettingsPage.vue'
 import MovieSurveyPage from '@/views/MovieSurveyPage.vue'
+import Profile from '@/views/Profile.vue'
 
 // 장르 페이지 - 하나로 통합
 import GenrePage from '@/views/GenrePage.vue'
@@ -92,6 +93,14 @@ const routes = [
     path: '/survey',
     name: 'movie-survey', 
     component: MovieSurveyPage
+  },
+  {
+    path: '/profile/:userId',
+    name: 'user-profile',
+    component: Profile,
+    meta: {
+      title: '프로필 페이지'
+    }
   }
 ]
 
@@ -175,6 +184,14 @@ const router = createRouter({
       path: '/survey',
       name: 'movie-survey', 
       component: MovieSurveyPage
+    },
+    {
+      path: '/profile/:userId',
+      name: 'user-profile',
+      component: Profile,
+      meta: {
+        title: '프로필 페이지'
+      }
     }
   ]
 })
