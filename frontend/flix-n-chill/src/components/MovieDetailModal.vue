@@ -30,18 +30,16 @@
         <!-- 헤더 섹션 -->
         <div class="modal-header">
           <div class="movie-backdrop" v-if="movieDetail.backdrop_path">
-            <img :src="`https://image.tmdb.org/t/p/w1280${movieDetail.backdrop_path}`" 
-                 :alt="movieDetail.title" />
+            <img :src="`https://image.tmdb.org/t/p/w1280${movieDetail.backdrop_path}`" :alt="movieDetail.title" />
             <div class="backdrop-overlay"></div>
           </div>
-          
+
           <div class="movie-header-content">
             <div class="movie-poster-section">
-              <img :src="movieDetail.poster || '/api/placeholder/300/450'" 
-                   :alt="movieDetail.title" 
-                   class="movie-poster" />
+              <img :src="movieDetail.poster || '/api/placeholder/300/450'" :alt="movieDetail.title"
+                class="movie-poster" />
             </div>
-            
+
             <div class="movie-info-section">
               <h1 class="movie-title">{{ movieDetail.title }}</h1>
               <div class="movie-meta">
@@ -54,7 +52,7 @@
                 <span class="separator" v-if="movieDetail.runtime">•</span>
                 <span class="movie-runtime" v-if="movieDetail.runtime">{{ movieDetail.runtime }}분</span>
               </div>
-              
+
               <!-- 장르 -->
               <div class="movie-genres" v-if="movieDetail.genres && movieDetail.genres.length">
                 <span v-for="genre in movieDetail.genres" :key="genre" class="genre-tag">
@@ -68,20 +66,19 @@
                   <i class="bi bi-play-fill me-2"></i>
                   재생
                 </button>
-                
-                <button v-if="isAuth"
-                        @click="handleToggleLike" 
-                        class="btn btn-outline-light action-btn"
-                        :class="{ 'active': movieDetail.isLiked }">
+
+                <button v-if="isAuth" @click="handleToggleLike" class="btn btn-outline-light action-btn"
+                  :class="{ 'active': movieDetail.isLiked }">
                   <i class="bi" :class="movieDetail.isLiked ? 'bi-heart-fill' : 'bi-heart'"></i>
                 </button>
 
                 <!-- 평가하기 버튼 추가 -->
-                <button v-if="isAuth"
-                        @click.stop="openReviewModal" 
-                        class="btn btn-outline-light action-btn"
-                        title="평가하기">
-                  <i class="bi bi-star"></i>
+                <button v-if="isAuth" @click.stop="openReviewModal" class="btn btn-outline-light review-btn" :class="{
+                  active: movieDetail.isReviewed,           // active 클래스 토글
+                  'btn-outline-light': !movieDetail.isReviewed,
+                  'btn-warning': movieDetail.isReviewed     // 원한다면 색 바꾸기
+                }" :title="movieDetail.userReview ? '리뷰 수정' : '평가하기'">
+                  <i class="bi" :class="movieDetail.isReviewed ? 'bi-star-fill' : 'bi-star'"></i>
                 </button>
               </div>
             </div>
@@ -100,17 +97,11 @@
           <div class="section" v-if="movieDetail.providers && movieDetail.providers.length">
             <h3 class="section-title">감상 가능한 플랫폼</h3>
             <div class="providers-container">
-              <div 
-                v-for="provider in movieDetail.providers" 
-                :key="provider.id" 
-                class="provider-item"
-              >
+              <div v-for="provider in movieDetail.providers" :key="provider.id" class="provider-item">
                 <div class="provider-logo">
-                  <img 
-                    :src="provider.logo_path ? `https://image.tmdb.org/t/p/w92${provider.logo_path}` : '/api/placeholder/40/40'" 
-                    :alt="provider.name"
-                    @error="handleImageError"
-                  />
+                  <img
+                    :src="provider.logo_path ? `https://image.tmdb.org/t/p/w92${provider.logo_path}` : '/api/placeholder/40/40'"
+                    :alt="provider.name" @error="handleImageError" />
                 </div>
                 <span class="provider-name">{{ provider.name }}</span>
               </div>
@@ -142,14 +133,10 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 평가 모달을 modal-container 외부로 이동 -->
-    <MovieReviewModal 
-      :is-visible="showReviewModal"
-      :movie="movieDetail"
-      @close="closeReviewModal"
-      @submit="handleReviewSubmit"
-    />
+    <MovieReviewModal :is-visible="showReviewModal" :movie="movieDetail" @close="closeReviewModal"
+      @submit="handleReviewSubmit" />
   </div>
 </template>
 
@@ -157,6 +144,8 @@
 import { ref, watch, onBeforeUnmount } from 'vue'
 import axios from 'axios'
 import MovieReviewModal from './MovieReviewModal.vue'  // 새로운 리뷰 모달 import
+import { useUserStore } from '@/stores/accounts'
+
 
 // Props
 const props = defineProps({
@@ -186,14 +175,25 @@ const showReviewModal = ref(false)
 // 영화 상세 정보 가져오기
 const fetchMovieDetail = async () => {
   if (!props.movieId) return
-  
+
   loading.value = true
   error.value = null
-  
+
   try {
     // Django API 호출
-    const response = await axios.get(`http://127.0.0.1:8000/api/v1/movies/${props.movieId}/`)
-    
+    const userStore = useUserStore()
+
+    const config = {
+      headers: {}
+    }
+    if (userStore.token) {
+      config.headers.Authorization = `Token ${userStore.token}`
+    }
+    console.log(config)
+    const response = await axios.get(
+      `http://127.0.0.1:8000/api/v1/movies/${props.movieId}/`,
+      config)
+
     const genreList = {
       "1": "액션",
       "2": "모험",
@@ -215,6 +215,7 @@ const fetchMovieDetail = async () => {
       "18": "전쟁",
       "19": "서부"
     }
+    console.log(response);
 
     // 데이터 변환
     const movie = response.data
@@ -232,10 +233,11 @@ const fetchMovieDetail = async () => {
       original_language: movie.original_language,
       vote_count: movie.vote_count,
       budget: movie.budget,
-      isLiked: false, // 실제로는 사용자 상태에 따라
-      providers: movie.providers
+      isLiked: movie.isLiked, // 실제로는 사용자 상태에 따라
+      isReviewed: movie.isReviewed,
+      providers: movie.providers,
     }
-    
+
   } catch (err) {
     console.error('🚨 영화 상세 정보 로딩 오류:', err)
     error.value = '영화 정보를 불러오는데 실패했습니다.'
@@ -249,7 +251,7 @@ watch(() => props.isVisible, (newValue) => {
   if (newValue && props.movieId) {
     fetchMovieDetail()
   }
-  
+
   // 모달이 열릴 때 스크롤 방지
   if (newValue) {
     document.body.style.overflow = 'hidden'
@@ -280,10 +282,10 @@ const handleToggleLike = () => {
 
 const handleReviewSubmit = (result) => {
   console.log('리뷰 제출 결과:', result)
-  
+
   if (result.success) {
     let message = ''
-    
+
     if (result.isDelete) {
       // 삭제된 경우
       message = '리뷰가 삭제되었습니다!'
@@ -297,20 +299,20 @@ const handleReviewSubmit = (result) => {
       message = '리뷰가 등록되었습니다!'
       console.log('리뷰 생성 성공!')
     }
-    
+
     // 성공 메시지 표시
     alert(message)
-    
+
     // 부모 컴포넌트에 리뷰 변경 사실 알림
     emit('review-submitted', {
       movieId: props.movieId,
       action: result.isDelete ? 'deleted' : (result.isEdit ? 'updated' : 'created'),
       reviewData: result
     })
-    
+
     // 리뷰 모달 닫기
     closeReviewModal()
-    
+
   } else if (result.error) {
     console.error('리뷰 처리 실패:', result.message)
     // 에러는 이미 리뷰 모달에서 alert로 처리됨
@@ -422,7 +424,8 @@ onBeforeUnmount(() => {
 }
 
 /* 로딩 및 에러 상태 */
-.loading-content, .error-content {
+.loading-content,
+.error-content {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -474,12 +477,10 @@ onBeforeUnmount(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(26, 26, 46, 0.3) 0%,
-    rgba(26, 26, 46, 0.8) 70%,
-    rgba(26, 26, 46, 1) 100%
-  );
+  background: linear-gradient(to bottom,
+      rgba(26, 26, 46, 0.3) 0%,
+      rgba(26, 26, 46, 0.8) 70%,
+      rgba(26, 26, 46, 1) 100%);
 }
 
 .movie-header-content {
@@ -605,6 +606,32 @@ onBeforeUnmount(() => {
   color: white;
 }
 
+.review-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.review-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.1);
+}
+
+.review-btn.active {
+  background: rgba(29, 205, 159);
+  border-color: #a69522;
+  color: white;
+}
+
 /* 본문 섹션 */
 .modal-body {
   padding: 2rem;
@@ -715,44 +742,44 @@ onBeforeUnmount(() => {
     margin: 0.5rem;
     max-height: 95vh;
   }
-  
+
   .movie-header-content {
     flex-direction: column;
     text-align: center;
     padding: 1.5rem;
   }
-  
+
   .movie-poster {
     width: 150px;
     height: 225px;
   }
-  
+
   .movie-title {
     font-size: 2rem;
   }
-  
+
   .modal-body {
     padding: 1.5rem;
   }
-  
+
   .action-buttons {
     justify-content: center;
   }
-  
+
   .details-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .provider-item {
     min-width: 120px;
     padding: 0.6rem 0.8rem;
   }
-  
+
   .provider-logo {
     width: 32px;
     height: 32px;
   }
-  
+
   .provider-name {
     font-size: 0.85rem;
   }
@@ -762,11 +789,11 @@ onBeforeUnmount(() => {
   .movie-header-content {
     padding: 1rem;
   }
-  
+
   .movie-title {
     font-size: 1.75rem;
   }
-  
+
   .modal-body {
     padding: 1rem;
   }

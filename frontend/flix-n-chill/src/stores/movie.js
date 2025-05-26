@@ -141,9 +141,8 @@ export const useMovieStore = defineStore('movie', () => {
   const toggleLike = async (movieId) => {
     const userStore = useUserStore()
     if (!userStore.token) return
-    const userStore = useUserStore()
-    if (!userStore.token) return
 
+  
     // 1) 캐시에서 모든 배열 참조 가져오기
     const userKey = getUserKey()
     const userCache = moviesByGenre.value[userKey] || {}
@@ -156,24 +155,8 @@ export const useMovieStore = defineStore('movie', () => {
     })
     if (currentLiked === null) return
     const nextLiked = !currentLiked
-    const userKey = getUserKey()
-    const userCache = moviesByGenre.value[userKey] || {}
     
-    let currentLiked = null
-    Object.values(userCache).some(arr => {
-      const m = arr.find(x => x.id === movieId)
-      if (m) { currentLiked = m.isLiked; return true }
-    })
-    if (currentLiked === null) return
-    const nextLiked = !currentLiked
-
     // 3) 서버에 요청 (POST/DELETE 분기)
-    try {
-      await axios({
-        method: nextLiked ? 'post' : 'delete',
-        url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/like/`,
-        headers: { Authorization: `Token ${userStore.token}` }
-      })
     try {
       await axios({
         method: nextLiked ? 'post' : 'delete',
@@ -193,20 +176,6 @@ export const useMovieStore = defineStore('movie', () => {
         }
       })
     } catch (e) {
-      console.error('좋아요 토글 실패', e)
-      error.value = e.message
-    }
-  }
-      Object.values(userCache).forEach(arr => {
-        arr.forEach(movie => {
-          if (movie.id === movieId) {
-            movie.isLiked = nextLiked
-            movie.like_count = (movie.like_count || 0) + (nextLiked ? 1 : -1)
-          }
-        })
-      })
-    }
-    catch (e) {
       console.error('좋아요 토글 실패', e)
       error.value = e.message
     }

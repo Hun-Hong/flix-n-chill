@@ -8,7 +8,7 @@
           <div class="profile-main-info">
             <div class="profile-avatar-section">
               <div class="avatar-container" @click="handleAvatarClick">
-                <img :src="userProfile.profile_image || `${userStore.BE_API_PATH}/media/profile/default_profile_img.png`" :alt="userProfile.nickname"
+                <img :src="userProfile.profile_image || `/defaultProfileImg.png`" :alt="userProfile.nickname"
                   class="profile-avatar" @error="handleAvatarError">
                 <div class="avatar-overlay">
                   <i class="bi bi-camera"></i>
@@ -123,8 +123,12 @@
                   <h5 class="review-movie-title">{{ review.movieTitle }}</h5>
                   <div class="review-rating">
                     <div class="stars">
-                      <i v-for="star in 5" :key="star" class="bi"
-                        :class="star <= review.rating ? 'bi-star-fill' : 'bi-star'"></i>
+                      <i v-for="star in 5" :key="star" class="bi" :class="review.rating >= star
+                          ? 'bi-star-fill'                    // 꽉 찬 별
+                          : review.rating >= star - 0.5
+                            ? 'bi-star-half'                    // 반쪽 별
+                            : 'bi-star'                          // 빈 별
+                        "></i>
                     </div>
                     <span class="rating-text">{{ review.rating }}/5</span>
                   </div>
@@ -532,7 +536,7 @@ const handleToggleLike = (movie) => {
   }
 }
 
-const handleProfileSave = async(updatedData) => {
+const handleProfileSave = async (updatedData) => {
   // updatedData는 { nickname, bio, profileImageFile } 을 포함하고 있다고 가정
   const { success, data, error } = await userStore.updateProfile(updatedData)
 

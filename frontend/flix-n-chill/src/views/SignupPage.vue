@@ -562,7 +562,7 @@ const isFormValid = computed(() => {
 		strength >= 3 && // 3점 이상
 		formData.value.password === formData.value.confirmPassword &&
 		formData.value.nickname.length >= 2 &&
-		formData.value.gender &&
+		formData.value.gender !== "" &&
 		formData.value.birthdate &&
 		agreeTerms.value &&
 		emailCheckResult.value &&
@@ -658,7 +658,7 @@ const validateNickname = () => {
 
 // 성별 유효성 검사
 const validateGender = () => {
-	if (!formData.value.gender) {
+	if (formData.value.gender === "") {
 		errors.value.gender = '성별을 선택해주세요'
 	} else {
 		clearError('gender')

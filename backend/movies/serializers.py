@@ -45,12 +45,28 @@ class MovieDetailSerializer(serializers.ModelSerializer):
             model = MovieProvider
             fields = "__all__"
 
+    isLiked = serializers.SerializerMethodField()
+    isReviewed = serializers.SerializerMethodField()
     providers = ProviderSerializer(many=True)
 
     class Meta:
         model = Movie
         fields = "__all__"
         read_only_fields = ("rating", "genres")
+    
+    def get_isLiked(self, obj):
+        request = self.context.get("request", None)
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated:
+            return obj.liked_user.filter(id=user.id).exists()
+        return False
+    
+    def get_isReviewed(self, obj):
+        request = self.context.get("request", None)
+        user    = getattr(request, 'user', None)
+        if user and user.is_authenticated:
+            return Review.objects.filter(movie=obj, user=user).exists()
+        return False
 
 
 class ReviewSerializer(serializers.ModelSerializer):
