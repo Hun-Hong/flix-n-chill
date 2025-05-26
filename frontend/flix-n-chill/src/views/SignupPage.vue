@@ -85,6 +85,30 @@
 						<div v-if="errors.nickname" class="error-message">{{ errors.nickname }}</div>
 					</div>
 
+					<!-- 성별 선택 -->
+					<div class="form-group">
+						<label for="gender" class="form-label">성별</label>
+						<div class="gender-select-container">
+							<div class="gender-option">
+								<input id="male" v-model="formData.gender" type="radio" value="male"
+									class="gender-radio" @change="clearError('gender')">
+								<label for="male" class="gender-label">
+									<span class="gender-icon">👨</span>
+									<span class="gender-text">남성</span>
+								</label>
+							</div>
+							<div class="gender-option">
+								<input id="female" v-model="formData.gender" type="radio" value="female"
+									class="gender-radio" @change="clearError('gender')">
+								<label for="female" class="gender-label">
+									<span class="gender-icon">👩</span>
+									<span class="gender-text">여성</span>
+								</label>
+							</div>
+						</div>
+						<div v-if="errors.gender" class="error-message">{{ errors.gender }}</div>
+					</div>
+
 					<!-- 생년월일 입력 -->
 					<div class="form-group">
 						<label for="birthdate" class="form-label">생년월일</label>
@@ -364,6 +388,7 @@ const formData = ref({
 	password: '',
 	confirmPassword: '',
 	nickname: '',
+	gender: '',
 	birthdate: ''
 })
 
@@ -537,6 +562,7 @@ const isFormValid = computed(() => {
 		strength >= 3 && // 3점 이상
 		formData.value.password === formData.value.confirmPassword &&
 		formData.value.nickname.length >= 2 &&
+		formData.value.gender &&
 		formData.value.birthdate &&
 		agreeTerms.value &&
 		emailCheckResult.value &&
@@ -630,6 +656,15 @@ const validateNickname = () => {
 	}
 }
 
+// 성별 유효성 검사
+const validateGender = () => {
+	if (!formData.value.gender) {
+		errors.value.gender = '성별을 선택해주세요'
+	} else {
+		clearError('gender')
+	}
+}
+
 // 생년월일 유효성 검사
 const validateBirthdate = () => {
 	if (!formData.value.birthdate) {
@@ -658,6 +693,7 @@ const handleSubmit = async () => {
 	validatePassword()
 	validateConfirmPassword()
 	validateNickname()
+	validateGender()
 	validateBirthdate()
 
 	// 약관 동의 체크
@@ -852,6 +888,13 @@ watch(() => formData.value.nickname, () => {
 	}
 })
 
+// 성별 선택 시 실시간 검사
+watch(() => formData.value.gender, () => {
+	if (formData.value.gender) {
+		clearError('gender')
+	}
+})
+
 // 생년월일 입력 시 실시간 검사
 watch(() => formData.value.birthdate, () => {
 	if (formData.value.birthdate) {
@@ -880,6 +923,114 @@ if (import.meta.env.DEV) {
 </script>
 
 <style scoped>
+
+.gender-select-container {
+	display: flex;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+
+.gender-option {
+	flex: 1;
+	min-width: 120px;
+}
+
+.gender-radio {
+	display: none;
+}
+
+.gender-label {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 1.2rem 1rem;
+	background: rgba(255, 255, 255, 0.08);
+	border: 2px solid rgba(255, 255, 255, 0.15);
+	border-radius: 12px;
+	cursor: pointer;
+	transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	position: relative;
+	overflow: hidden;
+}
+
+.gender-label::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(135deg, rgba(138, 43, 226, 0.1), rgba(74, 0, 224, 0.1));
+	opacity: 0;
+	transition: opacity 0.3s ease;
+}
+
+.gender-label:hover {
+	border-color: rgba(138, 43, 226, 0.5);
+	background: rgba(255, 255, 255, 0.12);
+	transform: translateY(-2px);
+}
+
+.gender-label:hover::before {
+	opacity: 1;
+}
+
+.gender-radio:checked + .gender-label {
+	border-color: rgba(138, 43, 226, 0.8);
+	background: rgba(138, 43, 226, 0.15);
+	box-shadow: 0 0 0 0.2rem rgba(138, 43, 226, 0.15);
+}
+
+.gender-radio:checked + .gender-label::before {
+	opacity: 1;
+}
+
+.gender-icon {
+	font-size: 2rem;
+	margin-bottom: 0.5rem;
+	transition: transform 0.3s ease;
+}
+
+.gender-radio:checked + .gender-label .gender-icon {
+	transform: scale(1.2);
+}
+
+.gender-text {
+	color: rgba(255, 255, 255, 0.85);
+	font-size: 0.9rem;
+	font-weight: 600;
+	letter-spacing: 0.5px;
+	transition: color 0.3s ease;
+}
+
+.gender-radio:checked + .gender-label .gender-text {
+	color: #ffffff;
+}
+
+/* 반응형 성별 선택 */
+@media (max-width: 480px) {
+	.gender-select-container {
+		flex-direction: column;
+		gap: 0.8rem;
+	}
+	
+	.gender-option {
+		min-width: auto;
+	}
+	
+	.gender-label {
+		flex-direction: row;
+		justify-content: center;
+		gap: 0.8rem;
+		padding: 1rem;
+	}
+	
+	.gender-icon {
+		font-size: 1.5rem;
+		margin-bottom: 0;
+	}
+}
+
 .signup-page {
 	min-height: 100vh;
 	position: relative;
