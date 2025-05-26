@@ -25,7 +25,7 @@
           <p class="movie-year" v-if="movie.year">{{ movie.year }}년</p>
           
           <!-- 장르 -->
-          <p class="movie-genre" v-if="movie.genre">{{ getKoreanGenre(movie.genre[0]) }}</p>
+          <p class="movie-genre" v-if="movie.genre">{{ movie.genre }}</p>
           
           <!-- 액션 버튼들 -->
           <div class="movie-actions">

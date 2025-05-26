@@ -1,9 +1,9 @@
 <template>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-transparent shadow-sm fixed-top">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-transparent shadow-sm fixed-top" :class="{ scrolled: isScrolled }">
     <div class="container">
       <!-- 로고 -->
       <router-link class="navbar-brand fw-bold d-flex align-items-center" :to="{ name: 'Home' }">
-        <img src="/flixnchill.png" alt="FLIX n CHILL" class="logo-image me-2">
+        <img src="/flixnchill.png" alt="FLIX n CHILL" class="logo-image me-2" @error="handleImageError">
         <span style="color: #db0000;">FLIXnCHILL</span>
       </router-link>
 
@@ -42,13 +42,12 @@
             >
               <i class="bi bi-collection me-1"></i>Genre
             </a>
-            <ul class="dropdown-menu" :class="{ show: isGenreDropdownOpen }" style="background-color: black;">
+            <ul class="dropdown-menu" :class="{ show: isGenreDropdownOpen }">
               <li v-for="genre in genreList" :key="genre.type">
                 <router-link 
                   class="dropdown-item" 
                   :to="{ name: 'Genre', query: { type: genre.type } }" 
-                  @click="closeAllDropdowns" 
-                  style="color: #FAF8F1;"
+                  @click="closeAllDropdowns"
                 >
                   {{ genre.name }}
                 </router-link>
@@ -56,7 +55,7 @@
             </ul>
           </li>
           <li class="nav-item" v-if="userStore.isAuthenticated">
-            <router-link class="nav-link" :to="{ name: 'user-profile', params: {userId: 1} }" @click="closeMobileMenu">
+            <router-link class="nav-link" :to="{ name: 'user-profile', params: {userId: userStore.userData.id} }" @click="closeMobileMenu">
               <i class="bi bi-person me-1"></i>My Page
             </router-link>
           </li>
@@ -87,12 +86,13 @@
                 class="rounded-circle me-2"
                 width="32" 
                 height="32"
+                @error="handleImageError"
               >
               <span class="text-white fw-medium d-none d-md-inline">{{ userStore.userName }}</span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end" :class="{ show: isUserDropdownOpen }">
               <li>
-                <router-link :to="{ name: 'user-profile', params: {userId: 1} }" class="dropdown-item" @click="closeAllDropdowns">
+                <router-link :to="{ name: 'user-profile', params: {userId: userStore.userData.id} }" class="dropdown-item" @click="closeAllDropdowns">
                   <i class="bi bi-person me-2"></i>My page
                 </router-link>
               </li>
@@ -183,6 +183,9 @@ const showLogoutModal = ref(false)
 const showLogoutSuccess = ref(false)
 const isLoggingOut = ref(false)
 
+// 스크롤 효과 상태
+const isScrolled = ref(false)
+
 // 사용자 프로필 이미지 계산
 const userProfileImage = computed(() => {
   // 1. 사용자가 업로드한 프로필 이미지가 있는 경우
@@ -217,7 +220,7 @@ const userProfileImage = computed(() => {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(firstLetter)}&background=${selectedColor.bg}&color=${selectedColor.text}&size=128&font-size=0.6&bold=true`
 })
 
-// 🔧 이미지 로드 에러 처리를 위한 함수 추가
+// 이미지 로드 에러 처리를 위한 함수 추가
 const handleImageError = (event) => {
   console.log('프로필 이미지 로드 실패, 기본 이미지로 교체')
   const firstLetter = userStore.userName ? userStore.userName.charAt(0).toUpperCase() : 'U'
@@ -229,7 +232,7 @@ const handleImageError = (event) => {
   event.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(firstLetter)}&background=${selectedColor}&color=ffffff&size=128&font-size=0.6&bold=true`
 }
 
-// 🔧 프로필 이미지 관련 유틸리티 함수들 추가
+// 프로필 이미지 관련 유틸리티 함수들 추가
 const getInitials = (name) => {
   if (!name) return 'U'
   
@@ -270,6 +273,11 @@ const genreList = [
   { type: 'family', name: '가족' },
   { type: 'romance', name: '로맨스' }
 ]
+
+// 스크롤 효과 핸들러
+const handleScroll = () => {
+  isScrolled.value = window.scrollY > 100
+}
 
 // 메뉴 토글 함수들
 const toggleMobileMenu = () => {
@@ -358,6 +366,8 @@ const handleClickOutside = (event) => {
 onMounted(() => {
   // 외부 클릭 이벤트 리스너 추가
   document.addEventListener('click', handleClickOutside)
+  // 스크롤 이벤트 리스너 추가
+  window.addEventListener('scroll', handleScroll)
   
   // 사용자 활동 업데이트
   if (userStore.isAuthenticated) {
@@ -368,110 +378,632 @@ onMounted(() => {
 onUnmounted(() => {
   // 이벤트 리스너 제거
   document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('scroll', handleScroll)
 })
 </script>
 
 <style scoped>
-/* 기존 네비게이션 스타일 유지 */
+/* 🌟 GLASS MORPHISM NAVBAR WITH EPIC ANIMATIONS 🌟 */
+.navbar {
+  background: linear-gradient(135deg, 
+    rgba(0, 0, 0, 0.9) 0%, 
+    rgba(219, 0, 0, 0.15) 30%, 
+    rgba(0, 0, 0, 0.9) 100%) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(219, 0, 0, 0.3);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.37),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: visible !important;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: 1050 !important;
+}
 
-/* 브랜드 로고 스타일 */
+/* 🎭 FLOATING PARTICLES BACKGROUND */
+.navbar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(219, 0, 0, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(219, 0, 0, 0.08) 0%, transparent 50%);
+  /* animation: particleFloat 8s ease-in-out infinite alternate; */
+  pointer-events: none;
+}
+
+@keyframes particleFloat {
+  0% { 
+    opacity: 0.6;
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-10px) rotate(180deg);
+  }
+  100% { 
+    opacity: 0.8;
+    transform: translateY(-5px) rotate(360deg);
+  }
+}
+
+/* 🚀 BRAND LOGO WITH HOLOGRAPHIC EFFECT */
 .navbar-brand {
-  font-size: 1.5rem;
-  color: #ffffff !important;
-  font-weight: 700;
+  font-size: 1.8rem !important;
+  font-weight: 800 !important;
+  background: linear-gradient(
+    45deg,
+    #ff0000,
+    #ff4444,
+    #ff0000,
+    #cc0000,
+    #ff0000
+  );
+  background-size: 400% 400%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: holographicShine 3s ease-in-out infinite;
+  text-shadow: 0 0 30px rgba(219, 0, 0, 0.5);
+  position: relative;
+  transform-style: preserve-3d;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .navbar-brand:hover {
-  color: #ffffff !important;
+  transform: scale(1.05) rotateY(5deg);
+  filter: brightness(1.2) saturate(1.3);
 }
 
-/* 로고 이미지 스타일 */
+@keyframes holographicShine {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* 💎 LOGO IMAGE WITH CYBER GLOW */
 .logo-image {
-  height: 40px;
+  height: 45px;
   width: auto;
-  max-width: 50px;
-  object-fit: contain;
+  max-width: 55px;
+  filter: 
+    drop-shadow(0 0 10px rgba(219, 0, 0, 0.6))
+    drop-shadow(0 0 20px rgba(219, 0, 0, 0.4))
+    brightness(1.1)
+    contrast(1.2);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: logoFloat 4s ease-in-out infinite;
 }
 
-/* 모든 네비게이션 링크를 흰색으로 */
+.navbar-brand:hover .logo-image {
+  transform: rotate(5deg) scale(1.1);
+  filter: 
+    drop-shadow(0 0 15px rgba(219, 0, 0, 0.8))
+    drop-shadow(0 0 30px rgba(219, 0, 0, 0.6))
+    brightness(1.3)
+    contrast(1.4);
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-3px) rotate(2deg); }
+}
+
+/* ⚡ CYBER NAV LINKS WITH NEON EFFECTS - 간격 넓히기 */
+.navbar-nav {
+  gap: 2rem; /* 메뉴 간격을 2rem으로 넓힘 */
+  display: flex; 
+  overflow: visible;
+}
+
 .navbar-nav .nav-link {
   color: #ffffff !important;
-  font-weight: 500;
+  font-weight: 600 !important;
+  position: relative;
+  padding: 0.8rem 1.5rem !important; /* 클릭 영역도 넓게 */
+  border-radius: 25px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.9rem;
+  overflow: hidden;
+  white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+}
+
+.navbar-nav .nav-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(219, 0, 0, 0.3),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.navbar-nav .nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #ff0000, #ff4444, #ff0000);
+  transform: translateX(-50%);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .navbar-nav .nav-link:hover {
-  color: #db0000 !important; /* FLIX n CHILL 브랜드 컬러로 호버 */
+  color: #ffffff !important;
+  background: rgba(219, 0, 0, 0.2);
+  box-shadow: 
+    0 0 20px rgba(219, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px) scale(1.05);
 }
 
-/* active 링크 스타일 */
+.navbar-nav .nav-link:hover::before {
+  left: 100%;
+}
+
+.navbar-nav .nav-link:hover::after {
+  width: 80%;
+}
+
+/* 🎯 ACTIVE LINK WITH SPECIAL GLOW */
 .nav-link.router-link-active {
-  color: #db0000 !important; /* 브랜드 컬러로 활성 상태 표시 */
-  font-weight: 600;
-}
-
-/* 드롭다운 버튼 스타일 */
-.nav-link.dropdown-toggle {
-  cursor: pointer;
+  background: linear-gradient(135deg, 
+    rgba(219, 0, 0, 0.3), 
+    rgba(255, 68, 68, 0.2)) !important;
+  box-shadow: 
+    0 0 25px rgba(219, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(219, 0, 0, 0.5);
   color: #ffffff !important;
+  font-weight: 700 !important;
 }
 
-.nav-link.dropdown-toggle:hover {
-  color: #db0000 !important;
+.nav-link.router-link-active::after {
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #ff0000, #ff6666, #ff0000);
+  animation: activeGlow 2s ease-in-out infinite alternate;
 }
 
-/* 사용자 인증 버튼 스타일 */
-.signin-btn {
-  background-color: white;
-  color: #333333;
-  border: 1px solid #ffffff;
-  font-weight: 500;
+@keyframes activeGlow {
+  0% { box-shadow: 0 0 5px rgba(219, 0, 0, 0.8); }
+  100% { box-shadow: 0 0 20px rgba(219, 0, 0, 1); }
 }
 
-.signin-btn:hover {
-  background-color: #f8f9fa;
-  color: #333333;
+/* 🔧 드롭다운 컨테이너 기본 설정 */
+.nav-item.dropdown {
+  position: relative; /* 매우 중요! 부모 위치 기준점 */
 }
 
-.signup-btn {
-  background-color: #db0000;
-  color: white;
-  border: 1px solid #db0000;
-  font-weight: 500;
-}
-
-.signup-btn:hover {
-  background-color: #c20000;
-  border-color: #c20000;
-}
-
-/* 사용자 프로필 버튼 */
-.user-profile-btn {
-  color: #ffffff !important;
-}
-
-.user-profile-btn:hover {
-  color: #db0000 !important;
-}
-
-/* 사용자 프로필 드롭다운 버튼 */
-.dropdown-toggle:focus {
-  box-shadow: none;
-}
-
-/* 드롭다운 메뉴 스타일 */
+/* 🎭 EPIC DROPDOWN WITH MATRIX EFFECTS - 가려짐 문제 해결 */
 .dropdown-menu {
-  z-index: 1050;
-  background-color: #ffffff;
-  border: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, 
+    rgba(0, 0, 0, 0.89) 0%,    /* 🎯 0.95 → 0.98로 변경 (더 불투명) */
+    rgba(61, 24, 65, 0.9) 50%,  /* 🎯 0.1 → 0.2로 변경 (빨간색 더 진하게) */
+    rgba(0, 0, 0, 0.95) 100%   /* 🎯 0.95 → 0.98로 변경 (더 불투명) */
+  ) !important;
+  backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(219, 0, 0, 0.5) !important; /* 🎯 테두리도 더 진하게 */
+  border-radius: 15px !important;
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.7),    /* 🎯 그림자도 더 진하게 */
+    0 5px 15px rgba(219, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15); /* 🎯 내부 하이라이트도 더 밝게 */
+  padding: 1rem !important;
+  animation: dropdownSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  position: absolute !important;
+  z-index: 9999 !important;
+  top: calc(100% + 0.25rem) !important;
+  left: 0 !important;
+  min-width: 200px !important;
+  max-width: 300px !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  transform: none !important;
+  will-change: transform, opacity;
+}
+
+.dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(219, 0, 0, 0.8) 50%, 
+    transparent 100%);
+}
+
+/* 드롭다운이 보이는 상태일 때 강제 표시 */
+.dropdown-menu.show {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+    visibility: hidden;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    visibility: visible;
+  }
 }
 
 .dropdown-item {
-  color: #333333;
+  color: rgba(255, 255, 255, 0.9) !important;
+  padding: 0.8rem 1.2rem !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+}
+
+.dropdown-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(219, 0, 0, 0.2), 
+    transparent);
+  transition: left 0.4s ease;
 }
 
 .dropdown-item:hover {
-  background-color: #f8f9fa;
-  color: #db0000;
+  background: linear-gradient(135deg, 
+    rgba(219, 0, 0, 0.2), 
+    rgba(255, 68, 68, 0.1)) !important;
+  color: #ffffff !important;
+  transform: translateX(5px) scale(1.02);
+  box-shadow: 0 5px 15px rgba(219, 0, 0, 0.3);
+}
+
+.dropdown-item:hover::before {
+  left: 100%;
+}
+
+/* 드롭다운 토글 버튼 개선 */
+.nav-link.dropdown-toggle {
+  position: relative;
+}
+
+.nav-link.dropdown-toggle::after {
+  transition: transform 0.3s ease;
+  margin-left: 0.5rem;
+}
+
+.nav-link.dropdown-toggle[aria-expanded="true"]::after {
+  transform: rotate(180deg);
+}
+
+/* 🔥 CYBER BUTTONS WITH HOLOGRAPHIC EFFECTS */
+.signin-btn {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.9), 
+    rgba(255, 255, 255, 0.8)) !important;
+  color: #000000 !important;
+  border: 2px solid rgba(255, 255, 255, 0.8) !important;
+  font-weight: 600 !important;
+  border-radius: 25px !important;
+  padding: 0.6rem 1.5rem !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.85rem;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.signin-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.3), 
+    transparent);
+  transition: left 0.5s ease;
+}
+
+.signin-btn:hover {
+  background: linear-gradient(135deg, #ffffff, #f8f9fa) !important;
+  color: #000000 !important;
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 
+    0 10px 25px rgba(255, 255, 255, 0.2),
+    0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.signin-btn:hover::before {
+  left: 100%;
+}
+
+.signup-btn {
+  background: linear-gradient(135deg, #ff0000, #cc0000) !important;
+  color: white !important;
+  border: 2px solid rgba(219, 0, 0, 0.8) !important;
+  font-weight: 600 !important;
+  border-radius: 25px !important;
+  padding: 0.6rem 1.5rem !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.85rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(219, 0, 0, 0.3);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.signup-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.2), 
+    transparent);
+  transition: left 0.5s ease;
+}
+
+.signup-btn:hover {
+  background: linear-gradient(135deg, #ff2222, #e60000) !important;
+  border-color: rgba(255, 68, 68, 0.9) !important;
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 
+    0 15px 35px rgba(219, 0, 0, 0.4),
+    0 0 30px rgba(219, 0, 0, 0.6);
+}
+
+.signup-btn:hover::before {
+  left: 100%;
+}
+
+/* 👤 CYBER USER PROFILE WITH MATRIX VIBES */
+.user-profile-btn {
+  color: #ffffff !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 50px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.user-profile-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(219, 0, 0, 0.1), 
+    transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.user-profile-btn:hover {
+  background: rgba(219, 0, 0, 0.2) !important;
+  border-color: rgba(219, 0, 0, 0.5) !important;
+  transform: scale(1.05);
+  box-shadow: 0 0 25px rgba(219, 0, 0, 0.3);
+}
+
+.user-profile-btn:hover::before {
+  opacity: 1;
+}
+
+/* 🖼️ PROFILE IMAGE WITH CYBER RING */
+.user-profile-btn img {
+  border: 2px solid rgba(219, 0, 0, 0.5);
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(219, 0, 0, 0.3);
+}
+
+.user-profile-btn:hover img {
+  border-color: rgba(219, 0, 0, 0.8);
+  box-shadow: 
+    0 0 25px rgba(219, 0, 0, 0.6),
+    inset 0 0 10px rgba(219, 0, 0, 0.2);
+  transform: scale(1.1);
+}
+
+/* 🌟 MOBILE TOGGLER WITH CYBER EFFECTS */
+.navbar-toggler {
+  border: 2px solid rgba(219, 0, 0, 0.5) !important;
+  border-radius: 8px !important;
+  padding: 0.5rem !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.navbar-toggler:hover {
+  border-color: rgba(219, 0, 0, 0.8) !important;
+  background: rgba(219, 0, 0, 0.2) !important;
+  box-shadow: 0 0 20px rgba(219, 0, 0, 0.4);
+  transform: scale(1.1);
+}
+
+.navbar-toggler:focus {
+  box-shadow: 0 0 0 0.25rem rgba(219, 0, 0, 0.5) !important;
+}
+
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.85%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* 🎯 SCROLL EFFECTS */
+.navbar.scrolled {
+  background: linear-gradient(135deg, 
+    rgba(0, 0, 0, 0.98) 0%, 
+    rgba(219, 0, 0, 0.08) 30%, 
+    rgba(0, 0, 0, 0.98) 100%) !important;
+  backdrop-filter: blur(25px) saturate(200%);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 0 60px rgba(219, 0, 0, 0.2);
+}
+
+/* ✨ SPECIAL EFFECTS FOR EPIC FEEL */
+.navbar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(219, 0, 0, 0.03) 25%,
+    rgba(255, 255, 255, 0.02) 50%,
+    rgba(219, 0, 0, 0.03) 75%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: scanline 4s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scanline {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* 컨테이너 오버플로우 방지 */
+.navbar .container {
+  overflow: visible;
+}
+
+/* 화면 경계 처리 - 드롭다운이 화면 밖으로 나가지 않도록 */
+@media (max-width: 1200px) {
+  .navbar-nav {
+    gap: 1.5rem; /* 중간 크기 화면에서는 간격 줄임 */
+  }
+  
+  .dropdown-menu {
+    right: 0 !important;
+    left: auto !important;
+  }
+}
+
+/* 🎨 ENHANCED MOBILE STYLES */
+@media (max-width: 991.98px) {
+  .navbar-nav {
+    background: linear-gradient(135deg, 
+      rgba(0, 0, 0, 0.95) 0%, 
+      rgba(219, 0, 0, 0.1) 50%,
+      rgba(0, 0, 0, 0.95) 100%);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(219, 0, 0, 0.3);
+    border-radius: 15px;
+    margin-top: 1rem;
+    padding: 2rem 1.5rem;
+    box-shadow: 
+      0 15px 35px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    animation: mobileMenuSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    gap: 1rem; /* 모바일에서는 간격 줄임 */
+  }
+
+  @keyframes mobileMenuSlide {
+    from {
+      opacity: 0;
+      transform: translateY(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .nav-item {
+    margin-bottom: 1rem;
+    flex-shrink: 0;
+  }
+
+  .navbar-nav .nav-link {
+    padding: 1rem 1.5rem !important;
+    margin-bottom: 0.5rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .navbar-nav .nav-link:hover {
+    background: rgba(219, 0, 0, 0.3);
+    border-color: rgba(219, 0, 0, 0.5);
+  }
+
+  /* 모바일에서 드롭다운 메뉴 스타일 */
+  .dropdown-menu {
+    position: static !important;
+    transform: none !important;
+    box-shadow: 
+      0 10px 25px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(219, 0, 0, 0.3) !important;
+    background: linear-gradient(135deg, 
+      rgba(0, 0, 0, 0.9) 0%, 
+      rgba(219, 0, 0, 0.15) 50%,
+      rgba(0, 0, 0, 0.9) 100%) !important;
+    margin-left: 1rem;
+    margin-top: 0.5rem;
+    border-radius: 10px !important;
+    z-index: auto;
+  }
+
+  .dropdown-item {
+    color: #ffffff !important;
+  }
+
+  .dropdown-item:hover {
+    background: rgba(219, 0, 0, 0.2) !important;
+    color: #ffffff !important;
+  }
+
+  .d-flex.gap-2 {
+    gap: 0.5rem !important;
+    margin-top: 1rem;
+  }
 }
 
 /* 로그아웃 버튼 특별 스타일 */
@@ -482,26 +1014,6 @@ onUnmounted(() => {
 .logout-btn:hover {
   background-color: rgba(220, 53, 69, 0.1) !important;
   color: #dc3545 !important;
-}
-
-/* 네비게이션 바 투명도 */
-.navbar {
-  background: rgba(0, 0, 0, 0.8) !important;
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* 모바일 토글 버튼 스타일 */
-.navbar-toggler {
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.navbar-toggler:focus {
-  box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25);
-}
-
-.navbar-toggler-icon {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
 /* 로그아웃 모달 스타일 */
@@ -850,49 +1362,19 @@ onUnmounted(() => {
   left: 100%;
 }
 
-
-
-/* 모바일에서 네비게이션 간격 조정 */
-@media (max-width: 991.98px) {
-  .navbar-nav {
-    padding-top: 1rem;
-    background-color: rgba(0, 0, 0, 0.9);
-    border-radius: 8px;
-    margin-top: 1rem;
-    padding: 1rem;
+/* 🎪 ULTRA RESPONSIVE DESIGN */
+@media (max-width: 768px) {
+  .navbar-brand {
+    font-size: 1.5rem !important;
   }
   
-  .nav-item {
-    margin-bottom: 0.5rem;
+  .logo-image {
+    height: 35px;
   }
   
-  .d-flex.gap-2 {
-    gap: 0.5rem !important;
-    margin-top: 1rem;
-  }
-
-  /* 모바일에서 드롭다운 메뉴 스타일 */
-  .dropdown-menu {
-    position: static !important;
-    transform: none !important;
-    box-shadow: none;
-    border: none;
-    background-color: rgba(255, 255, 255, 0.1);
-    margin-left: 1rem;
-  }
-
-  .dropdown-item {
-    color: #ffffff;
-  }
-
-  .dropdown-item:hover {
-    background-color: rgba(219, 0, 0, 0.2);
-    color: #ffffff;
-  }
-
-  .logout-btn:hover {
-    background-color: rgba(220, 53, 69, 0.2) !important;
-    color: #dc3545 !important;
+  .signin-btn, .signup-btn {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.8rem;
   }
 
   /* 모바일에서 모달 조정 */
@@ -921,9 +1403,27 @@ onUnmounted(() => {
   .popup-content {
     padding: 2rem 1.5rem;
   }
+
+  .logout-btn:hover {
+    background-color: rgba(220, 53, 69, 0.2) !important;
+    color: #dc3545 !important;
+  }
 }
 
 @media (max-width: 480px) {
+  .navbar-brand {
+    font-size: 1.3rem !important;
+  }
+  
+  .logo-image {
+    height: 30px;
+  }
+  
+  .navbar-nav .nav-link {
+    font-size: 0.8rem;
+    padding: 0.8rem 1rem !important;
+  }
+
   .modal-content {
     margin: 0.5rem;
   }
@@ -945,6 +1445,30 @@ onUnmounted(() => {
   }
 }
 
+/* 🌈 ACCESSIBILITY WITH STYLE */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.5s !important;
+    transition-duration: 0.3s !important;
+  }
+}
+
+/* 🎨 HIGH CONTRAST MODE */
+@media (prefers-contrast: high) {
+  .navbar {
+    background: rgba(0, 0, 0, 1) !important;
+    border-bottom: 3px solid #ff0000;
+  }
+  
+  .navbar-nav .nav-link {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .navbar-nav .nav-link:hover {
+    border-color: #ff0000;
+  }
+}
+
 /* 포커스 스타일 */
 .modal-btn:focus-visible,
 .popup-btn:focus-visible,
@@ -961,6 +1485,4 @@ onUnmounted(() => {
     transition-duration: 0.01ms !important;
   }
 }
-
-
 </style>

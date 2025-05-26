@@ -90,7 +90,7 @@
 						<label for="gender" class="form-label">성별</label>
 						<div class="gender-select-container">
 							<div class="gender-option">
-								<input id="male" v-model="formData.gender" type="radio" value="male"
+								<input id="male" v-model="formData.gender" type="radio" :value="true"
 									class="gender-radio" @change="clearError('gender')">
 								<label for="male" class="gender-label">
 									<span class="gender-icon">👨</span>
@@ -98,7 +98,7 @@
 								</label>
 							</div>
 							<div class="gender-option">
-								<input id="female" v-model="formData.gender" type="radio" value="female"
+								<input id="female" v-model="formData.gender" type="radio" :value="false"
 									class="gender-radio" @change="clearError('gender')">
 								<label for="female" class="gender-label">
 									<span class="gender-icon">👩</span>
@@ -760,7 +760,10 @@ const handleSubmit = async () => {
 				username: formData.value.email,
 				email: formData.value.email,
 				password1: formData.value.password,
-				password2: formData.value.confirmPassword
+				password2: formData.value.confirmPassword,
+				gender: formData.value.gender,
+				nickname: formData.value.nickname,
+				birth: formData.value.birthdate,
 			}
 
 			const response = await fetch('http://127.0.0.1:8000/accounts/registration/', {
@@ -909,17 +912,17 @@ watch(() => formData.value.birthdate, () => {
 })
 
 // 디버깅용 - 개발 환경에서만 활성화
-if (import.meta.env.DEV) {
-	// 폼 상태 모니터링
-	watch([formData, errors, isFormValid], ([newFormData, newErrors, newIsFormValid]) => {
-		console.log('📋 폼 상태 업데이트:', {
-			formData: newFormData,
-			errors: newErrors,
-			isFormValid: newIsFormValid,
-			isSubmitting: isSubmitting.value
-		})
-	}, { deep: true })
-}
+// if (import.meta.env.DEV) {
+// 	// 폼 상태 모니터링
+// 	watch([formData, errors, isFormValid], ([newFormData, newErrors, newIsFormValid]) => {
+// 		console.log('📋 폼 상태 업데이트:', {
+// 			formData: newFormData,
+// 			errors: newErrors,
+// 			isFormValid: newIsFormValid,
+// 			isSubmitting: isSubmitting.value
+// 		})
+// 	}, { deep: true })
+// }
 </script>
 
 <style scoped>
@@ -976,7 +979,8 @@ if (import.meta.env.DEV) {
 }
 
 .gender-radio:checked + .gender-label {
-	border-color: rgba(138, 43, 226, 0.8);
+	border-color: rgba(75, 192, 182, 0.8);
+	;
 	background: rgba(138, 43, 226, 0.15);
 	box-shadow: 0 0 0 0.2rem rgba(138, 43, 226, 0.15);
 }
