@@ -618,18 +618,29 @@ onBeforeUnmount(() => {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .review-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 193, 7, 0.2);
+  border-color: rgba(255, 193, 7, 0.5);
+  color: #ffc107;
   transform: scale(1.1);
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.3);
 }
 
+/* 활성화 상태 - 골든 컬러로 더 예쁘게 */
 .review-btn.active {
-  background: rgba(29, 205, 159);
-  border-color: #a69522;
+  background: linear-gradient(135deg, #ffc107, #ffb300);
+  border-color: #ffc107;
   color: white;
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+}
+
+.review-btn.active:hover {
+  background: linear-gradient(135deg, #ffb300, #ff8f00);
+  transform: scale(1.1);
+  box-shadow: 0 12px 35px rgba(255, 193, 7, 0.5);
 }
 
 /* 본문 섹션 */
