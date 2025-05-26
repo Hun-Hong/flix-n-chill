@@ -8,6 +8,7 @@ import LoginPage from '@/views/LoginPage.vue'
 import SignupPage from '@/views/SignupPage.vue'
 import MyPage from '@/views/MyPage.vue'
 import SettingsPage from '@/views/SettingsPage.vue'
+import MovieSurveyPage from '@/views/MovieSurveyPage.vue'
 
 // 장르 페이지 - 하나로 통합
 import GenrePage from '@/views/GenrePage.vue'
@@ -86,6 +87,11 @@ const routes = [
     meta: {
       title: 'FLIXnCHILL - 영화 상세'
     }
+  },
+  {
+    path: '/survey',
+    name: 'movie-survey', 
+    component: MovieSurveyPage
   }
 ]
 
@@ -164,6 +170,11 @@ const router = createRouter({
       meta: {
         title: 'FLIXnCHILL - 영화 상세'
       }
+    },
+    {
+      path: '/survey',
+      name: 'movie-survey', 
+      component: MovieSurveyPage
     }
   ]
 })
