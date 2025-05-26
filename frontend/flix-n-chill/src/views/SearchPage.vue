@@ -26,6 +26,30 @@
                     <div class="results-count">
                         {{ searchResults.length }}개의 영화를 찾았습니다!
                     </div>
+
+                    <!-- 정렬 및 필터 컨트롤 추가 -->
+                    <div class="search-controls">
+                        <div class="sort-controls">
+                            <label class="control-label">정렬:</label>
+                            <select v-model="sortBy" @change="applySortAndFilter" class="form-select">
+                                <option value="latest">최신순</option>
+                                <option value="oldest">오래된 순</option>
+                                <option value="rating-high">별점 높은 순</option>
+                                <option value="rating-low">별점 낮은 순</option>
+                                <option value="title">제목 순</option>
+                            </select>
+                        </div>
+
+                        <div class="year-filter">
+                            <label class="control-label">연도:</label>
+                            <select v-model="selectedYear" @change="applySortAndFilter" class="form-select">
+                                <option value="">전체</option>
+                                <option v-for="year in availableYears" :key="year" :value="year">
+                                    {{ year }}년
+                                </option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -120,6 +144,10 @@ const searchResults = ref([])
 const loading = ref(false)
 const hasSearched = ref(false)
 const searchError = ref(false)
+const sortBy = ref('latest')
+const selectedYear = ref('')
+const availableYears = ref([])
+const filteredResults = ref([])
 
 // API 설정 - 백엔드 URL (Django 주소)
 const API_BASE_URL = 'http://127.0.0.1:8000/api/v1'
@@ -153,6 +181,45 @@ const searchMoviesFromAPI = async (query) => {
 }
 
 // 메서드들
+
+// 연도 목록 생성
+const generateAvailableYears = (movies) => {
+    const years = [...new Set(movies.map(movie => movie.year).filter(year => year))]
+    availableYears.value = years.sort((a, b) => b - a) // 최신년도부터
+}
+
+// 정렬 및 필터 적용
+const applySortAndFilter = () => {
+    let results = [...searchResults.value]
+
+    // 연도 필터 적용
+    if (selectedYear.value) {
+        results = results.filter(movie => movie.year === parseInt(selectedYear.value))
+    }
+
+    // 정렬 적용
+    switch (sortBy.value) {
+        case 'latest':
+            results.sort((a, b) => b.year - a.year)
+            break
+        case 'oldest':
+            results.sort((a, b) => a.year - b.year)
+            break
+        case 'rating-high':
+            results.sort((a, b) => b.rating - a.rating)
+            break
+        case 'rating-low':
+            results.sort((a, b) => a.rating - b.rating)
+            break
+        case 'title':
+            results.sort((a, b) => a.title.localeCompare(b.title))
+            break
+    }
+
+    filteredResults.value = results
+}
+
+
 const handleSearch = (query) => {
     searchQuery.value = query
     performSearch(query)
@@ -174,10 +241,12 @@ const performSearch = async (query) => {
     try {
         console.log('🔍 백엔드 검색 실행:', query)
 
-        // 백엔드 API 호출
         const results = await searchMoviesFromAPI(query)
-
         searchResults.value = results || []
+
+        // 연도 목록 생성 및 초기 정렬 적용
+        generateAvailableYears(searchResults.value)
+        applySortAndFilter()
 
         console.log('✅ 검색 완료:', searchResults.value.length, '개 결과')
 
@@ -185,6 +254,7 @@ const performSearch = async (query) => {
         console.error('🚨 검색 오류:', error)
         searchError.value = true
         searchResults.value = []
+        filteredResults.value = []
     } finally {
         loading.value = false
     }
@@ -243,20 +313,20 @@ const handleMovieClick = (movie) => {
 
 // 모달 관련 이벤트
 const closeModal = () => {
-  showModal.value = false
-  selectedMovieId.value = null
+    showModal.value = false
+    selectedMovieId.value = null
 }
 
 const handleModalToggleWatchlist = (movie) => {
-  store.toggleWatchlist(movie.id)
+    store.toggleWatchlist(movie.id)
 }
 
 const handleModalToggleLike = (movie) => {
-  store.toggleLike(movie.id)
+    store.toggleLike(movie.id)
 }
 
 const handleModalPlay = (movie) => {
-  // 재생 로직
+    // 재생 로직
 }
 
 // URL 쿼리에서 검색어 가져오기
@@ -489,6 +559,58 @@ onMounted(() => {
 
     .no-results-icon {
         font-size: 4rem;
+    }
+}
+
+/* 검색 컨트롤 스타일 */
+.search-controls {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.sort-controls,
+.year-filter {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.control-label {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.form-select {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    min-width: 140px;
+}
+
+.form-select:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.form-select option {
+    background: #1a1a1a;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .search-controls {
+        flex-direction: column;
+        gap: 1rem;
     }
 }
 </style>

@@ -76,6 +76,11 @@
                                     <i class="bi bi-pencil"></i>
                                     프로필 편집
                                 </button>
+                                <!-- 🌟 임시 테스트 버튼 -->
+                                <button class="btn btn-secondary" @click="showEditModal = true">
+                                    <i class="bi bi-pencil"></i>
+                                    <span>프로필 수정 (테스트)</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -222,6 +227,8 @@
                 </div>
             </div>
         </div>
+        <EditProfileModal :show="showEditModal" :user-profile="userProfile" @close="showEditModal = false"
+            @save="handleProfileSave" />
     </div>
 </template>
 
@@ -231,6 +238,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { useMovieStore } from '@/stores/movie'
 import { useUserStore } from '@/stores/accounts'
 import MovieCard from '@/components/MovieCard.vue'
+import EditProfileModal from '@/components/EditProfileModal.vue'
+
+// 모달 상태
+const showEditModal = ref(false)
 
 // Stores
 const movieStore = useMovieStore()
@@ -413,7 +424,7 @@ const blockUser = () => {
 }
 
 const editProfile = () => {
-    router.push('/profile/edit')
+    showEditModal.value = true
 }
 
 const handleAvatarClick = () => {
@@ -452,6 +463,16 @@ const handleToggleLike = (movie) => {
     if (likedIndex !== -1) {
         likedMovies.value.splice(likedIndex, 1)
     }
+}
+
+const handleProfileSave = (updatedData) => {
+    // 프로필 데이터 업데이트
+    userProfile.value.email = updatedData.email
+    userProfile.value.bio = updatedData.bio
+    userProfile.value.profileImage = updatedData.profileImage
+
+    console.log('프로필이 업데이트되었습니다:', updatedData)
+    // 실제로는 여기서 API 호출해서 서버에 저장
 }
 
 const handleMovieClick = (movie) => {
@@ -865,7 +886,7 @@ watch(activeTab, (newTab) => {
     background: rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 0.75rem 0; 
+    padding: 0.75rem 0;
     position: sticky;
     top: 76px;
     z-index: 100;
@@ -875,15 +896,15 @@ watch(activeTab, (newTab) => {
     display: flex;
     gap: 2rem;
     overflow-x: auto;
-    justify-content: center; 
+    justify-content: center;
 }
 
 .nav-tab {
     background: transparent;
     border: none;
     color: rgba(255, 255, 255, 0.7);
-    padding: 1rem 2rem; 
-    border-radius: 50px; 
+    padding: 1rem 2rem;
+    border-radius: 50px;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
@@ -891,7 +912,7 @@ watch(activeTab, (newTab) => {
     gap: 0.5rem;
     white-space: nowrap;
     position: relative;
-    min-height: 48px; 
+    min-height: 48px;
 }
 
 .nav-tab:hover {
@@ -1250,10 +1271,10 @@ watch(activeTab, (newTab) => {
     }
 
     .nav-tab {
-    padding: 0.75rem 1.5rem; 
-    font-size: 0.9rem;
-    border-radius: 40px; 
-    min-height: 42px; 
+        padding: 0.75rem 1.5rem;
+        font-size: 0.9rem;
+        border-radius: 40px;
+        min-height: 42px;
     }
 
     .content-header {

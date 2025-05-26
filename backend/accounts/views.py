@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import api_view, permission_classes
+from dj_rest_auth.views import UserDetailsView
+from .serializers import UserProfileSerializer
 
 
 # Create your views here.
@@ -39,3 +41,6 @@ def follow(request, user_pk):
             return Response({'error': "팔로우한 적이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
         user.followers.remove(request.user)
         return Response({'detail': "언팔로우 성공!"}, status=status.HTTP_204_NO_CONTENT)
+
+class CustomUserDetailsView(UserDetailsView):
+    serializer_class = UserProfileSerializer

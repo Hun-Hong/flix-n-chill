@@ -71,6 +71,11 @@ REST_FRAMEWORK = {
     ],
 }
 
+REST_AUTH = {
+    'USER_DETAILS_SERIALIZER': 'accounts.serializers.UserProfileSerializer',
+    'REGISTER_SERIALIZER': 'accounts.serializers.CustomRegisterSerializer',
+}
+
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
