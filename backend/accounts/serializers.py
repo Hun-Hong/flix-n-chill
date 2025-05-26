@@ -39,7 +39,7 @@ class ReviewSimpleSerializer(serializers.ModelSerializer):
     # 리뷰에 필요한 영화 정보는 간단하게
     movie_title = serializers.CharField(source='movie.title', read_only=True)
     movie_id = serializers.IntegerField(source='movie.id', read_only=True)
-    
+    poster_path = serializers.CharField(source='movie.poster_path', read_only=True)
     class Meta:
         model = Review
         fields = '__all__'  # 또는 필요한 필드들만 명시
@@ -139,3 +139,9 @@ class ProfileMovieSerializer(serializers.ModelSerializer):
         if reviews.exists():
             return round(reviews.aggregate(avg=models.Avg('rating'))['avg'], 2)
         return None
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('nickname', 'profile_bio', 'profile_image')

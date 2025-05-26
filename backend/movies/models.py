@@ -26,7 +26,7 @@ class Review(models.Model):
     user = models.ForeignKey("accounts.user", on_delete=models.CASCADE)
     movie = models.ForeignKey("movies.movie", on_delete=models.CASCADE)
     rating = models.FloatField()
-    comment = models.CharField(max_length=50)
+    comment = models.CharField(max_length=50, default="", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     unique_together = ('user', 'movie')
 

@@ -15,7 +15,7 @@ class MovieListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
         fields = ("id", "vote_average", "poster_path", "release_date", "genres", "title", "original_title", "is_liked", "average_rating")
-        read_only_field = ("genres", "is_liked")
+        read_only_fields = ("genres", "is_liked")
 
     def get_is_liked(self, obj):
         request = self.context.get("request", None)
@@ -36,7 +36,7 @@ class MovieCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
         fields = "__all__"
-        read_only_field = ("rating", "genres")
+        read_only_fields = ("rating", "genres")
 
 
 class MovieDetailSerializer(serializers.ModelSerializer):
@@ -50,7 +50,7 @@ class MovieDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
         fields = "__all__"
-        read_only_field = ("rating", "genres")
+        read_only_fields = ("rating", "genres")
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -63,5 +63,12 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        field = "__all__"
-        read_only_field = ("user", "movie", "created_at")
+        fields = "__all__"
+        read_only_fields = ("user", "movie", "created_at")
+
+
+class ReviewCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = "__all__"
+        read_only_fields = ("user", "movie", "created_at")

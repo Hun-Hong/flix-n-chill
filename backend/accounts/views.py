@@ -5,7 +5,7 @@ from rest_framework import status, permissions
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import api_view, permission_classes
 from dj_rest_auth.views import UserDetailsView
-from .serializers import UserProfileSerializer
+from .serializers import UserProfileSerializer, UserUpdateSerializer
 
 
 # Create your views here.
@@ -46,22 +46,30 @@ def follow(request, user_pk):
 class CustomUserDetailsView(UserDetailsView):
     serializer_class = UserProfileSerializer
 
-@api_view(["GET"])
+@api_view(["GET", "PUT"])
 def detail(request, user_pk):
-    user = get_object_or_404(User, pk=user_pk)
+    if request.method == "GET":
+        user = get_object_or_404(User, pk=user_pk)
+        
+        # 디버깅 정보 출력
+        print(f"Request user: {request.user}")
+        print(f"Request user authenticated: {request.user.is_authenticated}")
+        print(f"Target user: {user}")
+        print(f"Target user's liked movies: {user.like_movie.all()}")
+        
+        # 특정 영화로 테스트
+        if user.like_movie.exists():
+            first_movie = user.like_movie.first()
+            print(f"First liked movie: {first_movie}")
+            print(f"Movie's liked_user field: {first_movie.liked_user.all()}")
+            print(f"Is request.user in liked_user? {first_movie.liked_user.filter(id=request.user.id).exists()}")
+        
+        serializer = UserProfileSerializer(user, context={'request': request})
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
     
-    # 디버깅 정보 출력
-    print(f"Request user: {request.user}")
-    print(f"Request user authenticated: {request.user.is_authenticated}")
-    print(f"Target user: {user}")
-    print(f"Target user's liked movies: {user.like_movie.all()}")
-    
-    # 특정 영화로 테스트
-    if user.like_movie.exists():
-        first_movie = user.like_movie.first()
-        print(f"First liked movie: {first_movie}")
-        print(f"Movie's liked_user field: {first_movie.liked_user.all()}")
-        print(f"Is request.user in liked_user? {first_movie.liked_user.filter(id=request.user.id).exists()}")
-    
-    serializer = UserProfileSerializer(user, context={'request': request})
-    return Response(data=serializer.data, status=status.HTTP_200_OK)
+    elif request.method == "PUT":
+        serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+
