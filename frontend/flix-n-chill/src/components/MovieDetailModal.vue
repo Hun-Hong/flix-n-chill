@@ -156,7 +156,7 @@
 <script setup>
 import { ref, watch, onBeforeUnmount } from 'vue'
 import axios from 'axios'
-import MovieReviewModal from './MovieReviewModal.vue'
+import MovieReviewModal from './MovieReviewModal.vue'  // 새로운 리뷰 모달 import
 
 // Props
 const props = defineProps({
@@ -278,10 +278,43 @@ const handleToggleLike = () => {
   emit('toggle-like', movieDetail.value)
 }
 
-const handleReviewSubmit = (reviewData) => {
-  console.log('리뷰 제출:', reviewData)
-  emit('review-submitted', reviewData)
-  closeReviewModal()
+const handleReviewSubmit = (result) => {
+  console.log('리뷰 제출 결과:', result)
+  
+  if (result.success) {
+    let message = ''
+    
+    if (result.isDelete) {
+      // 삭제된 경우
+      message = '리뷰가 삭제되었습니다!'
+      console.log('리뷰 삭제 성공!')
+    } else if (result.isEdit) {
+      // 수정된 경우
+      message = '리뷰가 수정되었습니다!'
+      console.log('리뷰 수정 성공!')
+    } else {
+      // 새로 생성된 경우
+      message = '리뷰가 등록되었습니다!'
+      console.log('리뷰 생성 성공!')
+    }
+    
+    // 성공 메시지 표시
+    alert(message)
+    
+    // 부모 컴포넌트에 리뷰 변경 사실 알림
+    emit('review-submitted', {
+      movieId: props.movieId,
+      action: result.isDelete ? 'deleted' : (result.isEdit ? 'updated' : 'created'),
+      reviewData: result
+    })
+    
+    // 리뷰 모달 닫기
+    closeReviewModal()
+    
+  } else if (result.error) {
+    console.error('리뷰 처리 실패:', result.message)
+    // 에러는 이미 리뷰 모달에서 alert로 처리됨
+  }
 }
 
 const openReviewModal = () => {

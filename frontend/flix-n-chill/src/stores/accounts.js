@@ -10,6 +10,8 @@ export const useUserStore = defineStore('user', () => {
   const isLoading = ref(false)
   const lastActivity = ref(Date.now())
 
+  const BE_API_PATH = "http://127.0.0.1:8000/"
+
   // Computed - 로그인 상태 확인
   const isAuthenticated = computed(() => {
     return !!token.value && !!userData.value
@@ -202,33 +204,53 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // Actions - 프로필 업데이트
-  const updateProfile = async (profileData) => {
-    if (!token.value) return { success: false, error: '로그인이 필요합니다.' }
+const updateProfile = async (profileData) => {
+  if (!token.value) 
+    return { success: false, error: '로그인이 필요합니다.' }
 
-    isLoading.value = true
-    try {
-      const response = await axios({
-        method: 'patch',
-        url: 'http://127.0.0.1:8000/accounts/user/',
+  isLoading.value = true
+  try {
+    // 1) FormData 에 텍스트 필드와 파일 필드 모두 담는다
+    const form = new FormData()
+    form.append('nickname',      profileData.nickname)
+    // form.append('email',         profileData.email)
+    // if (profileData.bio !== undefined) {
+    //   form.append('bio', profileData.bio)
+    // }
+    form.append('profile_bio', profileData.profile_bio)
+    // 만약 파일을 선택했다면
+    if (profileData.profileImageFile) {
+      // <input type="file"> 에서 가져온 File 객체
+      form.append('profile_image', profileData.profileImageFile)
+    }
+
+    // 2) axios 요청: Content-Type 은 multipart/form-data 로
+    const response = await axios.patch(
+      'http://127.0.0.1:8000/accounts/user/',
+      form,
+      {
         headers: {
           'Authorization': `Token ${token.value}`,
-          'Content-Type': 'application/json'
+          // multipart/form-data 로 보내면 boundary 도 같이 붙으니
+          // Content-Type 헤더는 생략하거나 'multipart/form-data'만 지정하세요
+          'Content-Type': 'multipart/form-data',
         },
-        data: profileData
-      })
-
-      setUserData(response.data)
-      return { success: true, data: response.data }
-    } catch (error) {
-      console.error('프로필 업데이트 실패:', error)
-      return { 
-        success: false, 
-        error: error.response?.data || { message: '프로필 업데이트에 실패했습니다.' }
       }
-    } finally {
-      isLoading.value = false
+    )
+
+    setUserData(response.data)
+    return { success: true, data: response.data }
+
+  } catch (error) {
+    console.error('프로필 업데이트 실패:', error)
+    return { 
+      success: false, 
+      error: error.response?.data || { message: '프로필 업데이트에 실패했습니다.' }
     }
+  } finally {
+    isLoading.value = false
   }
+}
 
   // Actions - 비밀번호 변경
   const changePassword = async (passwordData) => {
@@ -337,6 +359,9 @@ export const useUserStore = defineStore('user', () => {
 
   // Store 반환
   return {
+    //
+    BE_API_PATH,
+
     // State
     token,
     userData,

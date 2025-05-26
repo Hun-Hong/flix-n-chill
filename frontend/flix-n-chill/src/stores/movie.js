@@ -8,15 +8,7 @@ export const useMovieStore = defineStore('movie', () => {
   const loading = ref(false)
   const error = ref(null)
 
-
-  // const userStore = useUserStore()
-  // watch(
-  //   () => userStore.user?.id, // userId가 바뀌면(로그인/로그아웃)
-  //   () => {
-  //     moviesByGenre.value = {} // 캐시 초기화!
-  //   }
-  // )
-
+  const BE_API_PATH = "http://127.0.0.1:8000/"
 
   const getUserKey = () => {
     const userStore = useUserStore()
@@ -36,14 +28,6 @@ export const useMovieStore = defineStore('movie', () => {
   const fetchMoviesByGenre = async (genreType, ordering = "top", year = "") => {
     const userKey = getUserKey()
     const cacheKey = getCacheKey(genreType, ordering, year)
-
-    // if (
-    //   moviesByGenre.value[userKey] &&
-    //   moviesByGenre.value[userKey][cacheKey] &&
-    //   moviesByGenre.value[userKey][cacheKey].length > 0
-    // ) {
-    //   return moviesByGenre.value[userKey][cacheKey]
-    // }
 
     loading.value = true
     error.value = null
@@ -93,57 +77,141 @@ export const useMovieStore = defineStore('movie', () => {
     }
   }
 
-  // 좋아요 토글 후엔 캐시 지우고 새로 fetch
+  // 좋아요 토글
   const toggleLike = async (movieId) => {
-  const userStore = useUserStore()
-  if (!userStore.token) return
+    const userStore = useUserStore()
+    if (!userStore.token) return
 
-  // 1) 캐시에서 모든 배열 참조 가져오기
-  const userKey   = getUserKey()
-  const userCache = moviesByGenre.value[userKey] || {}
-  // 2) 현재 토글할 값 계산
-  //    (어차피 모든 배열의 movieRef.isLiked 값은 동일하다고 가정)
-  let currentLiked = null
-  Object.values(userCache).some(arr => {
-    const m = arr.find(x => x.id === movieId)
-    if (m) { currentLiked = m.isLiked; return true }
-  })
-  if (currentLiked === null) return
-  const nextLiked = !currentLiked
-
-  // 3) 서버에 요청 (POST/DELETE 분기)
-  try {
-    await axios({
-      method: nextLiked ? 'post' : 'delete',
-      url:   `http://127.0.0.1:8000/api/v1/movies/${movieId}/like/`,
-      headers: { Authorization: `Token ${userStore.token}` }
+    const userKey = getUserKey()
+    const userCache = moviesByGenre.value[userKey] || {}
+    
+    let currentLiked = null
+    Object.values(userCache).some(arr => {
+      const m = arr.find(x => x.id === movieId)
+      if (m) { currentLiked = m.isLiked; return true }
     })
+    if (currentLiked === null) return
+    const nextLiked = !currentLiked
 
-    // 4) 모든 캐시 배열 안에서 해당 영화만 업데이트
-    Object.values(userCache).forEach(arr => {
-      arr.forEach(movie => {
-        if (movie.id === movieId) {
-          movie.isLiked    = nextLiked
-          movie.like_count = (movie.like_count || 0) + (nextLiked ? 1 : -1)
-        }
+    try {
+      await axios({
+        method: nextLiked ? 'post' : 'delete',
+        url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/like/`,
+        headers: { Authorization: `Token ${userStore.token}` }
       })
-    })
-  }
-  catch (e) {
-    console.error('좋아요 토글 실패', e)
-    error.value = e.message
-  }
-}
 
+      Object.values(userCache).forEach(arr => {
+        arr.forEach(movie => {
+          if (movie.id === movieId) {
+            movie.isLiked = nextLiked
+            movie.like_count = (movie.like_count || 0) + (nextLiked ? 1 : -1)
+          }
+        })
+      })
+    }
+    catch (e) {
+      console.error('좋아요 토글 실패', e)
+      error.value = e.message
+    }
+  }
 
-  // ... (찜 토글도 같은 방식 적용)
+  // 리뷰 생성
+  const createReview = async (movieId, payload) => {
+    const userStore = useUserStore()
+    try {
+      const response = await axios({
+        method: 'post',
+        url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/review/`,
+        data: payload,
+        headers: { 
+          Authorization: `Token ${userStore.token}`,
+          'Content-Type': 'application/json'
+        },
+      })
+      console.log('리뷰 생성 성공:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('리뷰 생성 실패:', error)
+      throw error
+    }
+  }
+
+  // 사용자 리뷰 조회
+  const getUserReview = async (movieId) => {
+    const userStore = useUserStore()
+    try {
+      const response = await axios({
+        method: 'get',
+        url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/user-review/`,
+        headers: { 
+          Authorization: `Token ${userStore.token}`,
+        },
+      })
+      console.log('기존 리뷰 조회 성공:', response.data)
+      return response.data
+    } catch (error) {
+      if (error.response?.status === 404) {
+        // 리뷰가 없는 경우 (정상적인 상황)
+        console.log('기존 리뷰 없음')
+        return null
+      }
+      console.error('리뷰 조회 실패:', error)
+      throw error
+    }
+  }
+
+  // 리뷰 수정
+  const updateReview = async (movieId, reviewId, payload) => {
+    const userStore = useUserStore()
+    try {
+      const response = await axios({
+        method: 'put',
+        url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/review/${reviewId}/`,
+        data: payload,
+        headers: { 
+          Authorization: `Token ${userStore.token}`,
+          'Content-Type': 'application/json'
+        },
+      })
+      console.log('리뷰 수정 성공:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('리뷰 수정 실패:', error)
+      throw error
+    }
+  }
+
+  // 리뷰 삭제
+  const deleteReview = async (movieId, reviewId) => {
+    const userStore = useUserStore()
+    try {
+      const response = await axios({
+        method: 'delete',
+        url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/review/${reviewId}/delete/`,
+        headers: { 
+          Authorization: `Token ${userStore.token}`,
+        },
+      })
+      console.log('리뷰 삭제 성공')
+      return response.data
+    } catch (error) {
+      console.error('리뷰 삭제 실패:', error)
+      throw error
+    }
+  }
 
   return {
+    BE_API_PATH,
+    
     moviesByGenre,
     loading,
     error,
     getMoviesByGenreSync,
     fetchMoviesByGenre,
     toggleLike,
+    createReview,
+    getUserReview,
+    updateReview,
+    deleteReview,
   }
 })

@@ -1,235 +1,225 @@
 <template>
-    <div class="profile-page" v-if="userProfile">
-        <!-- 프로필 헤더 -->
-        <div class="profile-header">
-            <div class="container">
-                <div class="profile-hero">
-                    <!-- 프로필 이미지 & 기본 정보 -->
-                    <div class="profile-main-info">
-                        <div class="profile-avatar-section">
-                            <div class="avatar-container" @click="handleAvatarClick">
-                                <img :src="userProfile.profileImage || '/api/placeholder/200/200'"
-                                    :alt="userProfile.nickname" class="profile-avatar" @error="handleAvatarError">
-                                <div class="avatar-overlay">
-                                    <i class="bi bi-camera"></i>
-                                </div>
-                            </div>
-                        </div>
+  <div class="profile-page" v-if="userProfile">
+    <!-- 프로필 헤더 -->
+    <div class="profile-header">
+      <div class="container">
+        <div class="profile-hero">
+          <!-- 프로필 이미지 & 기본 정보 -->
+          <div class="profile-main-info">
+            <div class="profile-avatar-section">
+              <div class="avatar-container" @click="handleAvatarClick">
+                <img :src="userProfile.profile_image || `${userStore.BE_API_PATH}/media/profile/default_profile_img.png`" :alt="userProfile.nickname"
+                  class="profile-avatar" @error="handleAvatarError">
+                <div class="avatar-overlay">
+                  <i class="bi bi-camera"></i>
+                </div>
+              </div>
+            </div>
 
-                        <div class="profile-info">
-                            <div class="profile-header-top">
-                                <h1 class="profile-nickname">{{ userProfile.nickname }}</h1>
-                            </div>
+            <div class="profile-info">
+              <div class="profile-header-top">
+                <h1 class="profile-nickname">{{ userProfile.nickname }}</h1>
+              </div>
 
-                            <p class="profile-email">{{ userProfile.email }}</p>
-                            <p v-if="userProfile.bio" class="profile-bio">{{ userProfile.bio }}</p>
+              <p class="profile-email">{{ userProfile.email }}</p>
+              <p v-if="userProfile.profile_bio" class="profile-bio">{{ userProfile.profile_bio }}</p>
 
-                            <!-- 팔로우 정보 -->
-                            <div class="follow-stats">
-                                <div class="stat-item" @click="showFollowersModal">
-                                    <span class="stat-number">{{ formatNumber(userProfile.followers_count) }}</span>
-                                    <span class="stat-label">팔로워</span>
-                                </div>
-                                <div class="stat-item" @click="showFollowingModal">
-                                    <span class="stat-number">{{ formatNumber(userProfile.following_count) }}</span>
-                                    <span class="stat-label">팔로잉</span>
-                                </div>
-                                <!-- <div class="stat-item">
+              <!-- 팔로우 정보 -->
+              <div class="follow-stats">
+                <div class="stat-item" @click="showFollowersModal">
+                  <span class="stat-number">{{ formatNumber(userProfile.followers_count) }}</span>
+                  <span class="stat-label">팔로워</span>
+                </div>
+                <div class="stat-item" @click="showFollowingModal">
+                  <span class="stat-number">{{ formatNumber(userProfile.following_count) }}</span>
+                  <span class="stat-label">팔로잉</span>
+                </div>
+                <!-- <div class="stat-item">
                                     <span class="stat-number">{{ formatNumber(userProfile.reviews_count) }}</span>
                                     <span class="stat-label">리뷰</span>
                                 </div> -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 프로필 액션 버튼들 -->
-                    <div class="profile-actions">
-                        <button v-if="!isOwnProfile" class="btn follow-btn"
-                            :class="{ 'following': userProfile.isFollowing }" @click="toggleFollow"
-                            :disabled="followLoading">
-                            <div class="btn-content">
-                                <i
-                                    :class="userProfile.isFollowing ? 'bi bi-person-check-fill' : 'bi bi-person-plus-fill'"></i>
-                                <span>{{ userProfile.isFollowing ? '팔로잉' : '팔로우' }}</span>
-                            </div>
-                            <div class="btn-hover-content">
-                                <i class="bi bi-person-dash-fill"></i>
-                                <span>언팔로우</span>
-                            </div>
-                        </button>
-
-
-                        <div class="dropdown">
-                            <button class="btn btn-outline" @click="toggleDropdown">
-                                <i class="bi bi-three-dots"></i>
-                            </button>
-                            <div class="dropdown-menu" :class="{ 'show': showDropdown }">
-                                <button class="dropdown-item" @click="reportUser" v-if="!isOwnProfile">
-                                    <i class="bi bi-flag"></i>
-                                    신고하기
-                                </button>
-                                <button class="dropdown-item" @click="blockUser" v-if="!isOwnProfile">
-                                    <i class="bi bi-person-slash"></i>
-                                    차단하기
-                                </button>
-                                <button class="dropdown-item" @click="editProfile" v-if="isOwnProfile">
-                                    <i class="bi bi-pencil"></i>
-                                    프로필 편집
-                                </button>
-                                <!-- 🌟 임시 테스트 버튼 -->
-                                <button class="btn btn-secondary" @click="showEditModal = true">
-                                    <i class="bi bi-pencil"></i>
-                                    <span>프로필 수정 (테스트)</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+              </div>
             </div>
-        </div>
+          </div>
 
-        <!-- 프로필 탭 네비게이션 -->
-        <div class="profile-nav">
-            <div class="container">
-                <div class="nav-tabs">
-                    <button v-for="tab in tabs" :key="tab.id" class="nav-tab"
-                        :class="{ 'active': activeTab === tab.id }" @click="setActiveTab(tab.id)">
-                        <i :class="tab.icon"></i>
-                        <span>{{ tab.label }}</span>
-                        <span class="tab-count">{{ tab.count }}</span>
-                    </button>
-                </div>
+          <!-- 프로필 액션 버튼들 -->
+          <div class="profile-actions">
+            <button v-if="!isOwnProfile" class="btn follow-btn" :class="{ 'following': userProfile.isFollowing }"
+              @click="toggleFollow" :disabled="followLoading">
+              <div class="btn-content">
+                <i :class="userProfile.isFollowing ? 'bi bi-person-check-fill' : 'bi bi-person-plus-fill'"></i>
+                <span>{{ userProfile.isFollowing ? '팔로잉' : '팔로우' }}</span>
+              </div>
+              <div class="btn-hover-content">
+                <i class="bi bi-person-dash-fill"></i>
+                <span>언팔로우</span>
+              </div>
+            </button>
+
+
+            <div class="dropdown">
+              <button class="btn btn-outline" @click="toggleDropdown">
+                <i class="bi bi-three-dots"></i>
+              </button>
+              <div class="dropdown-menu" :class="{ 'show': showDropdown }">
+                <button class="dropdown-item" @click="reportUser" v-if="!isOwnProfile">
+                  <i class="bi bi-flag"></i>
+                  신고하기
+                </button>
+                <button class="dropdown-item" @click="blockUser" v-if="!isOwnProfile">
+                  <i class="bi bi-person-slash"></i>
+                  차단하기
+                </button>
+                <button class="dropdown-item" @click="editProfile" v-if="isOwnProfile">
+                  <i class="bi bi-pencil"></i>
+                  프로필 편집
+                </button>
+              </div>
             </div>
+          </div>
         </div>
-
-        <!-- 프로필 컨텐츠 -->
-        <div class="profile-content">
-            <div class="container">
-                <!-- 리뷰 탭 -->
-                <div v-if="activeTab === 'reviews'" class="tab-content">
-                    <div class="content-header">
-                        <h3>
-                            <i class="bi bi-chat-quote"></i>
-                            {{ userReviews.length }}개의 리뷰를 남겼어요!
-                        </h3>
-                        <div class="sort-options">
-                            <select v-model="reviewSortBy" class="sort-select">
-                                <option value="recent">최신순</option>
-                                <option value="rating">평점순</option>
-                                <option value="popular">인기순</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="reviews-grid" v-if="userReviews.length > 0">
-                        <div v-for="review in sortedReviews" :key="review.id" class="review-card"
-                            @click="viewReview(review)">
-                            <div class="review-movie-info">
-                                <img :src="review.moviePoster || '/api/placeholder/60/90'" :alt="review.movieTitle"
-                                    class="review-movie-poster">
-                                <div class="review-movie-details">
-                                    <h5 class="review-movie-title">{{ review.movieTitle }}</h5>
-                                    <div class="review-rating">
-                                        <div class="stars">
-                                            <i v-for="star in 5" :key="star" class="bi"
-                                                :class="star <= review.rating ? 'bi-star-fill' : 'bi-star'"></i>
-                                        </div>
-                                        <span class="rating-text">{{ review.rating }}/5</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="review-content">
-                                <p class="review-text">{{ truncateText(review.content, 150) }}</p>
-                                <div class="review-meta">
-                                    <span class="review-date">{{ formatDate(review.createdAt) }}</span>
-                                    <div class="review-actions">
-                                        <span class="review-likes">
-                                            <i class="bi bi-heart"></i>
-                                            {{ review.likesCount }}
-                                        </span>
-                                        <span class="review-comments">
-                                            <i class="bi bi-chat"></i>
-                                            {{ review.commentsCount }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div v-else class="empty-state">
-                        <i class="bi bi-chat-quote empty-icon"></i>
-                        <h4>아직 작성한 리뷰가 없어요</h4>
-                        <p>좋아하는 영화에 대한 리뷰를 작성해보세요!</p>
-                    </div>
-                </div>
-
-                <!-- 좋아요 탭 -->
-                <div v-if="activeTab === 'likes'" class="tab-content">
-                    <div class="content-header">
-                        <h3>
-                            <i class="bi bi-heart-fill"></i>
-                            {{ likedMovies.length }}개의 영화를 좋아해요!
-                        </h3>
-                        <div class="view-options">
-                            <button class="view-btn" :class="{ 'active': viewMode === 'grid' }"
-                                @click="viewMode = 'grid'">
-                                <i class="bi bi-grid-3x3-gap"></i>
-                            </button>
-                            <button class="view-btn" :class="{ 'active': viewMode === 'list' }"
-                                @click="viewMode = 'list'">
-                                <i class="bi bi-list"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div v-if="likedMovies.length > 0" class="liked-movies">
-                        <div class="movies-grid" :class="{ 'list-view': viewMode === 'list' }">
-                            <div class="row g-4">
-                                <div v-for="movie in likedMovies" :key="movie.id"
-                                    :class="viewMode === 'grid' ? 'col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6' : 'col-12'">
-                                    <MovieCard :movie="movie" :show-details="viewMode === 'list'"
-                                        @play="handlePlayMovie" @toggle-watchlist="handleToggleWatchlist"
-                                        @toggle-like="handleToggleLike" @click="handleMovieClick" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div v-else class="empty-state">
-                        <i class="bi bi-heart empty-icon"></i>
-                        <h4>아직 좋아하는 영화가 없어요</h4>
-                        <p>마음에 드는 영화에 하트를 눌러보세요!</p>
-                    </div>
-                </div>
-
-                <!-- 활동 탭 -->
-                <div v-if="activeTab === 'activity'" class="tab-content">
-                    <div class="content-header">
-                        <h3>
-                            <i class="bi bi-activity"></i>
-                            최근 활동
-                        </h3>
-                    </div>
-
-                    <div class="activity-timeline">
-                        <div v-for="activity in userActivities" :key="activity.id" class="activity-item">
-                            <div class="activity-icon" :class="activity.type">
-                                <i :class="getActivityIcon(activity.type)"></i>
-                            </div>
-                            <div class="activity-content">
-                                <div class="activity-text">{{ activity.text }}</div>
-                                <div class="activity-time">{{ formatRelativeTime(activity.createdAt) }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <EditProfileModal :show="showEditModal" :user-profile="userProfile" @close="showEditModal = false"
-            @save="handleProfileSave" />
+      </div>
     </div>
+
+    <!-- 프로필 탭 네비게이션 -->
+    <div class="profile-nav">
+      <div class="container">
+        <div class="nav-tabs">
+          <button v-for="tab in tabs" :key="tab.id" class="nav-tab" :class="{ 'active': activeTab === tab.id }"
+            @click="setActiveTab(tab.id)">
+            <i :class="tab.icon"></i>
+            <span>{{ tab.label }}</span>
+            <span class="tab-count">{{ tab.count }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 프로필 컨텐츠 -->
+    <div class="profile-content">
+      <div class="container">
+        <!-- 리뷰 탭 -->
+        <div v-if="activeTab === 'reviews'" class="tab-content">
+          <div class="content-header">
+            <h3>
+              <i class="bi bi-chat-quote"></i>
+              {{ userReviews.length }}개의 리뷰를 남겼어요!
+            </h3>
+            <div class="sort-options">
+              <select v-model="reviewSortBy" class="sort-select">
+                <option value="recent">최신순</option>
+                <option value="rating">평점순</option>
+                <option value="popular">인기순</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="reviews-grid" v-if="userReviews.length > 0">
+            <div v-for="review in sortedReviews" :key="review.id" class="review-card" @click="viewReview(review)">
+              <div class="review-movie-info">
+                <img :src="review.moviePoster || '/api/placeholder/60/90'" :alt="review.movieTitle"
+                  class="review-movie-poster">
+                <div class="review-movie-details">
+                  <h5 class="review-movie-title">{{ review.movieTitle }}</h5>
+                  <div class="review-rating">
+                    <div class="stars">
+                      <i v-for="star in 5" :key="star" class="bi"
+                        :class="star <= review.rating ? 'bi-star-fill' : 'bi-star'"></i>
+                    </div>
+                    <span class="rating-text">{{ review.rating }}/5</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="review-content">
+                <p class="review-text">{{ truncateText(review.content, 150) }}</p>
+                <div class="review-meta">
+                  <span class="review-date">{{ formatDate(review.createdAt) }}</span>
+                  <div class="review-actions">
+                    <span class="review-likes">
+                      <i class="bi bi-heart"></i>
+                      {{ review.likesCount }}
+                    </span>
+                    <span class="review-comments">
+                      <i class="bi bi-chat"></i>
+                      {{ review.commentsCount }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="empty-state">
+            <i class="bi bi-chat-quote empty-icon"></i>
+            <h4>아직 작성한 리뷰가 없어요</h4>
+            <p>좋아하는 영화에 대한 리뷰를 작성해보세요!</p>
+          </div>
+        </div>
+
+        <!-- 좋아요 탭 -->
+        <div v-if="activeTab === 'likes'" class="tab-content">
+          <div class="content-header">
+            <h3>
+              <i class="bi bi-heart-fill"></i>
+              {{ likedMovies.length }}개의 영화를 좋아해요!
+            </h3>
+            <div class="view-options">
+              <button class="view-btn" :class="{ 'active': viewMode === 'grid' }" @click="viewMode = 'grid'">
+                <i class="bi bi-grid-3x3-gap"></i>
+              </button>
+              <button class="view-btn" :class="{ 'active': viewMode === 'list' }" @click="viewMode = 'list'">
+                <i class="bi bi-list"></i>
+              </button>
+            </div>
+          </div>
+
+          <div v-if="likedMovies.length > 0" class="liked-movies">
+            <div class="movies-grid" :class="{ 'list-view': viewMode === 'list' }">
+              <div class="row g-4">
+                <div v-for="movie in likedMovies" :key="movie.id"
+                  :class="viewMode === 'grid' ? 'col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6' : 'col-12'">
+                  <MovieCard :movie="movie" :show-details="viewMode === 'list'" @play="handlePlayMovie"
+                    @toggle-watchlist="handleToggleWatchlist" @toggle-like="handleToggleLike"
+                    @click="handleMovieClick" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="empty-state">
+            <i class="bi bi-heart empty-icon"></i>
+            <h4>아직 좋아하는 영화가 없어요</h4>
+            <p>마음에 드는 영화에 하트를 눌러보세요!</p>
+          </div>
+        </div>
+
+        <!-- 활동 탭 -->
+        <div v-if="activeTab === 'activity'" class="tab-content">
+          <div class="content-header">
+            <h3>
+              <i class="bi bi-activity"></i>
+              최근 활동
+            </h3>
+          </div>
+
+          <div class="activity-timeline">
+            <div v-for="activity in userActivities" :key="activity.id" class="activity-item">
+              <div class="activity-icon" :class="activity.type">
+                <i :class="getActivityIcon(activity.type)"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-text">{{ activity.text }}</div>
+                <div class="activity-time">{{ formatRelativeTime(activity.createdAt) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <EditProfileModal :show="showEditModal" :user-profile="userProfile" @close="showEditModal = false"
+      @save="handleProfileSave" />
+  </div>
 </template>
 
 <script setup>
@@ -260,39 +250,39 @@ const isLoading = ref(false)
 
 
 const setActiveTab = (tabId) => {
-    activeTab.value = tabId
+  activeTab.value = tabId
 }
 
 // 사용자 프로필 데이터 (실제로는 API에서 가져올 데이터)
 const userProfile = ref("")
 
 const setUserData = (data) => {
-    userProfile.value = data
-    // localStorage.setItem('userData', JSON.stringify(data))
-    // updateLastActivity()
+  userProfile.value = data
+  // localStorage.setItem('userData', JSON.stringify(data))
+  // updateLastActivity()
 }
 
 // Actions - 사용자 정보 가져오기
 const fetchUserData = async () => {
-    isLoading.value = true
-    try {
-        console.log('유저 조회 요청 보냄')
-        const response = await axios({
-            method: 'get',
-            url: `http://127.0.0.1:8000/auth/${route.params.userId}/detail/`,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
+  isLoading.value = true
+  try {
+    console.log('유저 조회 요청 보냄')
+    const response = await axios({
+      method: 'get',
+      url: `http://127.0.0.1:8000/auth/${route.params.userId}/detail/`,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
 
-        setUserData(response.data)
-    } catch (error) {
-        console.error('사용자 정보 가져오기 실패:', error)
+    setUserData(response.data)
+  } catch (error) {
+    console.error('사용자 정보 가져오기 실패:', error)
 
-    } finally {
-        isLoading.value = false
+  } finally {
+    isLoading.value = false
 
-    }
+  }
 }
 
 
@@ -313,59 +303,76 @@ const fetchUserData = async () => {
 
 // 탭 설정
 const tabs = computed(() => [
-    {
-        id: 'reviews',
-        label: '리뷰',
-        icon: 'bi bi-chat-quote',
-        count: userReviews.value.length
-    },
-    {
-        id: 'likes',
-        label: '좋아요',
-        icon: 'bi bi-heart-fill',
-        count: likedMovies.value.length
-    },
-    {
-        id: 'activity',
-        label: '활동',
-        icon: 'bi bi-activity',
-        count: userActivities.value.length
-    }
+  {
+    id: 'reviews',
+    label: '리뷰',
+    icon: 'bi bi-chat-quote',
+    count: userReviews.value.length
+  },
+  {
+    id: 'likes',
+    label: '좋아요',
+    icon: 'bi bi-heart-fill',
+    count: likedMovies.value.length
+  },
+  {
+    id: 'activity',
+    label: '활동',
+    icon: 'bi bi-activity',
+    count: userActivities.value.length
+  }
 ])
 
 // 현재 사용자 본인 프로필인지 확인
 const isOwnProfile = computed(() => {
-    // 실제로는 로그인한 사용자 ID와 비교
-    return route.params.userId == userStore.userData.id
+  // 실제로는 로그인한 사용자 ID와 비교
+  return route.params.userId == userStore.userData.id
 })
-computed(() =>{
-    return userProfile.value.reviews
+computed(() => {
+  return userProfile.value.reviews
 })
 // 리뷰 데이터
-const userReviews = ref([
-    {
-        id: 1,
-        movieId: 1,
-        movieTitle: '기생충',
-        moviePoster: '/api/placeholder/60/90',
-        rating: 5,
-        content: '정말 놀라운 작품이었습니다. 봉준호 감독님의 연출력과 배우들의 연기가 완벽하게 조화를 이뤘어요. 사회적 메시지도 강렬하면서 영화적 재미도 놓치지 않은 걸작입니다.',
-        likesCount: 23,
-        commentsCount: 7,
-        createdAt: '2024-03-15T10:30:00Z'
-    },
-    {
-        id: 2,
-        movieId: 2,
-        movieTitle: '어벤져스: 엔드게임',
-        moviePoster: '/api/placeholder/60/90',
-        rating: 4,
-        content: 'MCU의 집대성이라고 할 수 있는 작품. 11년간의 여정이 이렇게 마무리되다니... 감동적이면서도 아쉬웠습니다.',
-        likesCount: 45,
-        commentsCount: 12,
-        createdAt: '2024-03-10T15:20:00Z'
-    }
-])
+const userReviews = computed(() => {
+  if (!userProfile.value?.reviews) return []
+
+  return userProfile.value.reviews.map(review => ({
+    id: review.id,
+    movieID: review.movie_id,
+    movieTitle: review.movie_title,
+    moviePoster: review.poster_path ? `https://image.tmdb.org/t/p/w500${review.poster_path}` : '/api/placeholder/300/450', // TMDB 이미지 URL 생성
+    rating: review.rating, // rating 필드 추가
+    content: review.comment,
+    createdAt: review.created_at,
+
+    commentsCount: 0,
+    likesCount: 0,
+
+  }))
+})
+// const userReviews = ref([
+//     {
+//         id: 1,
+//         movieId: 1,
+//         movieTitle: '기생충',
+//         moviePoster: '/api/placeholder/60/90',
+//         rating: 5,
+//         content: '정말 놀라운 작품이었습니다. 봉준호 감독님의 연출력과 배우들의 연기가 완벽하게 조화를 이뤘어요. 사회적 메시지도 강렬하면서 영화적 재미도 놓치지 않은 걸작입니다.',
+//         likesCount: 23,
+//         commentsCount: 7,
+//         createdAt: '2024-03-15T10:30:00Z'
+//     },
+//     {
+//         id: 2,
+//         movieId: 2,
+//         movieTitle: '어벤져스: 엔드게임',
+//         moviePoster: '/api/placeholder/60/90',
+//         rating: 4,
+//         content: 'MCU의 집대성이라고 할 수 있는 작품. 11년간의 여정이 이렇게 마무리되다니... 감동적이면서도 아쉬웠습니다.',
+//         likesCount: 45,
+//         commentsCount: 12,
+//         createdAt: '2024-03-10T15:20:00Z'
+//     }
+// ])
 
 // 좋아요한 영화 데이터
 // const likedMovies = ref([
@@ -392,1005 +399,1015 @@ const userReviews = ref([
 // ])
 
 const likedMovies = computed(() => {
-    if (!userProfile.value?.like_movies) return []
-    
-    return userProfile.value.like_movies.map(movie => ({
-        id: movie.id,
-        title: movie.title || movie.original_title, // title 필드 통일
-        original_title: movie.original_title,
-        rating: movie.vote_average || movie.average_rating, // rating 필드 추가
-        vote_average: movie.vote_average,
-        average_rating: movie.average_rating,
-        year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
-        release_date: movie.release_date,
-        genre: movie.genres?.[0]?.name || 'Unknown', // 첫 번째 장르
-        genres: movie.genres || [],
-        poster: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '/api/placeholder/300/450', // TMDB 이미지 URL 생성
-        poster_path: movie.poster_path,
-        isInWatchlist: false, // 기본값 설정 (실제로는 API에서 받아야 함)
-        isLiked: movie.is_liked !== undefined ? movie.is_liked : true // 좋아하는 영화 목록이므로 기본적으로 true
-    }))
+  if (!userProfile.value?.like_movies) return []
+
+  return userProfile.value.like_movies.map(movie => ({
+    id: movie.id,
+    title: movie.title || movie.original_title, // title 필드 통일
+    original_title: movie.original_title,
+    rating: movie.vote_average || movie.average_rating, // rating 필드 추가
+    vote_average: movie.vote_average,
+    average_rating: movie.average_rating,
+    year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
+    release_date: movie.release_date,
+    genre: movie.genres?.[0]?.name || 'Unknown', // 첫 번째 장르
+    genres: movie.genres || [],
+    poster: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '/api/placeholder/300/450', // TMDB 이미지 URL 생성
+    poster_path: movie.poster_path,
+    isInWatchlist: false, // 기본값 설정 (실제로는 API에서 받아야 함)
+    isLiked: movie.is_liked !== undefined ? movie.is_liked : true // 좋아하는 영화 목록이므로 기본적으로 true
+  }))
 })
 
 // 활동 데이터
 const userActivities = ref([
-    {
-        id: 1,
-        type: 'review',
-        text: '기생충에 리뷰를 작성했습니다',
-        createdAt: '2024-03-15T10:30:00Z'
-    },
-    {
-        id: 2,
-        type: 'like',
-        text: '어벤져스: 엔드게임을 좋아요했습니다',
-        createdAt: '2024-03-14T18:45:00Z'
-    },
-    {
-        id: 3,
-        type: 'follow',
-        text: '영화매니아님을 팔로우했습니다',
-        createdAt: '2024-03-13T14:20:00Z'
-    }
+  {
+    id: 1,
+    type: 'review',
+    text: '기생충에 리뷰를 작성했습니다',
+    createdAt: '2024-03-15T10:30:00Z'
+  },
+  {
+    id: 2,
+    type: 'like',
+    text: '어벤져스: 엔드게임을 좋아요했습니다',
+    createdAt: '2024-03-14T18:45:00Z'
+  },
+  {
+    id: 3,
+    type: 'follow',
+    text: '영화매니아님을 팔로우했습니다',
+    createdAt: '2024-03-13T14:20:00Z'
+  }
 ])
 
 // 계산된 속성들
 const sortedReviews = computed(() => {
-    const reviews = [...userReviews.value]
+  const reviews = [...userReviews.value]
 
-    switch (reviewSortBy.value) {
-        case 'rating':
-            return reviews.sort((a, b) => b.rating - a.rating)
-        case 'popular':
-            return reviews.sort((a, b) => b.likesCount - a.likesCount)
-        case 'recent':
-        default:
-            return reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    }
+  switch (reviewSortBy.value) {
+    case 'rating':
+      return reviews.sort((a, b) => b.rating - a.rating)
+    case 'popular':
+      return reviews.sort((a, b) => b.likesCount - a.likesCount)
+    case 'recent':
+    default:
+      return reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  }
 })
 
 // 메서드들
 
 const toggleFollow = async () => {
-    followLoading.value = true
+  followLoading.value = true
 
-    try {
-        // 실제로는 API 호출
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        userProfile.value.isFollowing = !userProfile.value.isFollowing
+  try {
+    // 실제로는 API 호출
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    userProfile.value.isFollowing = !userProfile.value.isFollowing
 
-        if (userProfile.value.isFollowing) {
-            userProfile.value.followersCount++
-        } else {
-            userProfile.value.followersCount--
-        }
-    } catch (error) {
-        console.error('팔로우 처리 중 오류:', error)
-    } finally {
-        followLoading.value = false
+    if (userProfile.value.isFollowing) {
+      userProfile.value.followersCount++
+    } else {
+      userProfile.value.followersCount--
     }
+  } catch (error) {
+    console.error('팔로우 처리 중 오류:', error)
+  } finally {
+    followLoading.value = false
+  }
 }
 
 const toggleDropdown = () => {
-    showDropdown.value = !showDropdown.value
+  showDropdown.value = !showDropdown.value
 }
 
 const reportUser = () => {
-    console.log('사용자 신고')
+  console.log('사용자 신고')
 }
 
 const blockUser = () => {
-    console.log('사용자 차단')
+  console.log('사용자 차단')
 }
 
 const editProfile = () => {
-    showEditModal.value = true
+  showEditModal.value = true
 }
 
 const handleAvatarClick = () => {
-    if (isOwnProfile.value) {
-        // 프로필 이미지 변경
-        console.log('프로필 이미지 변경')
-    }
+  if (isOwnProfile.value) {
+    // 프로필 이미지 변경
+    console.log('프로필 이미지 변경')
+  }
 }
 
 const handleAvatarError = (event) => {
-    event.target.src = '/api/placeholder/200/200'
+  event.target.src = '/api/placeholder/200/200'
 }
 
 const showFollowersModal = () => {
-    console.log('팔로워 목록 모달')
+  console.log('팔로워 목록 모달')
 }
 
 const showFollowingModal = () => {
-    console.log('팔로잉 목록 모달')
+  console.log('팔로잉 목록 모달')
 }
 
 const viewReview = (review) => {
-    router.push(`/reviews/${review.id}`)
+  router.push(`/reviews/${review.id}`)
 }
 
 // MovieCard 이벤트 핸들러들
 const handlePlayMovie = (movie) => {
-    console.log('영화 재생:', movie.title)
+  console.log('영화 재생:', movie.title)
 }
 
 const handleToggleLike = (movie) => {
-    movieStore.toggleLike(movie.id)
+  movieStore.toggleLike(movie.id)
 
-    // 좋아요 목록에서 제거/추가 처리
-    const likedIndex = likedMovies.value.findIndex(m => m.id === movie.id)
-    if (likedIndex !== -1) {
-        likedMovies.value.splice(likedIndex, 1)
-    }
+  // 좋아요 목록에서 제거/추가 처리
+  const likedIndex = likedMovies.value.findIndex(m => m.id === movie.id)
+  if (likedIndex !== -1) {
+    likedMovies.value.splice(likedIndex, 1)
+  }
 }
 
-const handleProfileSave = (updatedData) => {
-    // 프로필 데이터 업데이트
-    userProfile.value.email = updatedData.email
-    userProfile.value.bio = updatedData.bio
-    userProfile.value.profileImage = updatedData.profileImage
+const handleProfileSave = async(updatedData) => {
+  // updatedData는 { nickname, bio, profileImageFile } 을 포함하고 있다고 가정
+  const { success, data, error } = await userStore.updateProfile(updatedData)
 
-    console.log('프로필이 업데이트되었습니다:', updatedData)
-    // 실제로는 여기서 API 호출해서 서버에 저장
+  if (!success) {
+    // 실패한 경우, 에러 메시지 표시
+    const msg = error?.message || (typeof error === 'string' ? error : '프로필 업데이트에 실패했습니다.')
+    alert(msg)
+    return
+  }
+
+  // 성공 시, userProfile 값을 API에서 받은 최신 데이터로 덮어쓰기
+  userProfile.value = {
+    ...userProfile.value,
+    ...data
+  }
+
+  console.log('프로필이 업데이트되었습니다:', data)
 }
 
 const handleMovieClick = (movie) => {
-    router.push(`/movies/${movie.id}`)
+  router.push(`/movies/${movie.id}`)
 }
 
 // 유틸리티 함수들
 const formatNumber = (num) => {
-    if (num >= 1000000) {
-        return (num / 1000000).toFixed(1) + 'M'
-    } else if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K'
-    }
-    return num.toString()
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M'
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K'
+  }
+  return num.toString()
 }
 
 const formatDate = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    })
+  const date = new Date(dateString)
+  return date.toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
 }
 
 const formatRelativeTime = (dateString) => {
-    const now = new Date()
-    const date = new Date(dateString)
-    const diffMs = now - date
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  const now = new Date()
+  const date = new Date(dateString)
+  const diffMs = now - date
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-    if (diffDays === 0) {
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-        if (diffHours === 0) {
-            const diffMinutes = Math.floor(diffMs / (1000 * 60))
-            return `${diffMinutes}분 전`
-        }
-        return `${diffHours}시간 전`
-    } else if (diffDays === 1) {
-        return '어제'
-    } else if (diffDays < 7) {
-        return `${diffDays}일 전`
-    } else {
-        return formatDate(dateString)
+  if (diffDays === 0) {
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    if (diffHours === 0) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60))
+      return `${diffMinutes}분 전`
     }
+    return `${diffHours}시간 전`
+  } else if (diffDays === 1) {
+    return '어제'
+  } else if (diffDays < 7) {
+    return `${diffDays}일 전`
+  } else {
+    return formatDate(dateString)
+  }
 }
 
 const truncateText = (text, length) => {
-    if (text.length <= length) return text
-    return text.substring(0, length) + '...'
+  if (text.length <= length) return text
+  return text.substring(0, length) + '...'
 }
 
 const getActivityIcon = (type) => {
-    const icons = {
-        review: 'bi bi-chat-quote-fill',
-        like: 'bi bi-heart-fill',
-        follow: 'bi bi-person-plus-fill',
-        watchlist: 'bi bi-bookmark-fill'
-    }
-    return icons[type] || 'bi bi-circle-fill'
+  const icons = {
+    review: 'bi bi-chat-quote-fill',
+    like: 'bi bi-heart-fill',
+    follow: 'bi bi-person-plus-fill',
+    watchlist: 'bi bi-bookmark-fill'
+  }
+  return icons[type] || 'bi bi-circle-fill'
 }
 
 // 클릭 외부 감지
 const handleClickOutside = (event) => {
-    if (!event.target.closest('.dropdown')) {
-        showDropdown.value = false
-    }
+  if (!event.target.closest('.dropdown')) {
+    showDropdown.value = false
+  }
 }
 
 // 생명주기
 onMounted(() => {
-    // URL 파라미터에서 탭 정보 가져오기
-    if (route.query.tab) {
-        activeTab.value = route.query.tab
-    }
-    // 유저 정보 가져오기
-    fetchUserData()
-    
-    // 외부 클릭 이벤트 리스너 등록
-    document.addEventListener('click', handleClickOutside)
+  // URL 파라미터에서 탭 정보 가져오기
+  if (route.query.tab) {
+    activeTab.value = route.query.tab
+  }
+  // 유저 정보 가져오기
+  fetchUserData()
+
+  // 외부 클릭 이벤트 리스너 등록
+  document.addEventListener('click', handleClickOutside)
 })
 
 // 탭 변경 시 URL 업데이트
 watch(activeTab, (newTab) => {
-    router.push({
-        path: route.path,
-        query: { ...route.query, tab: newTab }
-    })
+  router.push({
+    path: route.path,
+    query: { ...route.query, tab: newTab }
+  })
 })
 </script>
 
 <style scoped>
 /* 페이지 기본 스타일 */
 .profile-page {
-    min-height: 100vh;
-    padding-top: 76px;
-    background: linear-gradient(135deg, #073763 0%, #780909 100%);
-    color: #ffffff;
+  min-height: 100vh;
+  padding-top: 76px;
+  background: linear-gradient(135deg, #073763 0%, #780909 100%);
+  color: #ffffff;
 }
 
 /* 프로필 헤더 */
 .profile-header {
-    background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.1) 0%,
-            rgba(255, 255, 255, 0.05) 100%);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 3rem 0;
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 3rem 0;
 }
 
 .profile-hero {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
 }
 
 /* 프로필 메인 정보 */
 .profile-main-info {
-    display: flex;
-    gap: 2rem;
-    flex: 1;
+  display: flex;
+  gap: 2rem;
+  flex: 1;
 }
 
 .profile-avatar-section {
-    position: relative;
+  position: relative;
 }
 
 .avatar-container {
-    position: relative;
-    width: 150px;
-    height: 150px;
-    cursor: pointer;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 4px solid rgba(255, 255, 255, 0.2);
-    transition: all 0.3s ease;
+  position: relative;
+  width: 150px;
+  height: 150px;
+  cursor: pointer;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
 }
 
 .avatar-container:hover {
-    transform: scale(1.05);
-    border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .profile-avatar {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .avatar-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    font-size: 2rem;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  font-size: 2rem;
 }
 
 .avatar-container:hover .avatar-overlay {
-    opacity: 1;
+  opacity: 1;
 }
 
 .online-status {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    width: 20px;
-    height: 20px;
-    background: #6c757d;
-    border-radius: 50%;
-    border: 3px solid #ffffff;
-    transition: background-color 0.3s ease;
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  background: #6c757d;
+  border-radius: 50%;
+  border: 3px solid #ffffff;
+  transition: background-color 0.3s ease;
 }
 
 
 /* 프로필 정보 */
 .profile-info {
-    flex: 1;
+  flex: 1;
 }
 
 .profile-header-top {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .profile-nickname {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin: 0;
-    background: linear-gradient(135deg, #ffffff, #e0e0e0);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #ffffff, #e0e0e0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .profile-badges {
-    display: flex;
-    gap: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
 }
 
 .badge {
-    padding: 0.25rem 0.75rem;
-    border-radius: 15px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .verified-badge {
-    background: linear-gradient(135deg, #1e88e5, #1565c0);
-    color: white;
+  background: linear-gradient(135deg, #1e88e5, #1565c0);
+  color: white;
 }
 
 .premium-badge {
-    background: linear-gradient(135deg, #ff9800, #f57c00);
-    color: white;
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  color: white;
 }
 
 .profile-email {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
 }
 
 .profile-bio {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 1rem;
-    line-height: 1.6;
-    margin-bottom: 1.5rem;
-    max-width: 500px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  max-width: 500px;
 }
 
 /* 팔로우 통계 */
 .follow-stats {
-    display: flex;
-    gap: 2rem;
+  display: flex;
+  gap: 2rem;
 }
 
 .stat-item {
-    text-align: center;
-    cursor: pointer;
-    transition: transform 0.3s ease;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.3s ease;
 }
 
 .stat-item:hover {
-    transform: translateY(-2px);
+  transform: translateY(-2px);
 }
 
 .stat-number {
-    display: block;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #ffffff;
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
 }
 
 .stat-label {
-    display: block;
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.7);
+  display: block;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* 프로필 액션 */
 .profile-actions {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
 }
 
 .btn {
-    padding: 0.75rem 1.5rem;
-    border-radius: 25px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    position: relative;
-    overflow: hidden;
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  overflow: hidden;
 }
 
 .follow-btn {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-    color: white;
-    min-width: 120px;
-    justify-content: center;
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+  min-width: 120px;
+  justify-content: center;
 }
 
 .follow-btn:hover {
-    background: linear-gradient(135deg, #c0392b, #a93226);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+  background: linear-gradient(135deg, #c0392b, #a93226);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
 }
 
 .follow-btn.following {
-    background: linear-gradient(135deg, #27ae60, #229954);
+  background: linear-gradient(135deg, #27ae60, #229954);
 }
 
 .follow-btn.following:hover {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
 }
 
 .follow-btn .btn-hover-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) translateY(100%);
-    opacity: 0;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateY(100%);
+  opacity: 0;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .follow-btn.following:hover .btn-content {
-    transform: translateY(-100%);
-    opacity: 0;
+  transform: translateY(-100%);
+  opacity: 0;
 }
 
 .follow-btn.following:hover .btn-hover-content {
-    transform: translate(-50%, -50%);
-    opacity: 1;
+  transform: translate(-50%, -50%);
+  opacity: 1;
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.5);
-    transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
 }
 
 .btn-outline {
-    background: transparent;
-    color: white;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    padding: 0.75rem;
-    width: 48px;
-    height: 48px;
-    justify-content: center;
+  background: transparent;
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 0.75rem;
+  width: 48px;
+  height: 48px;
+  justify-content: center;
 }
 
 .btn-outline:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 /* 드롭다운 */
 .dropdown {
-    position: relative;
+  position: relative;
 }
 
 .dropdown-menu {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: rgba(30, 30, 30, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 12px;
-    padding: 0.5rem;
-    min-width: 150px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.3s ease;
-    z-index: 1000;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: rgba(30, 30, 30, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 0.5rem;
+  min-width: 150px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  z-index: 1000;
 }
 
 .dropdown-menu.show {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 .dropdown-item {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    background: transparent;
-    color: white;
-    border: none;
-    text-align: left;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  color: white;
+  border: none;
+  text-align: left;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .dropdown-item:hover {
-    background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* 프로필 네비게이션 */
 .profile-nav {
-    background: rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 0.75rem 0;
-    position: sticky;
-    top: 76px;
-    z-index: 100;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75rem 0;
+  position: sticky;
+  top: 76px;
+  z-index: 100;
 }
 
 .nav-tabs {
-    display: flex;
-    gap: 2rem;
-    overflow-x: auto;
-    justify-content: center;
+  display: flex;
+  gap: 2rem;
+  overflow-x: auto;
+  justify-content: center;
 }
 
 .nav-tab {
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.7);
-    padding: 1rem 2rem;
-    border-radius: 50px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    white-space: nowrap;
-    position: relative;
-    min-height: 48px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  position: relative;
+  min-height: 48px;
 }
 
 .nav-tab:hover {
-    color: white;
-    background: rgba(255, 255, 255, 0.1);
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .nav-tab.active {
-    color: white;
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-    transform: translateY(-1px);
-    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
+  color: white;
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
 }
 
 .tab-count {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 0.2rem 0.5rem;
-    border-radius: 10px;
-    font-size: 0.8rem;
-    font-weight: 600;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .nav-tab.active .tab-count {
-    background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* 프로필 콘텐츠 */
 .profile-content {
-    padding: 3rem 0;
+  padding: 3rem 0;
 }
 
 .tab-content {
-    animation: fadeInUp 0.5s ease;
+  animation: fadeInUp 0.5s ease;
 }
 
 @keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .content-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
 }
 
 .content-header h3 {
-    font-size: 2rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
 }
 
 .sort-options,
 .view-options {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .sort-select {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    outline: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  outline: none;
 }
 
 .view-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: rgba(255, 255, 255, 0.7);
-    padding: 0.5rem;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .view-btn:hover,
 .view-btn.active {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 /* 리뷰 그리드 */
 .reviews-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-    gap: 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 2rem;
 }
 
 .review-card {
-    background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.1) 0%,
-            rgba(255, 255, 255, 0.05) 100%);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    padding: 1.5rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .review-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
-    border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .review-movie-info {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
 .review-movie-poster {
-    width: 60px;
-    height: 90px;
-    object-fit: cover;
-    border-radius: 8px;
+  width: 60px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 8px;
 }
 
 .review-movie-details {
-    flex: 1;
+  flex: 1;
 }
 
 .review-movie-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: white;
 }
 
 .review-rating {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .stars {
-    display: flex;
-    gap: 0.2rem;
-    color: #ffd700;
+  display: flex;
+  gap: 0.2rem;
+  color: #ffd700;
 }
 
 .rating-text {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .review-content {
-    margin-top: 1rem;
+  margin-top: 1rem;
 }
 
 .review-text {
-    color: rgba(255, 255, 255, 0.9);
-    line-height: 1.6;
-    margin-bottom: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+  margin-bottom: 1rem;
 }
 
 .review-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .review-date {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
 }
 
 .review-actions {
-    display: flex;
-    gap: 1rem;
+  display: flex;
+  gap: 1rem;
 }
 
 .review-likes,
 .review-comments {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
 }
 
 /* 영화 그리드 */
 .movies-grid {
-    margin-bottom: 2rem;
+  margin-bottom: 2rem;
 }
 
 .movies-grid.list-view .row {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 /* 빈 상태 */
 .empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
+  text-align: center;
+  padding: 4rem 2rem;
 }
 
 .empty-icon {
-    font-size: 5rem;
-    color: rgba(255, 255, 255, 0.3);
-    margin-bottom: 1.5rem;
+  font-size: 5rem;
+  color: rgba(255, 255, 255, 0.3);
+  margin-bottom: 1.5rem;
 }
 
 .empty-state h4 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color: white;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: white;
 }
 
 .empty-state p {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.1rem;
 }
 
 /* 활동 타임라인 */
 .activity-timeline {
-    max-width: 600px;
+  max-width: 600px;
 }
 
 .activity-item {
-    display: flex;
-    gap: 1rem;
-    padding: 1.5rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .activity-item:last-child {
-    border-bottom: none;
+  border-bottom: none;
 }
 
 .activity-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
 }
 
 .activity-icon.review {
-    background: linear-gradient(135deg, #3498db, #2980b9);
+  background: linear-gradient(135deg, #3498db, #2980b9);
 }
 
 .activity-icon.like {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
 }
 
 .activity-icon.follow {
-    background: linear-gradient(135deg, #27ae60, #229954);
+  background: linear-gradient(135deg, #27ae60, #229954);
 }
 
 .activity-content {
-    flex: 1;
-    padding-top: 0.5rem;
+  flex: 1;
+  padding-top: 0.5rem;
 }
 
 .activity-text {
-    color: white;
-    font-size: 1rem;
-    margin-bottom: 0.5rem;
+  color: white;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .activity-time {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
 }
 
 /* 반응형 디자인 */
 @media (max-width: 1200px) {
-    .reviews-grid {
-        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    }
+  .reviews-grid {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  }
 }
 
 @media (max-width: 992px) {
-    .profile-hero {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
+  .profile-hero {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
 
-    .profile-main-info {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
+  .profile-main-info {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
 
-    .profile-info {
-        text-align: center;
-        width: 100%;
-    }
+  .profile-info {
+    text-align: center;
+    width: 100%;
+  }
 
-    .profile-header-top {
-        justify-content: center;
-        flex-wrap: wrap;
-    }
+  .profile-header-top {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
 
-    .profile-actions {
-        width: 100%;
-        justify-content: center;
-    }
+  .profile-actions {
+    width: 100%;
+    justify-content: center;
+  }
 
-    .follow-stats {
-        justify-content: center;
-    }
+  .follow-stats {
+    justify-content: center;
+  }
 
-    .reviews-grid {
-        grid-template-columns: 1fr;
-    }
+  .reviews-grid {
+    grid-template-columns: 1fr;
+  }
 
-    .dropdown-menu {
-        top: auto;
-        bottom: 100%;
-        transform: translateY(10px);
-    }
+  .dropdown-menu {
+    top: auto;
+    bottom: 100%;
+    transform: translateY(10px);
+  }
 
 }
 
 @media (max-width: 768px) {
-    .profile-header {
-        padding: 2rem 0;
-    }
+  .profile-header {
+    padding: 2rem 0;
+  }
 
-    .avatar-container {
-        width: 120px;
-        height: 120px;
-    }
+  .avatar-container {
+    width: 120px;
+    height: 120px;
+  }
 
-    .profile-nickname {
-        font-size: 2rem;
-    }
+  .profile-nickname {
+    font-size: 2rem;
+  }
 
-    .nav-tabs {
-        gap: 1rem;
-        padding: 0 1rem;
-    }
+  .nav-tabs {
+    gap: 1rem;
+    padding: 0 1rem;
+  }
 
-    .nav-tab {
-        padding: 0.75rem 1.5rem;
-        font-size: 0.9rem;
-        border-radius: 40px;
-        min-height: 42px;
-    }
+  .nav-tab {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    border-radius: 40px;
+    min-height: 42px;
+  }
 
-    .content-header {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: stretch;
-    }
+  .content-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
 
-    .content-header h3 {
-        font-size: 1.5rem;
-    }
+  .content-header h3 {
+    font-size: 1.5rem;
+  }
 
-    .dropdown {
-        z-index: 2000;
-    }
+  .dropdown {
+    z-index: 2000;
+  }
 
-    .dropdown-menu {
-        top: auto;
-        bottom: 100%;
-        /* 위쪽으로 열림 */
-        transform: translateY(10px);
-    }
+  .dropdown-menu {
+    top: auto;
+    bottom: 100%;
+    /* 위쪽으로 열림 */
+    transform: translateY(10px);
+  }
 
-    .dropdown-menu.show {
-        transform: translateY(0);
-    }
+  .dropdown-menu.show {
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 576px) {
-    .profile-actions {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
+  .profile-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 
-    .follow-stats {
-        gap: 1rem;
-    }
+  .follow-stats {
+    gap: 1rem;
+  }
 
-    .stat-number {
-        font-size: 1.2rem;
-    }
+  .stat-number {
+    font-size: 1.2rem;
+  }
 
-    .review-card {
-        padding: 1rem;
-    }
+  .review-card {
+    padding: 1rem;
+  }
 
-    .activity-item {
-        padding: 1rem 0;
-    }
+  .activity-item {
+    padding: 1rem 0;
+  }
 
-    .activity-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
-    }
+  .activity-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
 }
 </style>

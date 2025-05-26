@@ -18,65 +18,66 @@
         <!-- 프로필 사진 수정 -->
         <div class="form-section">
           <div class="profile-photo-section">
-            <div class="current-photo">
-              <img 
-                :src="editForm.profileImage || '/api/placeholder/120/120'" 
+            <div class="current-photo" @click="triggerPhotoUpload">
+              <img
+                :src="editForm.profileImage || '/api/placeholder/120/120'"
                 alt="프로필 사진"
                 class="profile-preview"
                 @error="handleImageError"
-              >
-              <div class="photo-overlay" @click="triggerPhotoUpload">
+              />
+              <div class="photo-overlay">
                 <i class="bi bi-camera-fill"></i>
                 <span>사진 변경</span>
               </div>
             </div>
-            <input 
-              type="file" 
-              ref="photoInput" 
+            <input
+              type="file"
+              ref="photoInput"
               @change="handlePhotoUpload"
               accept="image/*"
               style="display: none;"
-            >
+            />
             <div class="photo-actions">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 class="btn btn-secondary btn-sm"
                 @click="triggerPhotoUpload"
               >
                 <i class="bi bi-upload"></i>
-                사진 업로드
+                업로드
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 class="btn btn-outline btn-sm"
                 @click="removePhoto"
-                v-if="editForm.profileImage"
+                v-if="editForm.profileImageFile"
               >
                 <i class="bi bi-trash"></i>
-                사진 삭제
+                삭제
               </button>
             </div>
           </div>
         </div>
 
-        <!-- 이메일 수정 -->
+        <!-- 닉네임 수정 -->
         <div class="form-section">
           <label class="form-label">
             <div>
-              <i class="bi bi-envelope"></i>
-              이메일
+              <i class="bi bi-person"></i>
+              닉네임
             </div>
           </label>
           <div class="form-group">
-            <input 
-              type="email" 
-              v-model="editForm.email"
+            <input
+              type="text"
+              v-model="editForm.nickname"
               class="form-input"
-              placeholder="이메일을 입력해주세요"
-              :class="{ 'error': errors.email }"
-            >
-            <div class="error-message" v-if="errors.email">
-              {{ errors.email }}
+              placeholder="닉네임을 입력해주세요"
+              maxlength="20"
+              :class="{ 'error': errors.nickname }"
+            />
+            <div class="error-message" v-if="errors.nickname">
+              {{ errors.nickname }}
             </div>
           </div>
         </div>
@@ -88,19 +89,19 @@
               <i class="bi bi-chat-text"></i>
               한마디
             </div>
-            <span class="char-count">{{ editForm.bio.length }}/200</span>
+            <span class="char-count">{{ editForm.profile_bio.length }}/200</span>
           </label>
           <div class="form-group">
-            <textarea 
-              v-model="editForm.bio"
+            <textarea
+              v-model="editForm.profile_bio"
               class="form-textarea"
               placeholder="자신을 소개해주세요..."
               rows="4"
               maxlength="200"
-              :class="{ 'error': errors.bio }"
+              :class="{ 'error': errors.profile_bio }"
             ></textarea>
-            <div class="error-message" v-if="errors.bio">
-              {{ errors.bio }}
+            <div class="error-message" v-if="errors.profile_bio">
+              {{ errors.profile_bio }}
             </div>
           </div>
         </div>
@@ -108,19 +109,10 @@
 
       <!-- 모달 푸터 -->
       <div class="modal-footer">
-        <button 
-          type="button" 
-          class="btn btn-outline"
-          @click="closeModal"
-        >
+        <button type="button" class="btn btn-outline" @click="closeModal">
           취소
         </button>
-        <button 
-          type="button" 
-          class="btn btn-primary"
-          @click="saveProfile"
-          :disabled="saving"
-        >
+        <button type="button" class="btn btn-primary" @click="saveProfile" :disabled="saving">
           <i class="bi bi-check-lg" v-if="!saving"></i>
           <i class="bi bi-arrow-clockwise spin" v-else></i>
           {{ saving ? '저장 중...' : '저장하기' }}
@@ -131,164 +123,138 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, nextTick } from 'vue'
+import { ref, reactive, watch } from 'vue'
 
 // Props
 const props = defineProps({
-  show: {
-    type: Boolean,
-    default: false
-  },
-  userProfile: {
-    type: Object,
-    required: true
-  }
+  show: Boolean,
+  userProfile: Object,
 })
 
 // Emits
 const emit = defineEmits(['close', 'save'])
 
-// 반응형 데이터
+// Reactive state
 const showModal = ref(props.show)
 const saving = ref(false)
 const photoInput = ref(null)
 
-// 폼 데이터
+// Form data includes file object
 const editForm = reactive({
-  email: '',
-  bio: '',
-  profileImage: ''
+  nickname: '',
+  profile_bio: '',
+  profileImage: '',
+  profileImageFile: null,
 })
 
-// 에러 상태
-const errors = reactive({
-  email: '',
-  bio: ''
+// Validation errors
+const errors = reactive({ nickname: '', profile_bio: '' })
+
+// Watchers to sync props
+watch(() => props.show, (val) => {
+  showModal.value = val
+  if (val) resetForm()
 })
 
-// Props 변화 감지
-watch(() => props.show, (newVal) => {
-  showModal.value = newVal
-  if (newVal) {
-    resetForm()
-  }
-})
+watch(
+  () => props.userProfile,
+  (profile) => {
+    if (profile) {
+      editForm.nickname = profile.nickname || ''
+      editForm.profile_bio = profile.profile_bio || ''
+      editForm.profileImage = profile.profileImage || ''
+      editForm.profileImageFile = null
+    }
+  },
+  { immediate: true }
+)
 
-watch(() => props.userProfile, (newProfile) => {
-  if (newProfile) {
-    editForm.email = newProfile.email || ''
-    editForm.bio = newProfile.bio || ''
-    editForm.profileImage = newProfile.profileImage || ''
-  }
-}, { immediate: true })
-
-// 메서드들
-const resetForm = () => {
-  editForm.email = props.userProfile.email || ''
-  editForm.bio = props.userProfile.bio || ''
-  editForm.profileImage = props.userProfile.profileImage || ''
-  
-  // 에러 초기화
-  errors.email = ''
-  errors.bio = ''
+// Reset form
+function resetForm() {
+  const profile = props.userProfile || {}
+  editForm.nickname = profile.nickname || ''
+  editForm.profile_bio = profile.profile_bio || ''
+  editForm.profileImage = profile.profileImage || ''
+  editForm.profileImageFile = null
+  errors.nickname = ''
+  errors.profile_bio = ''
 }
 
-const closeModal = () => {
+// Close modal
+function closeModal() {
   showModal.value = false
   emit('close')
 }
 
-const validateForm = () => {
-  let isValid = true
-  
-  // 에러 초기화
-  errors.email = ''
-  errors.bio = ''
-  
-  // 이메일 검증
-  if (!editForm.email.trim()) {
-    errors.email = '이메일을 입력해주세요.'
-    isValid = false
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.email)) {
-    errors.email = '올바른 이메일 형식을 입력해주세요.'
-    isValid = false
+// Validate before save
+function validateForm() {
+  let valid = true
+  errors.nickname = ''
+  errors.profile_bio = ''
+  if (!editForm.nickname.trim()) {
+    errors.nickname = '닉네임을 입력해주세요.'
+    valid = false
   }
-  
-  // Bio 검증 (선택사항이지만 길이 체크)
-  if (editForm.bio.length > 200) {
-    errors.bio = '소개는 200자 이하로 입력해주세요.'
-    isValid = false
+  if (editForm.nickname.length > 20) {
+    errors.nickname = '닉네임은 20자 이하로 입력해주세요.'
+    valid = false
   }
-  
-  return isValid
+  if (editForm.profile_bio.length > 200) {
+    errors.profile_bio = '소개는 200자 이하로 입력해주세요.'
+    valid = false
+  }
+  return valid
 }
 
-const saveProfile = async () => {
-  if (!validateForm()) {
-    return
-  }
-  
-  saving.value = true
-  
-  try {
-    // 실제로는 API 호출
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // 부모 컴포넌트로 수정된 데이터 전달
-    emit('save', {
-      email: editForm.email,
-      bio: editForm.bio,
-      profileImage: editForm.profileImage
-    })
-    
-    closeModal()
-  } catch (error) {
-    console.error('프로필 저장 중 오류:', error)
-    // 에러 처리 로직
-  } finally {
-    saving.value = false
-  }
-}
-
-const triggerPhotoUpload = () => {
+// Trigger file input
+function triggerPhotoUpload() {
   photoInput.value?.click()
 }
 
-const handlePhotoUpload = (event) => {
-  const file = event.target.files[0]
+// Handle file change
+function handlePhotoUpload(e) {
+  const file = e.target.files[0]
   if (file) {
-    // 파일 크기 체크 (5MB 제한)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('파일 크기는 5MB 이하로 선택해주세요.')
-      return
-    }
-    
-    // 이미지 파일 체크
-    if (!file.type.startsWith('image/')) {
-      alert('이미지 파일만 선택할 수 있습니다.')
-      return
-    }
-    
-    // FileReader로 미리보기 생성
+    if (!file.type.startsWith('image/')) return alert('이미지 파일만 가능합니다.')
+    if (file.size > 5 * 1024 * 1024) return alert('5MB 이하만 가능합니다.')
     const reader = new FileReader()
-    reader.onload = (e) => {
-      editForm.profileImage = e.target.result
+    reader.onload = (evt) => {
+      editForm.profileImage = evt.target.result
+      editForm.profileImageFile = file
     }
     reader.readAsDataURL(file)
   }
 }
 
-const removePhoto = () => {
+// Remove photo
+function removePhoto() {
   editForm.profileImage = ''
-  if (photoInput.value) {
-    photoInput.value.value = ''
-  }
+  editForm.profileImageFile = null
+  if (photoInput.value) photoInput.value.value = ''
 }
 
-const handleImageError = (event) => {
-  event.target.src = '/api/placeholder/120/120'
+// Save action
+async function saveProfile() {
+  if (!validateForm()) return
+  saving.value = true
+  // Emit full data including file
+  emit('save', { 
+    nickname: editForm.nickname,
+    profile_bio: editForm.profile_bio,
+    profileImageFile: editForm.profileImageFile,
+  })
+  saving.value = false
+  closeModal()
+}
+
+// Handle image load error
+function handleImageError(e) {
+  e.target.src = '/api/placeholder/120/120'
 }
 </script>
+
+
+
 
 <style scoped>
 /* 모달 오버레이 */
@@ -328,6 +294,7 @@ const handleImageError = (event) => {
     opacity: 0;
     transform: translateY(30px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -473,10 +440,11 @@ const handleImageError = (event) => {
   margin-bottom: 0.75rem;
 }
 
-.form-label > div:first-child {
+.form-label>div:first-child {
   display: flex;
   align-items: center;
-  gap: 0.5rem; /* 🌟 아이콘과 텍스트 사이 간격 */
+  gap: 0.5rem;
+  /* 🌟 아이콘과 텍스트 사이 간격 */
 }
 
 .char-count {
@@ -617,8 +585,13 @@ const handleImageError = (event) => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* 반응형 디자인 */
@@ -626,40 +599,40 @@ const handleImageError = (event) => {
   .modal-overlay {
     padding: 0.5rem;
   }
-  
+
   .edit-profile-modal {
     max-width: 100%;
     margin: 0.5rem;
   }
-  
+
   .modal-header {
     padding: 1rem 1.5rem;
   }
-  
+
   .modal-title {
     font-size: 1.25rem;
   }
-  
+
   .modal-body {
     padding: 1.5rem;
     max-height: 70vh;
   }
-  
+
   .modal-footer {
     padding: 1rem 1.5rem;
     flex-direction: column;
   }
-  
+
   .btn {
     width: 100%;
     justify-content: center;
   }
-  
+
   .current-photo {
     width: 100px;
     height: 100px;
   }
-  
+
   .photo-actions {
     flex-direction: column;
     width: 100%;
@@ -670,15 +643,15 @@ const handleImageError = (event) => {
   .modal-header {
     padding: 1rem;
   }
-  
+
   .modal-body {
     padding: 1rem;
   }
-  
+
   .modal-footer {
     padding: 1rem;
   }
-  
+
   .form-section {
     margin-bottom: 1.5rem;
   }
