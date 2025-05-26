@@ -56,7 +56,7 @@
             </ul>
           </li>
           <li class="nav-item" v-if="userStore.isAuthenticated">
-            <router-link class="nav-link" :to="{ name: 'MyPage' }" @click="closeMobileMenu">
+            <router-link class="nav-link" :to="{ name: 'user-profile', params: {userId: 1} }" @click="closeMobileMenu">
               <i class="bi bi-person me-1"></i>My Page
             </router-link>
           </li>
@@ -92,7 +92,7 @@
             </button>
             <ul class="dropdown-menu dropdown-menu-end" :class="{ show: isUserDropdownOpen }">
               <li>
-                <router-link :to="{ name: 'MyPage' }" class="dropdown-item" @click="closeAllDropdowns">
+                <router-link :to="{ name: 'user-profile', params: {userId: 1} }" class="dropdown-item" @click="closeAllDropdowns">
                   <i class="bi bi-person me-2"></i>My page
                 </router-link>
               </li>

@@ -6,7 +6,6 @@ import HomePage from '@/views/HomePage.vue'
 import SearchPage from '@/views/SearchPage.vue'
 import LoginPage from '@/views/LoginPage.vue'
 import SignupPage from '@/views/SignupPage.vue'
-import MyPage from '@/views/MyPage.vue'
 import SettingsPage from '@/views/SettingsPage.vue'
 import MovieSurveyPage from '@/views/MovieSurveyPage.vue'
 import Profile from '@/views/Profile.vue'
@@ -14,95 +13,6 @@ import Profile from '@/views/Profile.vue'
 // 장르 페이지 - 하나로 통합
 import GenrePage from '@/views/GenrePage.vue'
 
-
-const routes = [
-  {
-    path: '/',
-    name: 'Home',
-    component: HomePage,
-    meta: {
-      title: 'FLIXnCHILL - Home'
-    }
-  },
-  {
-    path: '/search',
-    name: 'Search',
-    component: SearchPage,
-    meta: {
-      title: 'FLIXnCHILL - Search'
-    }
-  },
-  {
-    path: '/login',
-    name: 'Login',
-    component: LoginPage,
-    meta: {
-      title: 'FLIXnCHILL - Sign in',
-      requiresGuest: true
-    }
-  },
-  {
-    path: '/signup',
-    name: 'Signup',
-    component: SignupPage,
-    meta: {
-      title: 'FLIXnCHILL - Sign up',
-      requiresGuest: true
-    }
-  },
-  {
-    path: '/my-page',
-    name: 'MyPage',
-    component: MyPage,
-    meta: {
-      title: 'FLIXnCHILL - My page',
-      requiresAuth: true
-    }
-  },
-  {
-    path: '/settings',
-    name: 'Settings',
-    component: SettingsPage,
-    meta: {
-      title: 'FLIXnCHILL - Settings',
-      requiresAuth: true
-    }
-  },
-  
-  // 장르 페이지 - 하나의 컴포넌트로
-  {
-    path: '/genre',
-    name: 'Genre',
-    component: GenrePage,
-    meta: {
-      title: 'FLIXnCHILL - 장르별 영화'
-    }
-    // query 예시: /genre?type=action, /genre?type=comedy
-  },
-  
-  // 영화 상세 페이지 (동적 라우트)
-  {
-    path: '/movie/:id',
-    name: 'MovieDetail',
-    component: () => import('@/views/MovieDetailPage.vue'),
-    meta: {
-      title: 'FLIXnCHILL - 영화 상세'
-    }
-  },
-  {
-    path: '/survey',
-    name: 'movie-survey', 
-    component: MovieSurveyPage
-  },
-  {
-    path: '/profile/:userId',
-    name: 'user-profile',
-    component: Profile,
-    meta: {
-      title: '프로필 페이지'
-    }
-  }
-]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -139,15 +49,6 @@ const router = createRouter({
       meta: {
         title: 'FLIXnCHILL - Sign up',
         requiresGuest: true
-      }
-    },
-    {
-      path: '/my-page',
-      name: 'MyPage',
-      component: MyPage,
-      meta: {
-        title: 'FLIXnCHILL - My page',
-        requiresAuth: true
       }
     },
     {
