@@ -224,6 +224,13 @@
     <EditProfileModal :show="showEditModal" :user-profile="userProfile" @close="showEditModal = false"
       @save="handleProfileSave" />
   </div>
+  <ReviewDetailModal 
+    :show="showReviewModal"
+    :review="selectedReview"
+    @close="closeReviewModal"
+    @like-toggled="handleReviewLikeToggled"
+    @comment-added="handleCommentAdded"
+  />
 </template>
 
 <script setup>
@@ -234,9 +241,20 @@ import { useUserStore } from '@/stores/accounts'
 import MovieCard from '@/components/MovieCard.vue'
 import EditProfileModal from '@/components/EditProfileModal.vue'
 import axios from 'axios'
+import ReviewDetailModal from '@/components/ReviewDetailModal.vue'
 
 // 모달 상태
 const showEditModal = ref(false)
+
+// 🎯 모달 관련 상태 추가 (다른 ref들과 함께)
+const showReviewModal = ref(false)
+const selectedReview = ref(null)
+
+// 🎯 closeReviewModal 함수도 추가
+const closeReviewModal = () => {
+  showReviewModal.value = false
+  selectedReview.value = null
+}
 
 // Stores
 const movieStore = useMovieStore()
@@ -288,22 +306,6 @@ const fetchUserData = async () => {
 
   }
 }
-
-
-
-
-// const userProfile = ref({
-//     id: 1,
-//     nickname: '영화광공주',
-//     email: 'movie.princess@example.com',
-//     bio: '영화를 사랑하는 평범한 사람입니다. 좋은 작품들을 함께 나누고 싶어요! 🎬✨',
-//     profileImage: '/api/placeholder/200/200',
-//     isFollowing: false,
-//     followersCount: 1247,
-//     followingCount: 89,
-//     reviewsCount: 156,
-//     joinDate: '2023-03-15'
-// })
 
 // 탭 설정
 const tabs = computed(() => [
@@ -462,6 +464,16 @@ const sortedReviews = computed(() => {
 
 // 메서드들
 
+const handleReviewLikeToggled = (review) => {
+  // 리뷰 좋아요 상태 업데이트 로직
+  console.log('리뷰 좋아요 토글:', review)
+}
+
+const handleCommentAdded = (comment) => {
+  // 댓글 추가 후 처리 로직
+  console.log('댓글 추가됨:', comment)
+}
+
 const toggleFollow = async () => {
   followLoading.value = true
 
@@ -517,8 +529,26 @@ const showFollowingModal = () => {
   console.log('팔로잉 목록 모달')
 }
 
+// const viewReview = (review) => {
+//   router.push(`/reviews/${review.id}`)
+// }
+
+// Profile.vue의 viewReview 함수를 이렇게 바꾸세요:
+
 const viewReview = (review) => {
-  router.push(`/reviews/${review.id}`)
+  // 임시 데이터로 리뷰 정보 확장
+  selectedReview.value = {
+    ...review,
+    likesCount: Math.floor(Math.random() * 50) + 5, // 5-55 사이 랜덤
+    isLiked: Math.random() > 0.5, // 랜덤 좋아요 상태
+    reviewer: {
+      id: userProfile.value?.id || 1,
+      nickname: userProfile.value?.nickname || '영화리뷰어',
+      avatar: userProfile.value?.profile_image || '/api/placeholder/50/50'
+    }
+  }
+  showReviewModal.value = true
+  console.log('리뷰 모달 열기:', selectedReview.value)
 }
 
 // MovieCard 이벤트 핸들러들
