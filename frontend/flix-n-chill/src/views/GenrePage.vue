@@ -89,6 +89,41 @@
               @toggle-watchlist="handleToggleWatchlist" @toggle-like="handleToggleLike" @click="handleMovieClick" />
           </div>
         </div>
+
+        <!-- 더보기 또는 완료 섹션 -->
+        <div class="pagination-section">
+          <!-- 더보기 섹션 -->
+          <div v-if="hasMoreMovies" class="text-center mt-5 mb-4">
+            <button 
+              @click="loadMoreMovies" 
+              :disabled="isLoadingMore"
+              class="btn btn-load-more"
+              ref="loadMoreButton"
+            >
+              <div v-if="isLoadingMore" class="d-flex align-items-center justify-content-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                더 많은 영화를 불러오는 중...
+              </div>
+              <div v-else class="d-flex align-items-center justify-content-center">
+                <i class="bi bi-plus-circle me-2"></i>
+                더 많은 영화 보기 ({{ remainingMoviesCount }}개 더)
+              </div>
+            </button>
+          </div>
+
+          <!-- 모든 영화를 다 본 경우 -->
+          <div v-else-if="totalMoviesFromAPI > 0 && !hasMoreMovies" class="text-center mt-5 mb-4">
+            <div class="all-movies-loaded">
+              <i class="bi bi-check-circle-fill text-success mb-2" style="font-size: 2rem;"></i>
+              <p class="text-white mb-0">모든 {{ currentGenre.name }} 영화를 확인했습니다! 🎬</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 새로 로드된 영화들의 시작점을 표시하는 마커 -->
+        <div ref="newMoviesMarker" class="new-movies-marker"></div>
       </div>
 
       <!-- 영화가 없을 때 -->
@@ -104,6 +139,7 @@
         </div>
       </div>
     </div>
+    
     <!-- 영화 상세 모달 -->
     <MovieDetailModal :is-visible="showModal" :is-auth="userStore.isAuthenticated" :movie-id="selectedMovieId" @close="closeModal"
       @toggle-watchlist="handleModalToggleWatchlist" @toggle-like="handleModalToggleLike" @play="handleModalPlay" />
@@ -111,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MovieCard from '@/components/MovieCard.vue'
 import { useMovieStore } from '@/stores/movie'
@@ -121,122 +157,101 @@ import { useUserStore } from '@/stores/accounts'
 // Router 사용
 const route = useRoute()
 const router = useRouter()
-
-// Store 사용
 const store = useMovieStore()
 const userStore = useUserStore()
 
-// 반응형 데이터
 const sortBy = ref('top')
 const filterYear = ref('')
-
-// 모달 상태
+const currentPage = ref(1)
+const isLoadingMore = ref(false)
+const totalMoviesFromAPI = ref(0)
+const loadMoreButton = ref(null)
+const newMoviesMarker = ref(null)
 const showModal = ref(false)
 const selectedMovieId = ref(null)
 
 // 장르 정보
 const genreList = ref([
-  {
-    type: 'action',
-    name: '액션',
-    icon: 'bi bi-lightning-fill',
-    color: '#FFA732',
-    description: '스릴 넘치는 액션과 모험이 가득한 영화들'
-  },
-  {
-    type: 'comedy',
-    name: '코미디',
-    icon: 'bi bi-emoji-laughing-fill',
-    color: '#C5FFF8',
-    description: '유쾌하고 재미있는 웃음이 가득한 영화들'
-  },
-  {
-    type: 'drama',
-    name: '드라마',
-    icon: 'bi bi-heart-fill',
-    color: '#BC7FCD',
-    description: '깊이 있는 스토리와 감동이 있는 영화들'
-  },
-  {
-    type: 'horror',
-    name: '호러',
-    icon: 'bi bi-moon-fill',
-    color: '#FABC3F',
-    description: '오싹하고 스릴 넘치는 공포 영화들'
-  },
-  {
-    type: 'adventure',
-    name: '모험',
-    icon: 'bi bi-compass-fill',
-    color: '#A8CD9F',
-    description: '신나는 모험과 탐험이 펼쳐지는 영화들'
-  },
-  {
-    type: 'family',
-    name: '가족',
-    icon: 'bi bi-house-heart-fill',
-    color: '#FFEADD',
-    description: '온 가족이 함께 즐길 수 있는 따뜻한 영화들'
-  },
-  {
-    type: 'romance',
-    name: '로맨스',
-    icon: 'bi bi-heart-fill',
-    color: '#FCAEAE',
-    description: '달콤하고 로맨틱한 사랑 이야기들'
-  }
+  { type: 'action', name: '액션', icon: 'bi bi-lightning-fill', color: '#FFA732', description: '스릴 넘치는 액션과 모험이 가득한 영화들' },
+  { type: 'comedy', name: '코미디', icon: 'bi bi-emoji-laughing-fill', color: '#C5FFF8', description: '유쾌하고 재미있는 웃음이 가득한 영화들' },
+  { type: 'drama', name: '드라마', icon: 'bi bi-heart-fill', color: '#BC7FCD', description: '깊이 있는 스토리와 감동이 있는 영화들' },
+  { type: 'horror', name: '호러', icon: 'bi bi-moon-fill', color: '#FABC3F', description: '오싹하고 스릴 넘치는 공포 영화들' },
+  { type: 'adventure', name: '모험', icon: 'bi bi-compass-fill', color: '#A8CD9F', description: '신나는 모험과 탐험이 펼쳐지는 영화들' },
+  { type: 'family', name: '가족', icon: 'bi bi-house-heart-fill', color: '#FFEADD', description: '온 가족이 함께 즐길 수 있는 따뜻한 영화들' },
+  { type: 'romance', name: '로맨스', icon: 'bi bi-heart-fill', color: '#FCAEAE', description: '달콤하고 로맨틱한 사랑 이야기들' }
 ])
 
-// 계산된 속성들
-const currentGenreType = computed(() => {
-  return route.query.type || 'action'
-})
-
-const currentGenre = computed(() => {
-  return genreList.value.find(genre => genre.type === currentGenreType.value) || genreList.value[0]
-})
-
-const currentMovies = computed(() => {
-  return store.getMoviesByGenreSync(currentGenreType.value, sortBy.value, filterYear.value)
-})
-
-const totalMovies = computed(() => {
-  return currentMovies.value.length
-})
+const currentGenreType = computed(() => route.query.type || 'action')
+const currentGenre = computed(() => genreList.value.find(genre => genre.type === currentGenreType.value) || genreList.value[0])
+const currentMovies = computed(() => store.getMoviesByGenreSync(currentGenreType.value, sortBy.value, filterYear.value) || [])
+const totalMovies = computed(() => totalMoviesFromAPI.value || currentMovies.value.length)
+const hasMoreMovies = computed(() => totalMoviesFromAPI.value > currentMovies.value.length)
+const remainingMoviesCount = computed(() => Math.min(20, totalMoviesFromAPI.value - currentMovies.value.length))
 
 // 장르 변경 감지해서 새로 로드
 watch(() => route.query.type, (newGenre) => {
   console.log('🎬 장르 변경 감지:', newGenre)
-  loadGenreMovies()
+  resetAndLoadMovies()
+})
+
+// 정렬/필터 변경 감지
+watch([sortBy, filterYear], () => {
+  resetAndLoadMovies()
 })
 
 // 메서드들
 const changeGenre = (genreType) => {
-  console.log('🎬 장르 변경:', genreType)
-  router.push({
-    name: 'Genre',
-    query: { type: genreType }
-  })
+  router.push({ name: 'Genre', query: { type: genreType } })
+}
+
+const resetAndLoadMovies = async () => {
+  currentPage.value = 1
+  totalMoviesFromAPI.value = 0
+  if (store.clearGenreMovies) {
+    store.clearGenreMovies(currentGenreType.value, sortBy.value, filterYear.value)
+  }
+  await loadGenreMovies()
 }
 
 const loadGenreMovies = async () => {
-  console.log('🎬 loadGenreMovies 호출 - 장르:', currentGenreType.value)
-
   try {
-    await store.fetchMoviesByGenre(currentGenreType.value, sortBy.value, filterYear.value)
+    const response = await store.fetchMoviesByGenre(currentGenreType.value, sortBy.value, filterYear.value, currentPage.value)
+    if (response && response.total) {
+      totalMoviesFromAPI.value = response.total
+    }
     console.log('🎬 API 호출 완료!')
   } catch (error) {
     console.error('🚨 영화 데이터 로드 실패:', error)
   }
 }
 
-// 정렬/필터 변경 감지
-watch([sortBy, filterYear], () => {
-  loadGenreMovies()
-}, { immediate: true })
+const loadMoreMovies = async () => {
+  if (isLoadingMore.value) return
+
+  // ✅ 현재 스크롤 위치 기억
+  const savedScrollTop = window.scrollY || window.pageYOffset
+
+  isLoadingMore.value = true
+
+  try {
+    currentPage.value += 1
+    await loadGenreMovies()
+
+    await nextTick()
+
+    // ✅ 저장된 위치로 다시 스크롤 복원
+    window.scrollTo({ top: savedScrollTop, behavior: 'auto' })
+
+  } catch (error) {
+    currentPage.value -= 1
+    console.error('🚨 추가 영화 로드 실패:', error)
+  } finally {
+    isLoadingMore.value = false
+  }
+}
 
 const resetFilters = () => {
-  sortBy.value = 'rating'
+  sortBy.value = 'top'
   filterYear.value = ''
 }
 
@@ -246,12 +261,10 @@ const handlePlayMovie = (movie) => {
 }
 
 const handleToggleWatchlist = (movie) => {
-  console.log('🎬 찜하기 토글:', movie.title)
   store.toggleWatchlist(movie.id)
 }
 
 const handleToggleLike = (movie) => {
-  console.log('🎬 좋아요 토글:', movie.title)
   store.toggleLike(movie.id)
 }
 
@@ -263,14 +276,11 @@ const handleMovieClick = (movie) => {
     console.error('🚨 영화 ID가 없습니다:', movie)
     return
   }
-
+  
   selectedMovieId.value = movie.id
   showModal.value = true
-
-  console.log('🎬 모달 열림 - 선택된 ID:', selectedMovieId.value)
 }
 
-// 모달 관련 이벤트
 const closeModal = () => {
   showModal.value = false
   selectedMovieId.value = null
@@ -290,12 +300,13 @@ const handleModalPlay = (movie) => {
 
 // 컴포넌트 마운트 시
 onMounted(() => {
-  console.log('🎬 컴포넌트 마운트!')
   loadGenreMovies()
 })
 </script>
 
+
 <style scoped>
+/* 기존 스타일 그대로 유지 */
 /* 🌟 CYBERPUNK GENRE PAGE STYLES 🌟 */
 
 /* 페이지 기본 스타일 - 사이버펑크 배경 */
@@ -441,6 +452,7 @@ onMounted(() => {
 }
 
 
+
 /* 🎯 장르 탭 - 네온 버튼 */
 .genre-tabs {
   margin-top: 2rem;
@@ -520,6 +532,7 @@ onMounted(() => {
   animation: activeGlow 2s ease-in-out infinite alternate;
 }
 
+
 @keyframes activeGlow {
   0% { box-shadow: 0 0 5px rgba(219, 0, 0, 0.8); }
   100% { box-shadow: 0 0 15px rgba(219, 0, 0, 1); }
@@ -583,6 +596,16 @@ onMounted(() => {
   background: #1a1a1a;
   color: #ffffff;
   border: none;
+}
+
+.form-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  border-radius: 0.375rem;
+  backdrop-filter: blur(10px);
+  width: auto;
+  min-width: 140px;
 }
 
 .form-input::placeholder {
@@ -661,6 +684,13 @@ onMounted(() => {
   transition: left 0.5s ease;
 }
 
+.loading-section,
+.error-section {
+  text-align: center;
+  padding: 3rem 0;
+}
+
+
 .cyber-btn:hover {
   background: linear-gradient(135deg, #db0000, #ff4757);
   border-color: #ff6b6b;
@@ -679,6 +709,49 @@ onMounted(() => {
   margin-bottom: 2rem;
   position: relative;
   z-index: 2;
+}
+
+/* 더보기 버튼 스타일 - 기존 디자인과 조화롭게 */
+.btn-load-more {
+  background: linear-gradient(135deg, #db0000, #ff4757);
+  border: none;
+  color: #ffffff;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(219, 0, 0, 0.3);
+  min-width: 280px;
+}
+
+.btn-load-more:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff4757, #ff6b7a);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(219, 0, 0, 0.4);
+  color: #ffffff;
+}
+
+.btn-load-more:disabled {
+  background: linear-gradient(135deg, #666, #888);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.all-movies-loaded {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 새로운 영화 마커 (보이지 않음) */
+.new-movies-marker {
+  height: 1px;
+  width: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .movie-item {
@@ -703,6 +776,7 @@ onMounted(() => {
 }
 
 /* 💫 빈 상태 스타일 */
+
 .empty-state {
   text-align: center;
   padding: 4rem 0;
@@ -811,6 +885,12 @@ onMounted(() => {
     padding: 0.5rem 1rem;
   }
 
+  .btn-load-more {
+    min-width: auto;
+    width: 100%;
+    max-width: 350px;
+  }
+  
   /* 모바일에서 영화 아이템 애니메이션 단순화 */
   .movie-item {
     animation-delay: 0.1s !important;
