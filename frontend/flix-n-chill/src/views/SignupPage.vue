@@ -979,7 +979,8 @@ watch(() => formData.value.birthdate, () => {
 }
 
 .gender-radio:checked + .gender-label {
-	border-color: rgba(138, 43, 226, 0.8);
+	border-color: rgba(75, 192, 182, 0.8);
+	;
 	background: rgba(138, 43, 226, 0.15);
 	box-shadow: 0 0 0 0.2rem rgba(138, 43, 226, 0.15);
 }
