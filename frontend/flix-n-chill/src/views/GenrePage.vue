@@ -427,6 +427,7 @@ onMounted(() => {
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
+/* 📊 영화 카운트 - 사이버 배지 */
 .movie-count {
   font-size: 1.2rem;
   font-weight: 700;
@@ -437,12 +438,6 @@ onMounted(() => {
   padding: 0.8rem 1.5rem;
   border-radius: 25px;
   border: 2px solid rgba(219, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  box-shadow: 
-    0 0 20px rgba(219, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  text-transform: uppercase;
-  letter-spacing: 1px;
 }
 
 
