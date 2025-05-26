@@ -93,6 +93,11 @@ const router = createRouter({
       meta: {
         title: '프로필 페이지'
       }
+    },
+    {
+      path: '/reviews/:id',
+      name: 'ReviewDetail',
+      component: () => import('@/components/ReviewDetailModal.vue')
     }
   ]
 })
