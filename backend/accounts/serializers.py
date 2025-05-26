@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import User, Review
-from movies.models import Movie
+from .models import User
+from movies.models import Movie, Review
+from dj_rest_auth.registration.serializers import RegisterSerializer
 
 class ReviewSimpleSerializer(serializers.ModelSerializer):
     movie_title = serializers.CharField(source='movie.title')
@@ -14,6 +15,33 @@ class MovieSimpleSerializer(serializers.ModelSerializer):
         model = Movie
         fields = ['id', 'title', 'poster_path']
 
+
+class CustomRegisterSerializer(RegisterSerializer):
+    nickname = serializers.CharField(required=True, max_length=20)
+    birth = serializers.DateField(required=True)
+    gender = serializers.BooleanField(required=True)
+    profile_image = serializers.ImageField(required=False)
+
+    def get_cleaned_data(self):
+        data = super().get_cleaned_data()
+        data['nickname'] = self.validated_data.get('nickname')
+        data['birth'] = self.validated_data.get('birth')
+        data['gender'] = self.validated_data.get('gender')
+        data['profile_image'] = self.validated_data.get('profile_image')
+        print(data)
+        return data
+    
+    def save(self, request):
+        user = super().save(request)
+        user.nickname = self.validated_data.get('nickname')
+        user.birth = self.validated_data.get('birth')
+        user.gender = self.validated_data.get('gender')
+        user.profile_image = self.validated_data.get('profile_imgae')
+        user.save()
+        return user
+
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     followers_count = serializers.SerializerMethodField()
     following_count = serializers.SerializerMethodField()
@@ -21,14 +49,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
     following = serializers.SerializerMethodField()
     reviews = serializers.SerializerMethodField()
     like_movies = MovieSimpleSerializer(source="like_movie", many=True)
-    profile_image = serializers.ImageField(source="profile_image", required=False)  # 프로필 이미지 필드명 맞게 변경
 
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'email', 'profile_image',
+            'id', 'username', 'email', 'profile_image', "last_login",
             'followers_count', 'following_count', 'followers', 'following',
-            'reviews', 'like_movies'
+            'reviews', 'like_movies', 'nickname', "birth", "profile_bio", "gender"
         ]
 
     def get_followers_count(self, obj):
@@ -46,3 +73,4 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def get_reviews(self, obj):
         reviews = Review.objects.filter(user=obj).select_related('movie')
         return ReviewSimpleSerializer(reviews, many=True).data
+
