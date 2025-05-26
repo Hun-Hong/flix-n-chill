@@ -205,7 +205,7 @@
   // 메인 페이지로 이동
   const goToMain = () => {
     showSuccessPopup.value = false
-    const redirectPath = router.currentRoute.value.query.redirect || '/home'
+    const redirectPath = router.currentRoute.value.query.redirect || '/'
     console.log(`📍 페이지 이동: ${redirectPath}`)
     router.push(redirectPath)
   }
@@ -217,7 +217,7 @@
     // 이미 로그인된 경우 리다이렉트
     if (userStore.isAuthenticated) {
       console.log('👤 이미 로그인된 사용자, 홈으로 리다이렉트')
-      router.push('/home')
+      router.push('/')
     }
   })
   </script>
