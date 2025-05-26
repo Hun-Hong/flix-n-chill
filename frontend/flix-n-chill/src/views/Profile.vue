@@ -1,5 +1,5 @@
 <template>
-    <div class="profile-page">
+    <div class="profile-page" v-if="userProfile">
         <!-- 프로필 헤더 -->
         <div class="profile-header">
             <div class="container">
@@ -27,17 +27,17 @@
                             <!-- 팔로우 정보 -->
                             <div class="follow-stats">
                                 <div class="stat-item" @click="showFollowersModal">
-                                    <span class="stat-number">{{ formatNumber(userProfile.followersCount) }}</span>
+                                    <span class="stat-number">{{ formatNumber(userProfile.followers_count) }}</span>
                                     <span class="stat-label">팔로워</span>
                                 </div>
                                 <div class="stat-item" @click="showFollowingModal">
-                                    <span class="stat-number">{{ formatNumber(userProfile.followingCount) }}</span>
+                                    <span class="stat-number">{{ formatNumber(userProfile.following_count) }}</span>
                                     <span class="stat-label">팔로잉</span>
                                 </div>
-                                <div class="stat-item">
-                                    <span class="stat-number">{{ formatNumber(userProfile.reviewsCount) }}</span>
+                                <!-- <div class="stat-item">
+                                    <span class="stat-number">{{ formatNumber(userProfile.reviews_count) }}</span>
                                     <span class="stat-label">리뷰</span>
-                                </div>
+                                </div> -->
                             </div>
                         </div>
                     </div>
@@ -239,6 +239,7 @@ import { useMovieStore } from '@/stores/movie'
 import { useUserStore } from '@/stores/accounts'
 import MovieCard from '@/components/MovieCard.vue'
 import EditProfileModal from '@/components/EditProfileModal.vue'
+import axios from 'axios'
 
 // 모달 상태
 const showEditModal = ref(false)
@@ -255,24 +256,60 @@ const viewMode = ref('grid')
 const reviewSortBy = ref('recent')
 const followLoading = ref(false)
 const showDropdown = ref(false)
+const isLoading = ref(false)
+
 
 const setActiveTab = (tabId) => {
     activeTab.value = tabId
 }
 
 // 사용자 프로필 데이터 (실제로는 API에서 가져올 데이터)
-const userProfile = ref({
-    id: 1,
-    nickname: '영화광공주',
-    email: 'movie.princess@example.com',
-    bio: '영화를 사랑하는 평범한 사람입니다. 좋은 작품들을 함께 나누고 싶어요! 🎬✨',
-    profileImage: '/api/placeholder/200/200',
-    isFollowing: false,
-    followersCount: 1247,
-    followingCount: 89,
-    reviewsCount: 156,
-    joinDate: '2023-03-15'
-})
+const userProfile = ref("")
+
+const setUserData = (data) => {
+    userProfile.value = data
+    // localStorage.setItem('userData', JSON.stringify(data))
+    // updateLastActivity()
+}
+
+// Actions - 사용자 정보 가져오기
+const fetchUserData = async () => {
+    isLoading.value = true
+    try {
+        console.log('유저 조회 요청 보냄')
+        const response = await axios({
+            method: 'get',
+            url: `http://127.0.0.1:8000/auth/${route.params.userId}/detail/`,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+
+        setUserData(response.data)
+    } catch (error) {
+        console.error('사용자 정보 가져오기 실패:', error)
+
+    } finally {
+        isLoading.value = false
+
+    }
+}
+
+
+
+
+// const userProfile = ref({
+//     id: 1,
+//     nickname: '영화광공주',
+//     email: 'movie.princess@example.com',
+//     bio: '영화를 사랑하는 평범한 사람입니다. 좋은 작품들을 함께 나누고 싶어요! 🎬✨',
+//     profileImage: '/api/placeholder/200/200',
+//     isFollowing: false,
+//     followersCount: 1247,
+//     followingCount: 89,
+//     reviewsCount: 156,
+//     joinDate: '2023-03-15'
+// })
 
 // 탭 설정
 const tabs = computed(() => [
@@ -299,9 +336,11 @@ const tabs = computed(() => [
 // 현재 사용자 본인 프로필인지 확인
 const isOwnProfile = computed(() => {
     // 실제로는 로그인한 사용자 ID와 비교
-    return route.params.userId === 'me' || !route.params.userId
+    return route.params.userId == userStore.userData.id
 })
-
+computed(() =>{
+    return userProfile.value.reviews
+})
 // 리뷰 데이터
 const userReviews = ref([
     {
@@ -329,28 +368,49 @@ const userReviews = ref([
 ])
 
 // 좋아요한 영화 데이터
-const likedMovies = ref([
-    {
-        id: 1,
-        title: '기생충',
-        rating: 8.6,
-        year: 2019,
-        genre: 'Drama',
-        poster: '/api/placeholder/300/450',
-        isInWatchlist: true,
-        isLiked: true
-    },
-    {
-        id: 2,
-        title: '어벤져스: 엔드게임',
-        rating: 8.4,
-        year: 2019,
-        genre: 'Action',
-        poster: '/api/placeholder/300/450',
-        isInWatchlist: false,
-        isLiked: true
-    }
-])
+// const likedMovies = ref([
+//     {
+//         id: 1,
+//         title: '기생충',
+//         rating: 8.6,
+//         year: 2019,
+//         genre: 'Drama',
+//         poster: '/api/placeholder/300/450',
+//         isInWatchlist: true,
+//         isLiked: true
+//     },
+//     {
+//         id: 2,
+//         title: '어벤져스: 엔드게임',
+//         rating: 8.4,
+//         year: 2019,
+//         genre: 'Action',
+//         poster: '/api/placeholder/300/450',
+//         isInWatchlist: false,
+//         isLiked: true
+//     }
+// ])
+
+const likedMovies = computed(() => {
+    if (!userProfile.value?.like_movies) return []
+    
+    return userProfile.value.like_movies.map(movie => ({
+        id: movie.id,
+        title: movie.title || movie.original_title, // title 필드 통일
+        original_title: movie.original_title,
+        rating: movie.vote_average || movie.average_rating, // rating 필드 추가
+        vote_average: movie.vote_average,
+        average_rating: movie.average_rating,
+        year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
+        release_date: movie.release_date,
+        genre: movie.genres?.[0]?.name || 'Unknown', // 첫 번째 장르
+        genres: movie.genres || [],
+        poster: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '/api/placeholder/300/450', // TMDB 이미지 URL 생성
+        poster_path: movie.poster_path,
+        isInWatchlist: false, // 기본값 설정 (실제로는 API에서 받아야 함)
+        isLiked: movie.is_liked !== undefined ? movie.is_liked : true // 좋아하는 영화 목록이므로 기본적으로 true
+    }))
+})
 
 // 활동 데이터
 const userActivities = ref([
@@ -548,7 +608,9 @@ onMounted(() => {
     if (route.query.tab) {
         activeTab.value = route.query.tab
     }
-
+    // 유저 정보 가져오기
+    fetchUserData()
+    
     // 외부 클릭 이벤트 리스너 등록
     document.addEventListener('click', handleClickOutside)
 })
