@@ -51,15 +51,6 @@ export const useMovieStore = defineStore('movie', () => {
       cacheData.currentPage = 0
     }
 
-    // 이미 해당 페이지를 로드했다면 리턴 (이 로직 제거!)
-    // if (cacheData.currentPage >= page) {
-    //   return {
-    //     movies: cacheData.movies,
-    //     total: cacheData.totalCount,
-    //     hasMore: cacheData.movies.length < cacheData.totalCount
-    //   }
-    // }
-
     loading.value = true
     error.value = null
 
@@ -87,14 +78,14 @@ export const useMovieStore = defineStore('movie', () => {
         title: movie.title,
         rating: movie.vote_average,
         year: movie.release_date ? new Date(movie.release_date).getFullYear() : 2024,
-        genre: movie.genres[0].name,
-        genres: movie.genres.map((genre) => genre.name),
+        genre: movie.genres[0]?.name || 'Unknown', // 안전한 접근
+        genres: movie.genres?.map((genre) => genre.name) || [],
         poster: movie.poster_path
           ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
           : '/api/placeholder/300/450',
         isInWatchlist: false,
-        isLiked: movie.is_liked,
-        like_count: movie.like_count,
+        isLiked: movie.is_liked || false, // 기본값 설정
+        like_count: movie.like_count || 0, // 기본값 설정
       }))
 
       // 기존 영화 목록에 새로운 영화들 추가
@@ -137,34 +128,40 @@ export const useMovieStore = defineStore('movie', () => {
     }
   }
 
-  // 좋아요 토글
+  // 좋아요 토글 - 수정된 버전
   const toggleLike = async (movieId) => {
     const userStore = useUserStore()
-    if (!userStore.token) return
-    const userStore = useUserStore()
-    if (!userStore.token) return
+    if (!userStore.token) {
+      console.warn('로그인이 필요합니다.')
+      return
+    }
 
-    // 1) 캐시에서 모든 배열 참조 가져오기
+    // 1) 캐시에서 모든 데이터 참조 가져오기
     const userKey = getUserKey()
     const userCache = moviesByGenre.value[userKey] || {}
     
     // 2) 현재 토글할 값 계산
     let currentLiked = null
-    Object.values(userCache).some(cacheData => {
-      const m = cacheData.movies?.find(x => x.id === movieId)
-      if (m) { currentLiked = m.isLiked; return true }
-    })
-    if (currentLiked === null) return
-    const nextLiked = !currentLiked
-    const userKey = getUserKey()
-    const userCache = moviesByGenre.value[userKey] || {}
+    let targetMovie = null
     
-    let currentLiked = null
-    Object.values(userCache).some(arr => {
-      const m = arr.find(x => x.id === movieId)
-      if (m) { currentLiked = m.isLiked; return true }
+    // 올바른 데이터 구조로 접근
+    Object.values(userCache).some(cacheData => {
+      if (cacheData.movies) {
+        const movie = cacheData.movies.find(m => m.id === movieId)
+        if (movie) {
+          currentLiked = movie.isLiked
+          targetMovie = movie
+          return true
+        }
+      }
+      return false
     })
-    if (currentLiked === null) return
+    
+    if (currentLiked === null || !targetMovie) {
+      console.warn('해당 영화를 찾을 수 없습니다.')
+      return
+    }
+    
     const nextLiked = !currentLiked
 
     // 3) 서버에 요청 (POST/DELETE 분기)
@@ -174,41 +171,24 @@ export const useMovieStore = defineStore('movie', () => {
         url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/like/`,
         headers: { Authorization: `Token ${userStore.token}` }
       })
-    try {
-      await axios({
-        method: nextLiked ? 'post' : 'delete',
-        url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/like/`,
-        headers: { Authorization: `Token ${userStore.token}` }
-      })
 
-      // 4) 모든 캐시 배열 안에서 해당 영화만 업데이트
+      // 4) 모든 캐시 데이터에서 해당 영화 업데이트
       Object.values(userCache).forEach(cacheData => {
         if (cacheData.movies) {
           cacheData.movies.forEach(movie => {
             if (movie.id === movieId) {
               movie.isLiked = nextLiked
-              movie.like_count = (movie.like_count || 0) + (nextLiked ? 1 : -1)
+              movie.like_count = Math.max(0, (movie.like_count || 0) + (nextLiked ? 1 : -1))
             }
           })
         }
       })
+      
+      console.log(`✅ 좋아요 ${nextLiked ? '추가' : '제거'} 성공: ${movieId}`)
+      
     } catch (e) {
-      console.error('좋아요 토글 실패', e)
-      error.value = e.message
-    }
-  }
-      Object.values(userCache).forEach(arr => {
-        arr.forEach(movie => {
-          if (movie.id === movieId) {
-            movie.isLiked = nextLiked
-            movie.like_count = (movie.like_count || 0) + (nextLiked ? 1 : -1)
-          }
-        })
-      })
-    }
-    catch (e) {
-      console.error('좋아요 토글 실패', e)
-      error.value = e.message
+      console.error('❌ 좋아요 토글 실패:', e)
+      error.value = e.message || '좋아요 처리 중 오류가 발생했습니다.'
     }
   }
 
@@ -217,9 +197,14 @@ export const useMovieStore = defineStore('movie', () => {
     // 찜 토글 로직 구현
     console.log('찜 토글:', movieId)
   }
+
   // 리뷰 생성
   const createReview = async (movieId, payload) => {
     const userStore = useUserStore()
+    if (!userStore.token) {
+      throw new Error('로그인이 필요합니다.')
+    }
+    
     try {
       const response = await axios({
         method: 'post',
@@ -230,10 +215,10 @@ export const useMovieStore = defineStore('movie', () => {
           'Content-Type': 'application/json'
         },
       })
-      console.log('리뷰 생성 성공:', response.data)
+      console.log('✅ 리뷰 생성 성공:', response.data)
       return response.data
     } catch (error) {
-      console.error('리뷰 생성 실패:', error)
+      console.error('❌ 리뷰 생성 실패:', error)
       throw error
     }
   }
@@ -241,6 +226,10 @@ export const useMovieStore = defineStore('movie', () => {
   // 사용자 리뷰 조회
   const getUserReview = async (movieId) => {
     const userStore = useUserStore()
+    if (!userStore.token) {
+      throw new Error('로그인이 필요합니다.')
+    }
+    
     try {
       const response = await axios({
         method: 'get',
@@ -249,15 +238,15 @@ export const useMovieStore = defineStore('movie', () => {
           Authorization: `Token ${userStore.token}`,
         },
       })
-      console.log('기존 리뷰 조회 성공:', response.data)
+      console.log('✅ 기존 리뷰 조회 성공:', response.data)
       return response.data
     } catch (error) {
       if (error.response?.status === 404) {
         // 리뷰가 없는 경우 (정상적인 상황)
-        console.log('기존 리뷰 없음')
+        console.log('ℹ️ 기존 리뷰 없음')
         return null
       }
-      console.error('리뷰 조회 실패:', error)
+      console.error('❌ 리뷰 조회 실패:', error)
       throw error
     }
   }
@@ -265,6 +254,10 @@ export const useMovieStore = defineStore('movie', () => {
   // 리뷰 수정
   const updateReview = async (movieId, reviewId, payload) => {
     const userStore = useUserStore()
+    if (!userStore.token) {
+      throw new Error('로그인이 필요합니다.')
+    }
+    
     try {
       const response = await axios({
         method: 'put',
@@ -275,10 +268,10 @@ export const useMovieStore = defineStore('movie', () => {
           'Content-Type': 'application/json'
         },
       })
-      console.log('리뷰 수정 성공:', response.data)
+      console.log('✅ 리뷰 수정 성공:', response.data)
       return response.data
     } catch (error) {
-      console.error('리뷰 수정 실패:', error)
+      console.error('❌ 리뷰 수정 실패:', error)
       throw error
     }
   }
@@ -286,6 +279,10 @@ export const useMovieStore = defineStore('movie', () => {
   // 리뷰 삭제
   const deleteReview = async (movieId, reviewId) => {
     const userStore = useUserStore()
+    if (!userStore.token) {
+      throw new Error('로그인이 필요합니다.')
+    }
+    
     try {
       const response = await axios({
         method: 'delete',
@@ -294,10 +291,10 @@ export const useMovieStore = defineStore('movie', () => {
           Authorization: `Token ${userStore.token}`,
         },
       })
-      console.log('리뷰 삭제 성공')
+      console.log('✅ 리뷰 삭제 성공')
       return response.data
     } catch (error) {
-      console.error('리뷰 삭제 실패:', error)
+      console.error('❌ 리뷰 삭제 실패:', error)
       throw error
     }
   }
