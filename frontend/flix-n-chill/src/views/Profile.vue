@@ -56,6 +56,11 @@
               </div>
             </button>
 
+            <button v-if="!isOwnProfile" class="btn chat-btn" @click="startChat">
+              <i class="bi bi-chat-dots-fill"></i>
+              <span>채팅하기</span>
+            </button>
+
             <div class="dropdown">
               <button class="btn btn-outline" @click="toggleDropdown">
                 <i class="bi bi-three-dots"></i>

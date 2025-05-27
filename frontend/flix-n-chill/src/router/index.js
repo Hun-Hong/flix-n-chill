@@ -76,14 +76,6 @@ const router = createRouter({
 
     // 영화 상세 페이지 (동적 라우트)
     {
-      path: '/movie/:id',
-      name: 'MovieDetail',
-      component: () => import('@/views/MovieDetailPage.vue'),
-      meta: {
-        title: 'FLIXnCHILL - 영화 상세'
-      }
-    },
-    {
       path: '/survey',
       name: 'movie-survey', 
       component: MovieSurveyPage

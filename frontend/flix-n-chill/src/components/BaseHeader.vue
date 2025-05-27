@@ -1,369 +1,430 @@
 <template>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-transparent shadow-sm fixed-top" :class="{ scrolled: isScrolled }">
-    <div class="container">
-      <!-- 로고 -->
-      <router-link class="navbar-brand fw-bold d-flex align-items-center" :to="{ name: 'Home' }">
-        <img src="/flixnchill.png" alt="FLIX n CHILL" class="logo-image me-2" @error="handleImageError">
-        <span style="color: #db0000;">FLIXnCHILL</span>
-      </router-link>
-
-      <!-- 모바일 토글 버튼 -->
-      <button 
-        class="navbar-toggler" 
-        type="button" 
-        @click="toggleMobileMenu"
-        :class="{ collapsed: !isMobileMenuOpen }"
-        aria-expanded="false" 
-        aria-label="Toggle navigation"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
-
-      <!-- 메뉴 -->
-      <div class="collapse navbar-collapse" :class="{ show: isMobileMenuOpen }">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item">
-            <router-link class="nav-link" :to="{ name: 'Home' }" @click="closeMobileMenu">
-              <i class="bi bi-house me-1"></i>Home
-            </router-link>
-          </li>
-          <li class="nav-item">
-            <router-link class="nav-link" :to="{ name: 'Search' }" @click="closeMobileMenu">
-              <i class="bi bi-search me-1"></i>Search
-            </router-link>
-          </li>
-          <li class="nav-item dropdown">
-            <a 
-              class="nav-link dropdown-toggle" 
-              href="#"
-              @click.prevent="toggleGenreDropdown"
-              :aria-expanded="isGenreDropdownOpen"
-              role="button"
-            >
-              <i class="bi bi-collection me-1"></i>Genre
-            </a>
-            <ul class="dropdown-menu" :class="{ show: isGenreDropdownOpen }">
-              <li v-for="genre in genreList" :key="genre.type">
-                <router-link 
-                  class="dropdown-item" 
-                  :to="{ name: 'Genre', query: { type: genre.type } }" 
-                  @click="closeAllDropdowns"
-                >
-                  {{ genre.name }}
-                </router-link>
-              </li>
-            </ul>
-          </li>
-          <li class="nav-item" v-if="userStore.isAuthenticated">
-            <router-link class="nav-link" :to="{ name: 'user-profile', params: {userId: userStore.userData.id} }" @click="closeMobileMenu">
-              <i class="bi bi-person me-1"></i>My Page
-            </router-link>
-          </li>
-        </ul>
-
-        <!-- 사용자 영역 -->
-        <div class="d-flex align-items-center">
-          <!-- 비로그인 상태 -->
-          <div v-if="!userStore.isAuthenticated" class="d-flex gap-2">
-            <router-link :to="{ name: 'Login' }" class="btn btn-sm signin-btn" @click="closeMobileMenu">
-              Sign in
-            </router-link>
-            <router-link :to="{ name: 'Signup' }" class="btn btn-sm signup-btn" @click="closeMobileMenu">
-              Sign up
-            </router-link>
+  <div class="chat-container">
+    <!-- 채팅방 헤더 -->
+    <div class="chat-header">
+      <div class="header-left">
+        <button @click="goBack" class="back-btn">
+          <i class="icon-arrow-left">←</i>
+        </button>
+        <div v-if="partner" class="partner-info">
+          <img 
+            :src="partner.profile_image || '/default-avatar.png'" 
+            :alt="partner.nickname"
+            class="partner-avatar"
+          >
+          <div>
+            <h3>{{ partner.nickname }}</h3>
+            <span class="online-status" :class="{ online: partner.is_online }">
+              {{ partner.is_online ? '온라인' : '오프라인' }}
+            </span>
           </div>
+        </div>
+      </div>
+    </div>
 
-          <!-- 로그인 상태 -->
-          <div v-else class="dropdown">
-            <button 
-              class="btn btn-link dropdown-toggle d-flex align-items-center text-decoration-none p-0 border-0 user-profile-btn"
-              @click="toggleUserDropdown"
-              :aria-expanded="isUserDropdownOpen"
-            >
+    <!-- 연결 상태 표시 -->
+    <div 
+      v-if="connectionStatus !== 'connected'" 
+      class="connection-status"
+      :class="connectionStatus"
+    >
+      {{ connectionMessage }}
+    </div>
+
+    <!-- 메시지 영역 -->
+    <div class="messages-container" ref="messagesContainer">
+      <div v-if="loading" class="loading">
+        <div class="loading-spinner"></div>
+        메시지를 불러오는 중...
+      </div>
+      
+      <template v-for="(message, index) in messages" :key="message.id">
+        <!-- 날짜 구분선 -->
+        <div v-if="shouldShowDateSeparator(message, index)" class="date-separator">
+          {{ formatDate(message.timestamp) }}
+        </div>
+        
+        <!-- 메시지 -->
+        <div 
+          class="message" 
+          :class="{ 
+            'own': message.sender.id === currentUser?.id,
+            'partner': message.sender.id !== currentUser?.id 
+          }"
+        >
+          <div class="message-content">
+            <div v-if="message.sender.id !== currentUser?.id" class="sender-info">
               <img 
-                :src="userProfileImage" 
-                :alt="userStore.userName" 
-                class="rounded-circle me-2"
-                width="32" 
-                height="32"
-                @error="handleImageError"
+                :src="message.sender.profile_image || '/default-avatar.png'" 
+                :alt="message.sender.nickname"
+                class="sender-avatar"
               >
-              <span class="text-white fw-medium d-none d-md-inline">{{ userStore.userName }}</span>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end" :class="{ show: isUserDropdownOpen }">
-              <li>
-                <router-link :to="{ name: 'user-profile', params: {userId: userStore.userData.id} }" class="dropdown-item" @click="closeAllDropdowns">
-                  <i class="bi bi-person me-2"></i>My page
-                </router-link>
-              </li>
-              <li>
-                <router-link :to="{ name: 'Settings' }" class="dropdown-item" @click="closeAllDropdowns">
-                  <i class="bi bi-gear me-2"></i>Settings
-                </router-link>
-              </li>
-              <li><hr class="dropdown-divider"></li>
-              <li>
-                <button @click="showLogoutModal = true" class="dropdown-item logout-btn">
-                  <i class="bi bi-box-arrow-right me-2"></i>Logout
-                </button>
-              </li>
-            </ul>
+              <span class="sender-name">{{ message.sender.nickname }}</span>
+            </div>
+            
+            <div class="message-bubble">
+              <p>{{ message.content }}</p>
+              <div class="message-time">
+                {{ formatTime(message.timestamp) }}
+                <span v-if="message.sender.id === currentUser?.id && message.is_read" class="read-indicator">
+                  읽음
+                </span>
+              </div>
+            </div>
           </div>
         </div>
+      </template>
+
+      <!-- 타이핑 표시 -->
+      <div v-if="isPartnerTyping" class="typing-indicator">
+        <div class="typing-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <span>{{ partner?.nickname }}님이 입력 중...</span>
       </div>
     </div>
 
-    <!-- 로그아웃 확인 모달 -->
-    <div v-if="showLogoutModal" class="modal-overlay" @click="showLogoutModal = false">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h2 class="modal-title">로그아웃 확인</h2>
-          <button class="modal-close-btn" @click="showLogoutModal = false">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="logout-icon">
-            <i class="bi bi-box-arrow-right"></i>
-          </div>
-          <p class="modal-description">
-            정말로 로그아웃 하시겠습니까?<br>
-            현재 작업 중인 내용이 저장되지 않을 수 있습니다.
-          </p>
-        </div>
-        <div class="modal-footer">
-          <button class="modal-btn secondary" @click="showLogoutModal = false">
-            취소
-          </button>
-          <button class="modal-btn primary" @click="handleLogout" :disabled="isLoggingOut">
-            <span v-if="isLoggingOut" class="loading-spinner small"></span>
-            {{ isLoggingOut ? '로그아웃 중...' : '로그아웃' }}
-          </button>
-        </div>
+    <!-- 입력 영역 -->
+    <div class="input-container">
+      <div class="input-wrapper">
+        <textarea
+          v-model="newMessage"
+          @keydown="handleKeyDown"
+          @input="handleTyping"
+          :disabled="connectionStatus !== 'connected'"
+          placeholder="메시지를 입력하세요..."
+          class="message-input"
+          rows="1"
+          ref="messageInput"
+        ></textarea>
+        
+        <button 
+          @click="sendMessage"
+          :disabled="!canSendMessage"
+          class="send-button"
+        >
+          <i class="icon-send">📤</i>
+        </button>
       </div>
     </div>
-
-    <!-- 로그아웃 성공 팝업 -->
-    <div v-if="showLogoutSuccess" class="popup-overlay" @click="closeSuccessPopup">
-      <div class="popup-content" @click.stop>
-        <div class="popup-header">
-          <div class="success-icon">
-            <i class="bi bi-check-circle-fill"></i>
-          </div>
-          <h2 class="popup-title">로그아웃 완료!</h2>
-          <p class="popup-message">
-            안전하게 로그아웃되었습니다.<br>
-            이용해 주셔서 감사합니다.
-          </p>
-        </div>
-        <div class="popup-actions">
-          <button class="popup-btn primary" @click="goToHome">메인 페이지로</button>
-        </div>
-      </div>
-    </div>
-  </nav>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/accounts'
 
-// 라우터와 스토어
-const router = useRouter()
-const userStore = useUserStore()
-
-// 반응형 상태 관리
-const isMobileMenuOpen = ref(false)
-const isGenreDropdownOpen = ref(false)
-const isUserDropdownOpen = ref(false)
-
-// 로그아웃 관련 상태
-const showLogoutModal = ref(false)
-const showLogoutSuccess = ref(false)
-const isLoggingOut = ref(false)
-
-// 스크롤 효과 상태
-const isScrolled = ref(false)
-
-// 사용자 프로필 이미지 계산
-const userProfileImage = computed(() => {
-  // 1. 사용자가 업로드한 프로필 이미지가 있는 경우
-  if (userStore.currentUser?.profile_image) {
-    // 상대 경로인 경우 절대 경로로 변환
-    if (userStore.currentUser.profile_image.startsWith('/')) {
-      return `http://127.0.0.1:8000${userStore.currentUser.profile_image}`
-    }
-    // 이미 절대 경로인 경우 그대로 사용
-    if (userStore.currentUser.profile_image.startsWith('http')) {
-      return userStore.currentUser.profile_image
-    }
-    // 상대 경로인 경우 미디어 URL과 결합
-    return `http://127.0.0.1:8000/media/${userStore.currentUser.profile_image}`
+// Props
+const props = defineProps({
+  roomId: {
+    type: [String, Number],
+    required: true
   }
-
-  return "/defaultProfileImg.png"
 })
 
-// 이미지 로드 에러 처리를 위한 함수 추가
-const handleImageError = (event) => {
-  console.log('프로필 이미지 로드 실패, 기본 이미지로 교체')
-  const firstLetter = userStore.userName ? userStore.userName.charAt(0).toUpperCase() : 'U'
-  const userName = userStore.userName || 'User'
-  const colorIndex = userName.charCodeAt(0) % 6
-  const colors = ['db0000', '2563eb', '7c3aed', 'dc2626', 'ea580c', '16a34a']
-  const selectedColor = colors[colorIndex]
-  
-  event.target.src = `/defaultProfileImg.png`
-}
+// Router
+const router = useRouter()
 
-// 프로필 이미지 관련 유틸리티 함수들 추가
-const getInitials = (name) => {
-  if (!name) return 'U'
-  
-  const words = name.trim().split(' ')
-  if (words.length === 1) {
-    return words[0].charAt(0).toUpperCase()
+// Reactive data
+const messages = ref([])
+const newMessage = ref('')
+const loading = ref(true)
+const connectionStatus = ref('connecting') // connecting, connected, disconnected, error
+const chatSocket = ref(null)
+const reconnectAttempts = ref(0)
+const maxReconnectAttempts = 5
+const partner = ref(null)
+const currentUser = ref(null)
+const isPartnerTyping = ref(false)
+const typingTimer = ref(null)
+const lastTypingTime = ref(0)
+
+// Template refs
+const messagesContainer = ref(null)
+const messageInput = ref(null)
+
+// Computed
+const canSendMessage = computed(() => {
+  return newMessage.value.trim() && 
+         connectionStatus.value === 'connected' && 
+         !loading.value
+})
+
+const connectionMessage = computed(() => {
+  switch (connectionStatus.value) {
+    case 'connecting':
+      return '연결 중...'
+    case 'disconnected':
+      return '연결이 끊어졌습니다. 재연결 시도 중...'
+    case 'error':
+      return '연결 오류가 발생했습니다.'
+    default:
+      return ''
   }
-  
-  // 두 단어 이상인 경우 첫 글자들 조합
-  return words.slice(0, 2).map(word => word.charAt(0).toUpperCase()).join('')
+})
+
+// Methods
+const goBack = () => {
+  router.go(-1)
 }
 
-const generateAvatarUrl = (name, size = 128) => {
-  const initials = getInitials(name)
-  const userName = name || 'User'
-  const colors = [
-    { bg: 'db0000', text: 'ffffff' }, // 브랜드 컬러
-    { bg: '2563eb', text: 'ffffff' },
-    { bg: '7c3aed', text: 'ffffff' },
-    { bg: 'dc2626', text: 'ffffff' },
-    { bg: 'ea580c', text: 'ffffff' },
-    { bg: '16a34a', text: 'ffffff' },
-  ]
-  
-  const colorIndex = userName.charCodeAt(0) % colors.length
-  const selectedColor = colors[colorIndex]
-  
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${selectedColor.bg}&color=${selectedColor.text}&size=${size}&font-size=0.6&bold=true&rounded=true`
-}
-
-// 장르 목록
-const genreList = [
-  { type: 'action', name: '액션' },
-  { type: 'comedy', name: '코미디' },
-  { type: 'drama', name: '드라마' },
-  { type: 'horror', name: '호러' },
-  { type: 'adventure', name: '모험' },
-  { type: 'family', name: '가족' },
-  { type: 'romance', name: '로맨스' }
-]
-
-// 스크롤 효과 핸들러
-const handleScroll = () => {
-  isScrolled.value = window.scrollY > 100
-}
-
-// 메뉴 토글 함수들
-const toggleMobileMenu = () => {
-  isMobileMenuOpen.value = !isMobileMenuOpen.value
-  // 모바일 메뉴 열릴 때 다른 드롭다운 닫기
-  if (isMobileMenuOpen.value) {
-    isGenreDropdownOpen.value = false
-    isUserDropdownOpen.value = false
-  }
-}
-
-const closeMobileMenu = () => {
-  isMobileMenuOpen.value = false
-}
-
-const toggleGenreDropdown = () => {
-  isGenreDropdownOpen.value = !isGenreDropdownOpen.value
-  isUserDropdownOpen.value = false // 다른 드롭다운 닫기
-}
-
-const toggleUserDropdown = () => {
-  isUserDropdownOpen.value = !isUserDropdownOpen.value
-  isGenreDropdownOpen.value = false // 다른 드롭다운 닫기
-}
-
-const closeAllDropdowns = () => {
-  isGenreDropdownOpen.value = false
-  isUserDropdownOpen.value = false
-  isMobileMenuOpen.value = false
-}
-
-// 로그아웃 처리 함수
-const handleLogout = async () => {
-  isLoggingOut.value = true
-  closeAllDropdowns()
-  
+const initializeChat = async () => {
   try {
-    // 서버에 로그아웃 요청
-    const result = await userStore.logout()
+    // 현재 사용자 정보 가져오기
+    currentUser.value = await getCurrentUser()
     
-    if (result.success) {
-      // 모달 닫고 성공 팝업 표시
-      showLogoutModal.value = false
-      showLogoutSuccess.value = true
-      
-      if (result.warning) {
-        console.warn(result.warning)
-      }
-    } else {
-      console.error('로그아웃 실패:', result.error)
-      // 실패해도 클라이언트 정리는 완료된 상태이므로 성공 팝업 표시
-      showLogoutModal.value = false
-      showLogoutSuccess.value = true
-    }
+    // 채팅방 정보 가져오기
+    const roomInfo = await getRoomInfo()
+    partner.value = roomInfo.partner
+    
+    loading.value = false
   } catch (error) {
-    console.error('로그아웃 처리 중 오류:', error)
-    // 오류가 발생해도 사용자에게는 성공 메시지 표시
-    showLogoutModal.value = false
-    showLogoutSuccess.value = true
-  } finally {
-    isLoggingOut.value = false
+    console.error('채팅 초기화 실패:', error)
+    connectionStatus.value = 'error'
+    loading.value = false
   }
 }
 
-// 성공 팝업 닫기
-const closeSuccessPopup = () => {
-  showLogoutSuccess.value = false
-  goToHome()
-}
-
-// 로그인 페이지로 이동
-const goToHome = () => {
-  showLogoutSuccess.value = false
-  router.push({ name: 'Home' })
-}
-
-// 외부 클릭 시 드롭다운 닫기
-const handleClickOutside = (event) => {
-  if (!event.target.closest('.dropdown')) {
-    isGenreDropdownOpen.value = false
-    isUserDropdownOpen.value = false
-  }
-}
-
-// 라이프사이클 훅
-onMounted(() => {
-  // 외부 클릭 이벤트 리스너 추가
-  document.addEventListener('click', handleClickOutside)
-  // 스크롤 이벤트 리스너 추가
-  window.addEventListener('scroll', handleScroll)
+const connectWebSocket = () => {
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const backendHost = import.meta.env.VITE_BACKEND_HOST || 'localhost:8000'
+  const wsUrl = `${wsProtocol}//${backendHost}/ws/chat/${props.roomId}/`
   
-  // 사용자 활동 업데이트
-  if (userStore.isAuthenticated) {
-    userStore.updateLastActivity()
+  chatSocket.value = new WebSocket(wsUrl)
+  
+  chatSocket.value.onopen = () => {
+    console.log('WebSocket 연결 성공')
+    connectionStatus.value = 'connected'
+    reconnectAttempts.value = 0
   }
+  
+  chatSocket.value.onmessage = (event) => {
+    const data = JSON.parse(event.data)
+    handleWebSocketMessage(data)
+  }
+  
+  chatSocket.value.onclose = () => {
+    console.log('WebSocket 연결 종료')
+    connectionStatus.value = 'disconnected'
+    attemptReconnect()
+  }
+  
+  chatSocket.value.onerror = (error) => {
+    console.error('WebSocket 오류:', error)
+    connectionStatus.value = 'error'
+  }
+}
+
+const disconnectWebSocket = () => {
+  if (chatSocket.value) {
+    chatSocket.value.close()
+    chatSocket.value = null
+  }
+}
+
+const attemptReconnect = () => {
+  if (reconnectAttempts.value < maxReconnectAttempts) {
+    reconnectAttempts.value++
+    setTimeout(() => {
+      console.log(`재연결 시도 ${reconnectAttempts.value}/${maxReconnectAttempts}`)
+      connectWebSocket()
+    }, 2000 * reconnectAttempts.value)
+  }
+}
+
+const handleWebSocketMessage = (data) => {
+  switch (data.type) {
+    case 'message_history':
+      messages.value = data.messages
+      nextTick(() => {
+        scrollToBottom()
+      })
+      break
+      
+    case 'chat_message':
+      messages.value.push(data.message)
+      nextTick(() => {
+        scrollToBottom()
+      })
+      break
+      
+    case 'typing_indicator':
+      isPartnerTyping.value = data.is_typing
+      if (data.is_typing) {
+        nextTick(() => {
+          scrollToBottom()
+        })
+      }
+      break
+      
+    case 'user_status':
+      if (partner.value) {
+        partner.value.is_online = data.is_online
+      }
+      break
+  }
+}
+
+const sendMessage = () => {
+  if (!canSendMessage.value) return
+  
+  const message = newMessage.value.trim()
+  
+  if (chatSocket.value && chatSocket.value.readyState === WebSocket.OPEN) {
+    chatSocket.value.send(JSON.stringify({
+      type: 'chat_message',
+      message: message
+    }))
+    
+    newMessage.value = ''
+    adjustTextareaHeight()
+    messageInput.value?.focus()
+  }
+}
+
+const handleKeyDown = (event) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault()
+    sendMessage()
+  }
+}
+
+const handleTyping = () => {
+  adjustTextareaHeight()
+  
+  const now = Date.now()
+  lastTypingTime.value = now
+  
+  // 타이핑 표시 전송
+  if (chatSocket.value && chatSocket.value.readyState === WebSocket.OPEN) {
+    chatSocket.value.send(JSON.stringify({
+      type: 'typing_indicator',
+      is_typing: true
+    }))
+  }
+  
+  // 일정 시간 후 타이핑 중지 신호 전송
+  if (typingTimer.value) {
+    clearTimeout(typingTimer.value)
+  }
+  
+  typingTimer.value = setTimeout(() => {
+    if (Date.now() - lastTypingTime.value >= 1000) {
+      if (chatSocket.value && chatSocket.value.readyState === WebSocket.OPEN) {
+        chatSocket.value.send(JSON.stringify({
+          type: 'typing_indicator',
+          is_typing: false
+        }))
+      }
+    }
+  }, 1000)
+}
+
+const adjustTextareaHeight = () => {
+  nextTick(() => {
+    const textarea = messageInput.value
+    if (textarea) {
+      textarea.style.height = 'auto'
+      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px'
+    }
+  })
+}
+
+const scrollToBottom = () => {
+  const container = messagesContainer.value
+  if (container) {
+    container.scrollTop = container.scrollHeight
+  }
+}
+
+const shouldShowDateSeparator = (message, index) => {
+  if (index === 0) return true
+  
+  const prevMessage = messages.value[index - 1]
+  const messageDate = new Date(message.timestamp).toDateString()
+  const prevDate = new Date(prevMessage.timestamp).toDateString()
+  
+  return messageDate !== prevDate
+}
+
+const formatDate = (timestamp) => {
+  const date = new Date(timestamp)
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+  
+  if (date.toDateString() === today.toDateString()) {
+    return '오늘'
+  } else if (date.toDateString() === yesterday.toDateString()) {
+    return '어제'
+  } else {
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+}
+
+const formatTime = (timestamp) => {
+  return new Date(timestamp).toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// API 호출 메서드들
+const getCurrentUser = async () => {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+  const response = await fetch(`${apiBaseUrl}/user/me/`, {
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  
+  if (!response.ok) {
+    throw new Error('사용자 정보를 가져올 수 없습니다.')
+  }
+  
+  return await response.json()
+}
+
+const getRoomInfo = async () => {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+  const response = await fetch(`${apiBaseUrl}/chat/room/${props.roomId}/info/`, {
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  
+  if (!response.ok) {
+    throw new Error('채팅방 정보를 가져올 수 없습니다.')
+  }
+  
+  return await response.json()
+}
+
+// Watchers
+watch(newMessage, () => {
+  adjustTextareaHeight()
+})
+
+// Lifecycle
+onMounted(async () => {
+  await initializeChat()
+  connectWebSocket()
+  adjustTextareaHeight()
 })
 
 onUnmounted(() => {
-  // 이벤트 리스너 제거
-  document.removeEventListener('click', handleClickOutside)
-  window.removeEventListener('scroll', handleScroll)
+  disconnectWebSocket()
+  if (typingTimer.value) {
+    clearTimeout(typingTimer.value)
+  }
 })
 </script>
 
