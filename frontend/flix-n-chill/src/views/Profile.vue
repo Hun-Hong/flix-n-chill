@@ -124,10 +124,10 @@
                   <div class="review-rating">
                     <div class="stars">
                       <i v-for="star in 5" :key="star" class="bi" :class="review.rating >= star
-                          ? 'bi-star-fill'                    // 꽉 찬 별
-                          : review.rating >= star - 0.5
-                            ? 'bi-star-half'                    // 반쪽 별
-                            : 'bi-star'                          // 빈 별
+                        ? 'bi-star-fill'                    // 꽉 찬 별
+                        : review.rating >= star - 0.5
+                          ? 'bi-star-half'                    // 반쪽 별
+                          : 'bi-star'                          // 빈 별
                         "></i>
                     </div>
                     <span class="rating-text">{{ review.rating }}/5</span>
@@ -224,13 +224,8 @@
     <EditProfileModal :show="showEditModal" :user-profile="userProfile" @close="showEditModal = false"
       @save="handleProfileSave" />
   </div>
-  <ReviewDetailModal 
-    :show="showReviewModal"
-    :review="selectedReview"
-    @close="closeReviewModal"
-    @like-toggled="handleReviewLikeToggled"
-    @comment-added="handleCommentAdded"
-  />
+  <ReviewDetailModal :show="showReviewModal" :review="selectedReview" @close="closeReviewModal"
+    @like-toggled="handleReviewLikeToggled" @comment-added="handleCommentAdded" />
 </template>
 
 <script setup>
@@ -404,6 +399,30 @@ const userReviews = computed(() => {
 //     }
 // ])
 
+const handleCommentAdded = (commentData) => {
+  try {
+    const { reviewId, commentCount } = commentData
+
+    console.log('📝 댓글 개수 업데이트:', { reviewId, commentCount })
+
+    // 🎯 selectedReview 업데이트 (모달이 열려있는 경우)
+    if (selectedReview.value && selectedReview.value.id === reviewId) {
+      selectedReview.value.commentsCount = commentCount
+    }
+
+    // 🎯 userReviews 배열에서도 해당 리뷰의 댓글 개수 업데이트
+    const reviewIndex = userReviews.value.findIndex(r => r.id === reviewId)
+    if (reviewIndex !== -1) {
+      userReviews.value[reviewIndex].commentsCount = commentCount
+    }
+
+    console.log('✅ 댓글 개수 업데이트 완료:', commentCount)
+
+  } catch (error) {
+    console.error('❌ 댓글 개수 업데이트 실패:', error)
+  }
+}
+
 const likedMovies = computed(() => {
   if (!userProfile.value?.like_movies) return []
 
@@ -478,44 +497,78 @@ const sortedReviews = computed(() => {
 
 // 메서드들
 
-const handleReviewLikeToggled = (review) => {
-  // 리뷰 좋아요 상태 업데이트 로직
-  console.log('리뷰 좋아요 토글:', review)
+const handleReviewLikeToggled = async (likeData) => {
+  try {
+    // 🎯 emit된 데이터에서 reviewId와 currentLiked 추출
+    const { reviewId, currentLiked, review } = likeData
+
+    console.log('🔄 리뷰 좋아요 토글 시작:', { reviewId, currentLiked })
+
+    // store 함수 호출 시 currentLiked 전달
+    const result = await movieStore.toggleReviewLike(reviewId, currentLiked)
+
+    // selectedReview 업데이트 (모달이 열려있는 경우)
+    if (selectedReview.value && selectedReview.value.id === reviewId) {
+      selectedReview.value.isLiked = result.is_liked
+      selectedReview.value.likesCount = result.like_count
+    }
+
+    // 🎯 userReviews 배열에서도 해당 리뷰의 좋아요 정보 업데이트
+    const reviewIndex = userReviews.value.findIndex(r => r.id === reviewId)
+    if (reviewIndex !== -1) {
+      userReviews.value[reviewIndex].isLiked = result.is_liked
+      userReviews.value[reviewIndex].likesCount = result.like_count
+    }
+
+    console.log('✅ 리뷰 좋아요 토글 성공:', {
+      reviewId,
+      isLiked: result.is_liked,
+      likeCount: result.like_count
+    })
+
+  } catch (error) {
+    console.error('❌ 리뷰 좋아요 토글 실패:', error)
+
+    let errorMessage = '좋아요 처리에 실패했습니다.'
+    if (error.response?.data?.error) {
+      errorMessage = error.response.data.error
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+
+    alert(errorMessage)
+  }
 }
 
-const handleCommentAdded = (comment) => {
-  // 댓글 추가 후 처리 로직
-  console.log('댓글 추가됨:', comment)
-}
 
 const toggleFollow = async () => {
-    followLoading.value = true
+  followLoading.value = true
 
-    try {
-        // userStore의 toggleFollow 함수 호출
-        const result = await userStore.toggleFollow(route.params.userId)
-        
-        // UI 업데이트
-        userProfile.value.isFollowing = result.is_following
-        userProfile.value.followers_count = result.followers_count
-        
-        // 성공 메시지
-        const message = result.is_following ? '팔로우했습니다!' : '언팔로우했습니다!'
-        console.log(message)
-        
-    } catch (error) {
-        console.error('팔로우 오류:', error)
-        
-        let errorMessage = '팔로우 처리에 실패했습니다.'
-        if (error.response?.data?.error) {
-            errorMessage = error.response.data.error
-        }
-        
-        alert(errorMessage)
-        
-    } finally {
-        followLoading.value = false
+  try {
+    // userStore의 toggleFollow 함수 호출
+    const result = await userStore.toggleFollow(route.params.userId)
+
+    // UI 업데이트
+    userProfile.value.isFollowing = result.is_following
+    userProfile.value.followers_count = result.followers_count
+
+    // 성공 메시지
+    const message = result.is_following ? '팔로우했습니다!' : '언팔로우했습니다!'
+    console.log(message)
+
+  } catch (error) {
+    console.error('팔로우 오류:', error)
+
+    let errorMessage = '팔로우 처리에 실패했습니다.'
+    if (error.response?.data?.error) {
+      errorMessage = error.response.data.error
     }
+
+    alert(errorMessage)
+
+  } finally {
+    followLoading.value = false
+  }
 }
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
@@ -552,26 +605,59 @@ const showFollowingModal = () => {
   console.log('팔로잉 목록 모달')
 }
 
-// const viewReview = (review) => {
-//   router.push(`/reviews/${review.id}`)
-// }
 
-// Profile.vue의 viewReview 함수를 이렇게 바꾸세요:
+const viewReview = async (review) => {
+  try {
+    console.log('🔍 리뷰 상세 정보 로딩:', review.id)
 
-const viewReview = (review) => {
-  // 임시 데이터로 리뷰 정보 확장
-  selectedReview.value = {
-    ...review,
-    likesCount: Math.floor(Math.random() * 50) + 5, // 5-55 사이 랜덤
-    isLiked: Math.random() > 0.5, // 랜덤 좋아요 상태
-    reviewer: {
-      id: userProfile.value?.id || 1,
-      nickname: userProfile.value?.nickname || '영화리뷰어',
-      avatar: userProfile.value?.profile_image || '/api/placeholder/50/50'
+    // movieStore에서 실제 리뷰 상세 정보 가져오기
+    const detailedReview = await movieStore.getReviewDetail(review.id)
+
+    // 실제 데이터로 selectedReview 설정
+    selectedReview.value = {
+      id: detailedReview.id,
+      movieID: detailedReview.movie.id,
+      movieTitle: detailedReview.movie.title,
+      moviePoster: detailedReview.movie.poster_path
+        ? `https://image.tmdb.org/t/p/w500${detailedReview.movie.poster_path}`
+        : '/api/placeholder/100/150',
+      rating: detailedReview.rating,
+      content: detailedReview.comment,
+      createdAt: detailedReview.created_at,
+
+      // 🎯 실제 좋아요 정보 사용
+      likesCount: detailedReview.like_count || 0,
+      isLiked: detailedReview.is_liked || false,
+
+      reviewer: {
+        id: detailedReview.user.id,
+        nickname: detailedReview.user.nickname,
+        avatar: detailedReview.user.profile_image || '/api/placeholder/50/50'
+      }
     }
+
+    showReviewModal.value = true
+    console.log('✅ 리뷰 모달 열기 성공:', selectedReview.value)
+
+  } catch (error) {
+    console.error('❌ 리뷰 상세 정보 로딩 실패:', error)
+
+    // 에러 시 기본 데이터 사용 (폴백)
+    selectedReview.value = {
+      ...review,
+      likesCount: 0,
+      isLiked: false,
+      reviewer: {
+        id: userProfile.value?.id || 1,
+        nickname: userProfile.value?.nickname || '영화리뷰어',
+        avatar: userProfile.value?.profile_image || '/api/placeholder/50/50'
+      }
+    }
+    showReviewModal.value = true
+
+    // 사용자에게 에러 알림 (선택사항)
+    console.warn('⚠️ 리뷰 정보를 불러오는데 실패했지만 기본 정보로 표시합니다.')
   }
-  showReviewModal.value = true
-  console.log('리뷰 모달 열기:', selectedReview.value)
 }
 
 // MovieCard 이벤트 핸들러들

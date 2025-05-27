@@ -8,7 +8,7 @@ export const useMovieStore = defineStore('movie', () => {
   const loading = ref(false)
   const error = ref(null)
 
-  const BE_API_PATH = "http://127.0.0.1:8000/"
+  const BE_API_PATH = "http://127.0.0.1:8000"
 
   const getUserKey = () => {
     const userStore = useUserStore()
@@ -64,8 +64,8 @@ export const useMovieStore = defineStore('movie', () => {
       const response = await axios({
         method: 'get',
         url: `http://127.0.0.1:8000/api/v1/movies/list/${genreType}/`,
-        params: { 
-          ordering, 
+        params: {
+          ordering,
           year,
           page: page,
           page_size: 20
@@ -143,7 +143,7 @@ export const useMovieStore = defineStore('movie', () => {
     // 2) 현재 토글할 값 계산
     let currentLiked = null
     let targetMovie = null
-    
+
     // 올바른 데이터 구조로 접근 - cacheData.movies 배열에서 찾기
     Object.values(userCache).some(cacheData => {
       if (cacheData.movies) {
@@ -210,7 +210,7 @@ export const useMovieStore = defineStore('movie', () => {
         method: 'post',
         url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/review/`,
         data: payload,
-        headers: { 
+        headers: {
           Authorization: `Token ${userStore.token}`,
           'Content-Type': 'application/json'
         },
@@ -234,7 +234,7 @@ export const useMovieStore = defineStore('movie', () => {
       const response = await axios({
         method: 'get',
         url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/user-review/`,
-        headers: { 
+        headers: {
           Authorization: `Token ${userStore.token}`,
         },
       })
@@ -262,7 +262,7 @@ export const useMovieStore = defineStore('movie', () => {
         method: 'put',
         url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/review/${reviewId}/`,
         data: payload,
-        headers: { 
+        headers: {
           Authorization: `Token ${userStore.token}`,
           'Content-Type': 'application/json'
         },
@@ -286,7 +286,7 @@ export const useMovieStore = defineStore('movie', () => {
       const response = await axios({
         method: 'delete',
         url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/review/${reviewId}/delete/`,
-        headers: { 
+        headers: {
           Authorization: `Token ${userStore.token}`,
         },
       })
@@ -309,9 +309,10 @@ export const useMovieStore = defineStore('movie', () => {
     try {
       const response = await axios({
         method: 'get',
-        url: `http://127.0.0.1:8000/api/v1/reviews/${reviewId}/`,
+        url: `http://127.0.0.1:8000/api/v1/movies/review/${reviewId}/`,
         headers,
       })
+
       console.log('✅ 리뷰 상세 조회 성공:', response.data)
       return response.data
     } catch (error) {
@@ -321,25 +322,23 @@ export const useMovieStore = defineStore('movie', () => {
   }
 
   // 리뷰 좋아요 토글 추가
-  const toggleReviewLike = async (reviewId) => {
-    const userStore = useUserStore()
-    if (!userStore.token) {
-      throw new Error('로그인이 필요합니다.')
-    }
+async function toggleReviewLike(reviewId, currentlyLiked) {
+  // undefined → false 취급
+  const wasLiked = typeof currentlyLiked === 'boolean' ? currentlyLiked : false
+  const nextLiked = !wasLiked
+  const userStore = useUserStore()
 
-    try {
-      const response = await axios({
-        method: 'post',
-        url: `http://127.0.0.1:8000/api/v1/reviews/${reviewId}/like/`,
-        headers: { Authorization: `Token ${userStore.token}` }
-      })
-      console.log('✅ 리뷰 좋아요 토글 성공:', response.data)
-      return response.data
-    } catch (error) {
-      console.error('❌ 리뷰 좋아요 토글 실패:', error)
-      throw error
-    }
+  const response = await axios({
+    method: nextLiked ? 'post' : 'delete',
+    url: `${BE_API_PATH}/api/v1/movies/review/${reviewId}/like/`,
+    headers: { Authorization: `Token ${userStore.token}` }
+  })
+
+  return {
+    is_liked: response.data.is_liked,
+    like_count: response.data.like_count
   }
+}
 
   // 리뷰에 댓글 작성
   const createComment = async (reviewId, content) => {
@@ -353,7 +352,7 @@ export const useMovieStore = defineStore('movie', () => {
         method: 'post',
         url: `http://localhost:8000/api/v1/movies/review/${reviewId}/comment/`,
         data: { content },
-        headers: { 
+        headers: {
           Authorization: `Token ${userStore.token}`,
           'Content-Type': 'application/json'
         },
@@ -378,7 +377,7 @@ export const useMovieStore = defineStore('movie', () => {
         method: 'post',
         url: `http://localhost:8000/api/v1/movies/comment/${commentId}/reply/`,
         data: { content },
-        headers: { 
+        headers: {
           Authorization: `Token ${userStore.token}`,
           'Content-Type': 'application/json'
         },
@@ -402,9 +401,10 @@ export const useMovieStore = defineStore('movie', () => {
     try {
       const response = await axios({
         method: 'get',
-        url: `http://localhost:8000/api/v1/movies/review/${reviewId}/comments/`,
+        url: `http://127.0.0.1:8000/api/v1/movies/review/${reviewId}/comments/`,
         headers,
       })
+
       console.log('✅ 댓글 목록 조회 성공:', response.data)
       return response.data
     } catch (error) {
@@ -424,7 +424,7 @@ export const useMovieStore = defineStore('movie', () => {
       const response = await axios({
         method: 'delete',
         url: `http://localhost:8000/api/v1/movies/comment/${commentId}/delete/`,
-        headers: { 
+        headers: {
           Authorization: `Token ${userStore.token}`,
         },
       })
@@ -447,7 +447,7 @@ export const useMovieStore = defineStore('movie', () => {
       const response = await axios({
         method: isCurrentlyLiked ? 'delete' : 'post',
         url: `http://localhost:8000/api/v1/movies/comment/${commentId}/like/`,
-        headers: { 
+        headers: {
           Authorization: `Token ${userStore.token}`,
         },
       })
