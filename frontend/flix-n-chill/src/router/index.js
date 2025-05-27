@@ -10,6 +10,7 @@ import SignupPage from '@/views/SignupPage.vue'
 import SettingsPage from '@/views/SettingsPage.vue'
 import MovieSurveyPage from '@/views/MovieSurveyPage.vue'
 import Profile from '@/views/Profile.vue'
+import RecommendationsPage from '@/views/RecommendationsPage.vue'
 
 // 장르 페이지 - 하나로 통합
 import GenrePage from '@/views/GenrePage.vue'
@@ -99,6 +100,11 @@ const router = createRouter({
       path: '/reviews/:id',
       name: 'ReviewDetail',
       component: () => import('@/components/ReviewDetailModal.vue')
+    },
+    {
+      path: '/recommendations',
+      name: 'Recommendations',
+      component: RecommendationsPage
     }
   ]
 })

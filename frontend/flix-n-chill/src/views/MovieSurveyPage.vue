@@ -76,6 +76,18 @@
                 <div class="stat-label">평균 평점</div>
               </div>
             </div>
+
+            <!-- 선호 장르 표시 -->
+            <div class="genre-preferences" v-if="Object.keys(genrePreferences).length > 0">
+              <h3 class="genre-title">당신의 선호 장르</h3>
+              <div class="genre-list">
+                <div v-for="(percentage, genre) in sortedGenrePreferences" :key="genre" class="genre-item">
+                  <span class="genre-name">{{ genre }}</span>
+                  <span class="genre-percentage">{{ percentage }}%</span>
+                </div>
+              </div>
+            </div>
+
             <div class="completion-actions">
               <button class="btn btn-primary" @click="goToRecommendations">
                 <i class="bi bi-magic"></i>
@@ -198,10 +210,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMovieStore } from '@/stores/movie'
 import { useUserStore } from '@/stores/accounts'
+import axios from 'axios'
 
 // Stores
 const movieStore = useMovieStore()
@@ -230,6 +243,45 @@ const averageRating = computed(() => {
   return sum / ratedMovies.value.length
 })
 
+// 장르 선호도 계산
+const genrePreferences = computed(() => {
+  if (ratedMovies.value.length === 0) return {}
+
+  const genreCounts = {}
+  let totalGenres = 0
+
+  // 평점 3.0 이상인 영화들의 장르만 계산 (선호하는 영화로 판단)
+  const preferredMovies = ratedMovies.value.filter(movie => movie.rating >= 3.0)
+
+  preferredMovies.forEach(movie => {
+    if (movie.genre && Array.isArray(movie.genre)) {
+      movie.genre.forEach(genre => {
+        genreCounts[genre] = (genreCounts[genre] || 0) + 1
+        totalGenres++
+      })
+    }
+  })
+
+  // 비율 계산 (소수점 1자리까지)
+  const preferences = {}
+  Object.entries(genreCounts).forEach(([genre, count]) => {
+    preferences[genre] = Math.round((count / totalGenres) * 100 * 10) / 10
+  })
+
+  return preferences
+})
+
+// 선호도 높은 순으로 정렬된 장르
+const sortedGenrePreferences = computed(() => {
+  return Object.entries(genrePreferences.value)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5) // 상위 5개만 표시
+    .reduce((obj, [genre, percentage]) => {
+      obj[genre] = percentage
+      return obj
+    }, {})
+})
+
 // 별점 관련 메서드
 const getStarClass = (starNumber, type) => {
   const rating = hoverRating.value || currentRating.value
@@ -251,6 +303,57 @@ const setRating = (rating) => {
   currentRating.value = rating
 }
 
+// 사용자 선호도 데이터를 백엔드에 전송
+const submitPreferencesToBackend = async () => {
+  try {
+    console.log('📤 사용자 선호도 데이터 전송 중...')
+
+    // 사용자 정보 가져오기
+    const userInfo = userStore.user || {}
+
+    // 선호도 데이터 구성
+    const preferenceData = {
+      user_id: userInfo.id || userStore.userId,
+      age: userInfo.age || null,
+      gender: userInfo.gender || null,
+      genre_preferences: genrePreferences.value,
+      survey_metadata: {
+        total_rated_movies: ratedMovies.value.length,
+        average_rating: averageRating.value,
+        completed_at: new Date().toISOString(),
+        survey_type: 'initial_preference'
+      }
+    }
+
+    console.log('📊 전송할 선호도 데이터:', preferenceData)
+
+    // API 호출 (실제 엔드포인트에 맞게 수정 필요)
+    const response = await axios.post('/api/v1/users/preferences/', preferenceData, {
+      headers: {
+        'Authorization': `Token ${userStore.token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    console.log('✅ 선호도 데이터 저장 성공:', response.data)
+    return response.data
+
+  } catch (err) {
+    console.error('❌ 선호도 데이터 저장 실패:', err)
+
+    // 에러 상세 로깅
+    if (err.response) {
+      console.error('응답 에러:', err.response.status, err.response.data)
+    } else if (err.request) {
+      console.error('요청 에러:', err.request)
+    } else {
+      console.error('설정 에러:', err.message)
+    }
+
+    throw err
+  }
+}
+
 // 영화 관련 메서드
 const loadMovies = async () => {
   isLoading.value = true
@@ -258,53 +361,45 @@ const loadMovies = async () => {
 
   try {
     console.log('🎬 설문조사용 영화 로딩 시작...')
-    
-    // 다양한 장르의 영화들을 가져오기 (movieStore 활용)
+
     const genreTypes = ['popular', 'action', 'comedy', 'drama', 'horror', 'romance', 'thriller']
     const allMovies = []
 
-    // 각 장르별로 영화 가져오기
     for (const genreType of genreTypes) {
       try {
         console.log(`📝 ${genreType} 장르 영화 로딩 중...`)
-        
-        // movieStore의 fetchMoviesByGenre 사용
+
         const result = await movieStore.fetchMoviesByGenre(genreType, 'top', '', 1)
-        
+
         if (result.movies && result.movies.length > 0) {
-          // API 응답 구조에 맞춰 데이터 매핑
           const mappedMovies = result.movies.map(movie => ({
             id: movie.id,
             title: movie.title,
-            original_title: movie.title, // 백엔드에서 original_title이 없을 수 있음
+            original_title: movie.title,
             year: movie.year || 2024,
-            genre: movie.genres || [movie.genre || 'Unknown'], // 배열 형태로 통일
+            genre: movie.genres || [movie.genre || 'Unknown'],
             rating: movie.rating || movie.vote_average || 0,
             poster: movie.poster || '/api/placeholder/300/450',
             overview: movie.overview || movie.description || '이 영화에 대한 설명이 준비되어 있지 않습니다.',
           }))
-          
+
           allMovies.push(...mappedMovies)
           console.log(`✅ ${genreType}: ${mappedMovies.length}개 영화 로드됨`)
         }
       } catch (genreError) {
         console.warn(`⚠️ ${genreType} 장르 로딩 실패:`, genreError.message)
-        // 개별 장르 실패는 전체를 중단시키지 않음
       }
     }
 
-    // 중복 제거 (같은 ID의 영화가 여러 장르에 있을 수 있음)
     const uniqueMovies = allMovies.filter((movie, index, self) =>
       index === self.findIndex(m => m.id === movie.id)
     )
 
     console.log(`🎯 중복 제거 후: ${uniqueMovies.length}개 영화`)
 
-    // 영화가 너무 적으면 더 가져오기
     if (uniqueMovies.length < 20) {
       console.log('🔄 영화 수가 부족하여 추가 로딩...')
-      
-      // popular 장르에서 더 많은 페이지 가져오기
+
       for (let page = 2; page <= 3; page++) {
         try {
           const result = await movieStore.fetchMoviesByGenre('popular', 'top', '', page)
@@ -321,7 +416,7 @@ const loadMovies = async () => {
                 poster: movie.poster || '/api/placeholder/300/450',
                 overview: movie.overview || movie.description || '이 영화에 대한 설명이 준비되어 있지 않습니다.',
               }))
-            
+
             uniqueMovies.push(...additionalMovies)
             console.log(`✅ 추가 페이지 ${page}: ${additionalMovies.length}개 영화 추가`)
           }
@@ -335,18 +430,15 @@ const loadMovies = async () => {
       throw new Error('영화 데이터를 불러올 수 없습니다. 서버 연결을 확인해주세요.')
     }
 
-    // 랜덤하게 섞고 30개만 선택
     const shuffledMovies = shuffleArray(uniqueMovies)
     movies.value = shuffledMovies.slice(0, Math.min(30, shuffledMovies.length))
 
     console.log(`🎉 설문조사용 영화 ${movies.value.length}개 로딩 완료!`)
-    console.log('영화 목록 미리보기:', movies.value.slice(0, 3).map(m => ({ id: m.id, title: m.title })))
 
   } catch (err) {
     console.error('🚨 영화 로드 실패:', err)
     error.value = err.message || '영화를 불러오는 중 오류가 발생했습니다.'
-    
-    // 폴백: 더미 데이터 사용 (개발용)
+
     if (process.env.NODE_ENV === 'development') {
       console.log('🔧 개발모드: 더미 데이터 사용')
       movies.value = generateDummyMovies()
@@ -361,7 +453,6 @@ const completeSurvey = async () => {
 
   console.log('📊 설문 완료 처리 중...')
 
-  // 서버에 설문 결과 종합 데이터 전송
   try {
     const surveyData = {
       completed_at: new Date().toISOString(),
@@ -369,7 +460,7 @@ const completeSurvey = async () => {
       rated_movies_count: ratedMovies.value.length,
       skipped_movies_count: skippedMovies.value.length,
       average_rating: averageRating.value,
-      survey_type: 'initial_preference', // 초기 취향 설문
+      survey_type: 'initial_preference',
       rated_movies: ratedMovies.value.map(movie => ({
         movie_id: movie.id,
         rating: movie.rating,
@@ -383,23 +474,22 @@ const completeSurvey = async () => {
 
     console.log('📤 설문 결과 데이터:', surveyData)
 
-    // 설문 완료 API 호출 (별도 엔드포인트가 있다면)
-    // await axios.post('/api/v1/survey/complete/', surveyData, {
-    //   headers: { Authorization: `Token ${userStore.token}` }
-    // })
+    await axios.post('/api/v1/survey/complete/', surveyData, {
+      headers: { Authorization: `Token ${userStore.token}` }
+    })
 
     console.log('✅ 설문 결과 저장 완료!')
 
+    // 선호도 데이터도 함께 전송
+    await submitPreferencesToBackend()
+
   } catch (err) {
     console.error('❌ 설문 결과 저장 실패:', err)
-    // 에러가 있어도 완료 상태로 변경 (사용자 경험 우선)
   }
 
-  // 설문 완료 상태로 변경
   isCompleted.value = true
   console.log('🎉 설문조사가 완료되었습니다!')
 }
-
 
 const shuffleArray = (array) => {
   const shuffled = [...array]
@@ -421,18 +511,16 @@ const rateMovie = async () => {
 
   ratedMovies.value.push(ratedMovie)
 
-  // 실제 API를 통해 평점 저장
   try {
     console.log('💾 평점 저장 중...', {
       movieId: currentMovie.value.id,
       rating: currentRating.value
     })
 
-    // movieStore의 createReview 함수 활용
     const reviewData = {
       rating: currentRating.value,
       comment: `설문조사를 통한 평점: ${currentRating.value}/5.0`,
-      is_survey_rating: true // 설문조사 평점임을 구분
+      is_survey_rating: true
     }
 
     await movieStore.createReview(currentMovie.value.id, reviewData)
@@ -440,11 +528,9 @@ const rateMovie = async () => {
 
   } catch (err) {
     console.error('❌ 평점 저장 실패:', err)
-    // 저장 실패해도 설문은 계속 진행
     console.log('⚠️ 평점 저장에 실패했지만 설문을 계속 진행합니다.')
   }
 
-  // 다음 영화로 이동
   nextMovie()
 }
 
@@ -455,8 +541,6 @@ const skipMovie = () => {
   }
 
   skippedMovies.value.push(skippedMovie)
-
-  // 다음 영화로 이동
   nextMovie()
 }
 
@@ -466,38 +550,32 @@ const nextMovie = () => {
 
   if (currentIndex.value < totalMovies.value - 1) {
     currentIndex.value++
-  } else {
-    // 마지막 영화면 설문 완료
-    completeSurvey()
-  }
-}
-
-  if (currentIndex.value < totalMovies.value - 1) {
-    currentIndex.value++
     console.log(`➡️ 다음 영화로 이동: ${currentIndex.value + 1}/${totalMovies.value}`)
   } else {
     console.log('🏁 마지막 영화 도달, 설문 완료')
     completeSurvey()
   }
-  
-  // 개발 모드에서만 상태 로깅
+}
 
+const previousMovie = () => {
+  if (currentIndex.value > 0) {
+    currentIndex.value--
+    const previousRating = ratedMovies.value.find(movie => movie.id === currentMovie.value.id)
+    currentRating.value = previousRating ? previousRating.rating : 0
+  }
+}
 
 const restartSurvey = () => {
-  // 설문 초기화
   currentIndex.value = 0
   currentRating.value = 0
   hoverRating.value = 0
   ratedMovies.value = []
   skippedMovies.value = []
   isCompleted.value = false
-
-  // 영화 다시 섞기
   movies.value = shuffleArray(movies.value)
 }
 
 const goToRecommendations = () => {
-  // 추천 페이지로 이동
   router.push('/recommendations')
 }
 
@@ -510,6 +588,20 @@ const truncateText = (text, length) => {
   if (!text) return ''
   if (text.length <= length) return text
   return text.substring(0, length) + '...'
+}
+
+const generateDummyMovies = () => {
+  return [
+    {
+      id: 1,
+      title: "더미 영화 1",
+      year: 2023,
+      genre: ["액션", "모험"],
+      rating: 8.5,
+      poster: "/api/placeholder/300/450",
+      overview: "개발용 더미 데이터입니다."
+    }
+  ]
 }
 
 // 키보드 이벤트 핸들러
@@ -540,12 +632,9 @@ const handleKeydown = (event) => {
 // 생명주기
 onMounted(async () => {
   await loadMovies()
-
-  // 키보드 이벤트 리스너 추가
   document.addEventListener('keydown', handleKeydown)
 })
 
-// cleanup
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
 })
@@ -838,6 +927,50 @@ onUnmounted(() => {
 .stat-label {
   font-size: 1rem;
   color: rgba(255, 255, 255, 0.7);
+}
+
+/* 장르 선호도 표시 */
+.genre-preferences {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 3rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.genre-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.genre-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.genre-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.genre-name {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.genre-percentage {
+  color: #8e2de2;
+  font-weight: 600;
+  font-size: 1.1rem;
 }
 
 .completion-actions {
@@ -1345,13 +1478,16 @@ onUnmounted(() => {
     flex-direction: column;
     gap: 1.5rem;
   }
+
+  .genre-list {
+    gap: 0.75rem;
+  }
 }
 
 @media (max-width: 768px) {
   .survey-header {
     padding: 1rem 0;
     top: 60px;
-    padding: 1rem 0;
   }
 
   .survey-title {
@@ -1404,6 +1540,15 @@ onUnmounted(() => {
   .completion-actions {
     flex-direction: column;
     align-items: center;
+  }
+
+  .genre-preferences {
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .genre-title {
+    font-size: 1.3rem;
   }
 
   .modal-content {
@@ -1463,6 +1608,18 @@ onUnmounted(() => {
 
   .stat-number {
     font-size: 2rem;
+  }
+
+  .genre-preferences {
+    padding: 1rem;
+  }
+
+  .genre-item {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .genre-percentage {
+    font-size: 1rem;
   }
 
   .survey-header {
