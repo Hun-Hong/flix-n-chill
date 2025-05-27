@@ -144,14 +144,8 @@ export const useMovieStore = defineStore('movie', () => {
     let currentLiked = null
     let targetMovie = null
     
-    // 올바른 데이터 구조로 접근
+    // 올바른 데이터 구조로 접근 - cacheData.movies 배열에서 찾기
     Object.values(userCache).some(cacheData => {
-      const m = cacheData.movies?.find(x => x.id === movieId)
-      if (m) { currentLiked = m.isLiked; return true }
-    })
-    if (currentLiked === null) return
-    const nextLiked = !currentLiked
-    
       if (cacheData.movies) {
         const movie = cacheData.movies.find(m => m.id === movieId)
         if (movie) {
@@ -198,19 +192,9 @@ export const useMovieStore = defineStore('movie', () => {
     }
   }
 
-  // 찜 토글 (필요시 구현)
-  const toggleWatchlist = async (movieId) => {
-    // 찜 토글 로직 구현
-    console.log('찜 토글:', movieId)
-  }
-
   // 리뷰 생성
   const createReview = async (movieId, payload) => {
     const userStore = useUserStore()
-    if (!userStore.token) {
-      throw new Error('로그인이 필요합니다.')
-    }
-    
     try {
       const response = await axios({
         method: 'post',
@@ -221,10 +205,10 @@ export const useMovieStore = defineStore('movie', () => {
           'Content-Type': 'application/json'
         },
       })
-      console.log('✅ 리뷰 생성 성공:', response.data)
+      console.log('리뷰 생성 성공:', response.data)
       return response.data
     } catch (error) {
-      console.error('❌ 리뷰 생성 실패:', error)
+      console.error('리뷰 생성 실패:', error)
       throw error
     }
   }
@@ -232,10 +216,6 @@ export const useMovieStore = defineStore('movie', () => {
   // 사용자 리뷰 조회
   const getUserReview = async (movieId) => {
     const userStore = useUserStore()
-    if (!userStore.token) {
-      throw new Error('로그인이 필요합니다.')
-    }
-    
     try {
       const response = await axios({
         method: 'get',
@@ -244,15 +224,15 @@ export const useMovieStore = defineStore('movie', () => {
           Authorization: `Token ${userStore.token}`,
         },
       })
-      console.log('✅ 기존 리뷰 조회 성공:', response.data)
+      console.log('기존 리뷰 조회 성공:', response.data)
       return response.data
     } catch (error) {
       if (error.response?.status === 404) {
         // 리뷰가 없는 경우 (정상적인 상황)
-        console.log('ℹ️ 기존 리뷰 없음')
+        console.log('기존 리뷰 없음')
         return null
       }
-      console.error('❌ 리뷰 조회 실패:', error)
+      console.error('리뷰 조회 실패:', error)
       throw error
     }
   }
@@ -260,10 +240,6 @@ export const useMovieStore = defineStore('movie', () => {
   // 리뷰 수정
   const updateReview = async (movieId, reviewId, payload) => {
     const userStore = useUserStore()
-    if (!userStore.token) {
-      throw new Error('로그인이 필요합니다.')
-    }
-    
     try {
       const response = await axios({
         method: 'put',
@@ -274,10 +250,10 @@ export const useMovieStore = defineStore('movie', () => {
           'Content-Type': 'application/json'
         },
       })
-      console.log('✅ 리뷰 수정 성공:', response.data)
+      console.log('리뷰 수정 성공:', response.data)
       return response.data
     } catch (error) {
-      console.error('❌ 리뷰 수정 실패:', error)
+      console.error('리뷰 수정 실패:', error)
       throw error
     }
   }
@@ -285,10 +261,6 @@ export const useMovieStore = defineStore('movie', () => {
   // 리뷰 삭제
   const deleteReview = async (movieId, reviewId) => {
     const userStore = useUserStore()
-    if (!userStore.token) {
-      throw new Error('로그인이 필요합니다.')
-    }
-    
     try {
       const response = await axios({
         method: 'delete',
@@ -297,28 +269,24 @@ export const useMovieStore = defineStore('movie', () => {
           Authorization: `Token ${userStore.token}`,
         },
       })
-      console.log('✅ 리뷰 삭제 성공')
+      console.log('리뷰 삭제 성공')
       return response.data
     } catch (error) {
-      console.error('❌ 리뷰 삭제 실패:', error)
+      console.error('리뷰 삭제 실패:', error)
       throw error
     }
   }
 
   return {
-    BE_API_PATH,
-    
     moviesByGenre,
     loading,
     error,
     getMoviesByGenreSync,
     fetchMoviesByGenre,
-    clearGenreMovies,
     toggleLike,
     createReview,
     getUserReview,
     updateReview,
     deleteReview,
-    toggleWatchlist,
   }
 })

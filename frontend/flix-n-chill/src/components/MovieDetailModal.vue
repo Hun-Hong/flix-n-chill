@@ -290,6 +290,7 @@ const handleReviewSubmit = (result) => {
       // 삭제된 경우
       message = '리뷰가 삭제되었습니다!'
       console.log('리뷰 삭제 성공!')
+      movieDetail.value.isReviewed = false
     } else if (result.isEdit) {
       // 수정된 경우
       message = '리뷰가 수정되었습니다!'
@@ -298,6 +299,7 @@ const handleReviewSubmit = (result) => {
       // 새로 생성된 경우
       message = '리뷰가 등록되었습니다!'
       console.log('리뷰 생성 성공!')
+      movieDetail.value.isReviewed = true
     }
 
     // 성공 메시지 표시
