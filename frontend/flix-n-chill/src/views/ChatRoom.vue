@@ -196,7 +196,7 @@ const initializeChat = async () => {
 
 const connectWebSocket = () => {
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const backendHost = import.meta.env.VITE_BACKEND_HOST || 'http://34.47.106.179'
+  const backendHost = import.meta.env.VITE_BACKEND_HOST || '34.47.106.179'
   // 토큰을 URL 쿼리 파라미터로 추가
   const wsUrl = `${wsProtocol}//${backendHost}/ws/chat/${props.roomId}/?token=${token.value}`
 
@@ -390,8 +390,8 @@ const getCurrentUser = async () => {
     throw new Error('인증 토큰이 없습니다. 로그인이 필요합니다.')
   }
 
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://34.47.106.179/api'
-  const response = await fetch(`${apiBaseUrl}/user/me/`, {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://34.47.106.179/accounts'
+  const response = await fetch(`${apiBaseUrl}/user/`, {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Token ${token.value}`
@@ -412,7 +412,7 @@ const getRoomInfo = async () => {
   }
 
   try {
-    const response = await fetch(`http://34.47.106.179/api/chat/room/${props.roomId}/`, {
+    const response = await fetch(`34.47.106.179/api/chat/room/${props.roomId}/`, {
       method: 'GET',
       headers: {
         'Authorization': `Token ${token.value}`,
