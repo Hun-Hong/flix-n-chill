@@ -97,10 +97,43 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return obj.following.count()
 
     def get_followers(self, obj):
-        return obj.followers.values('id', 'username')
+        followers_data = []
+        for follower in obj.followers.all():
+            followers_data.append({
+                'id': follower.id,
+                'username': follower.username,
+                'nickname': follower.nickname,
+                'profile_image': follower.profile_image.url if follower.profile_image else None,
+                'profile_bio': follower.profile_bio,
+                'followers_count': follower.followers.count(),
+                'following_count': follower.following.count(),
+                'is_following': self._check_is_following(follower)
+            })
+        return followers_data
 
     def get_following(self, obj):
-        return obj.following.values('id', 'username')
+        following_data = []
+        for following in obj.following.all():
+            following_data.append({
+                'id': following.id,
+                'username': following.username,
+                'nickname': following.nickname,
+                'profile_image': following.profile_image.url if following.profile_image else None,
+                'profile_bio': following.profile_bio,
+                'followers_count': following.followers.count(),
+                'following_count': following.following.count(),
+                'is_following': self._check_is_following(following)
+            })
+        return following_data
+
+    def _check_is_following(self, target_user):
+        """팔로우 상태 확인 헬퍼 메서드"""
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        if request.user == target_user:
+            return False
+        return Follow.objects.filter(follower=request.user, following=target_user).exists()
 
     def get_reviews(self, obj):
         reviews = Review.objects.filter(user=obj).select_related('movie')
