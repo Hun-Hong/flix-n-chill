@@ -16,6 +16,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from django.db.models import Q
 from datetime import datetime
+from accounts.models import MovieLike
 
 # Create your views here.
 
@@ -232,10 +233,10 @@ def movie_like(request, pk):
     user = request.user
 
     if request.method == "POST":
-        movie.liked_user.add(user)
+        MovieLike.objects.create(user=user, movie=movie)
         return Response({"detail": "liked"},status=status.HTTP_201_CREATED)
     elif request.method == "DELETE":
-        movie.liked_user.remove(user)
+        MovieLike.objects.filter(user=user, movie=movie).delete()
         return Response({"detail": "unliked"},status=status.HTTP_204_NO_CONTENT)
 
 

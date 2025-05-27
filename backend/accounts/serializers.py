@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import User
 from movies.models import Movie, Review, Genre
+from accounts.models import Follow, MovieLike
 # from movies.serializers import MovieListSerializer  # 이 import 제거
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from django.db import models
@@ -77,13 +78,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
     following = serializers.SerializerMethodField()
     reviews = serializers.SerializerMethodField()
     like_movies = serializers.SerializerMethodField()
+    is_following = serializers.SerializerMethodField()  # 추가
+    activities = serializers.SerializerMethodField()  # 이것만 추가
+
 
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'profile_image', "last_login",
             'followers_count', 'following_count', 'followers', 'following',
-            'reviews', 'like_movies', 'nickname', "birth", "profile_bio", "gender"
+            'reviews', 'like_movies', 'nickname', "birth", "profile_bio", "gender", "is_following", "activities"
         ]
 
     def get_followers_count(self, obj):
@@ -103,14 +107,96 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return ReviewSimpleSerializer(reviews, many=True, context=self.context).data
     
     def get_like_movies(self, obj):
-        liked_movies = obj.like_movie.all()
-        
         # 프로필 소유자를 context에 추가하여 전달
         context_with_owner = self.context.copy()
-        context_with_owner['profile_owner'] = obj  # 프로필 소유자 정보 추가
+        context_with_owner['profile_owner'] = obj
         
+        # prefetch_related로 성능 최적화
+        liked_movies = obj.like_movie.all().prefetch_related('genres', 'review_set')
         serializer = ProfileMovieSerializer(liked_movies, many=True, context=context_with_owner)
         return serializer.data
+
+    def get_is_following(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        
+        if request.user == obj:
+            return False  # 자기 자신은 팔로우할 수 없음
+        
+        return Follow.objects.filter(follower=request.user, following=obj).exists()
+
+    def get_activities(self, obj):
+    # 활동 제한 개수 (기본 30개)
+        limit = 30
+        activities = []
+        
+        try:
+            # 1. 리뷰 작성 내역
+            reviews = Review.objects.filter(user=obj).select_related('movie')[:limit]
+            for review in reviews:
+                activities.append({
+                    'id': f"review_{review.id}",
+                    'type': 'review',
+                    'action': 'created',
+                    'text': f'"{review.movie.title}"에 리뷰를 작성했습니다',
+                    'detail': {
+                        'movie_id': review.movie.id,
+                        'movie_title': review.movie.title,
+                        'movie_poster': review.movie.poster_path,
+                        'rating': review.rating,
+                        'content': review.comment[:100] + '...' if len(review.comment or '') > 100 else review.comment
+                    },
+                    'created_at': review.created_at,
+                    'timestamp': review.created_at.isoformat()
+                })
+            
+            # 2. 팔로우 내역
+            follows = Follow.objects.filter(follower=obj).select_related('following')[:limit]
+            for follow in follows:
+                activities.append({
+                    'id': f"follow_{follow.id}",
+                    'type': 'follow',
+                    'action': 'followed',
+                    'text': f'{follow.following.nickname}님을 팔로우했습니다',
+                    'detail': {
+                        'user_id': follow.following.id,
+                        'user_nickname': follow.following.nickname,
+                        'user_profile_image': follow.following.profile_image.url if follow.following.profile_image else None
+                    },
+                    'created_at': follow.created_at,
+                    'timestamp': follow.created_at.isoformat()
+                })
+            
+            # 3. 영화 좋아요 내역
+            movie_likes = MovieLike.objects.filter(user=obj).select_related('movie')[:limit]
+            for like in movie_likes:
+                activities.append({
+                    'id': f"like_{like.id}",
+                    'type': 'like',
+                    'action': 'liked',
+                    'text': f'"{like.movie.title}"을 좋아요했습니다',
+                    'detail': {
+                        'movie_id': like.movie.id,
+                        'movie_title': like.movie.title,
+                        'movie_poster': like.movie.poster_path,
+                        'movie_rating': like.movie.vote_average
+                    },
+                    'created_at': like.created_at,
+                    'timestamp': like.created_at.isoformat()
+                })
+            
+            # 모든 활동을 시간순으로 정렬 (최신순)
+            activities.sort(key=lambda x: x['created_at'], reverse=True)
+            
+            # 제한된 개수만 반환
+            return activities[:limit]
+            
+        except Exception as e:
+            print(f"활동 로그 생성 중 오류: {e}")
+            return []
+
+
 
 class ProfileMovieSerializer(serializers.ModelSerializer):
     class GenreSerializer(serializers.ModelSerializer):
