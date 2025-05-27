@@ -1,8 +1,12 @@
 from django.shortcuts import render, get_object_or_404
 from django.conf import settings
 import requests
-from .serializers import MovieListSerializer, MovieCreateSerializer, MovieDetailSerializer, ReviewSerializer, ReviewCreateSerializer
-from .models import Movie, Genre, MovieProvider, Review
+from .serializers import (
+    MovieListSerializer, MovieCreateSerializer, MovieDetailSerializer, 
+    ReviewSerializer, ReviewCreateSerializer, 
+    CommentSerializer, CommentCreateSerializer
+)
+from .models import Movie, Genre, MovieProvider, Review, Comment
 import json
 from .models import Genre
 from rest_framework.response import Response
@@ -117,7 +121,7 @@ def movie_collect(request):
 # 클래스 방식
 class MovieListView(ListAPIView):
     serializer_class = MovieListSerializer
-    
+
     def get_queryset(self):
         ordering = self.request.query_params.get('ordering', 'latest')
         year = self.request.query_params.get('year', None)
@@ -213,7 +217,7 @@ class MovieSearchView(ListAPIView):
 
         if not query:
             return Movie.objects.none()
-        
+
         if len(query) < 2:
             raise ValidationError("검색어는 최소 2자 이상이어야 합니다.")
 
@@ -239,7 +243,7 @@ def movie_like(request, pk):
 @permission_classes([permissions.IsAuthenticated])
 def create_review(request, pk):
     movie = get_object_or_404(Movie, pk=pk)
-    
+
     # 해당 사용자가 이미 이 영화에 리뷰를 작성했는지 확인 (선택사항)
     existing_review = Review.objects.filter(user=request.user, movie=movie).first()
     if existing_review:
@@ -247,16 +251,16 @@ def create_review(request, pk):
             {"error": "이미 이 영화에 대한 리뷰를 작성하셨습니다."}, 
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     serializer = ReviewCreateSerializer(data=request.data)
     if serializer.is_valid():
         # user와 movie를 자동으로 설정
         review = serializer.save(user=request.user, movie=movie)
-        
+
         # 생성된 리뷰를 다시 직렬화해서 반환 (모든 필드 포함)
         response_serializer = ReviewCreateSerializer(review)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-    
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
@@ -264,7 +268,7 @@ def create_review(request, pk):
 def get_user_review(request, pk):
     """현재 사용자의 특정 영화에 대한 리뷰 조회"""
     movie = get_object_or_404(Movie, pk=pk)
-    
+
     try:
         review = Review.objects.get(user=request.user, movie=movie)
         serializer = ReviewSerializer(review)  # 적절한 serializer 사용
@@ -282,7 +286,7 @@ def update_review(request, movie_pk, review_pk):
     """리뷰 수정"""
     movie = get_object_or_404(Movie, pk=movie_pk)
     review = get_object_or_404(Review, pk=review_pk, user=request.user, movie=movie)
-    
+
     serializer = ReviewCreateSerializer(review, data=request.data)
     if serializer.is_valid():
         serializer.save()
@@ -296,12 +300,111 @@ def delete_review(request, movie_pk, review_pk):
     """리뷰 삭제"""
     movie = get_object_or_404(Movie, pk=movie_pk)
     review = get_object_or_404(Review, pk=review_pk, user=request.user, movie=movie)
-    
+
     review.delete()
     return Response(
         {"detail": "리뷰가 삭제되었습니다."}, 
         status=status.HTTP_204_NO_CONTENT
     )
+
+
+## Comment API Views
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def create_comment(request, review_pk):
+    """리뷰에 댓글 작성"""
+    review = get_object_or_404(Review, pk=review_pk)
+
+    serializer = CommentCreateSerializer(data=request.data)
+    if serializer.is_valid():
+        comment = serializer.save(user=request.user, review=review, parent_comment=None)
+        response_serializer = CommentSerializer(comment, context={'request': request})
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def create_reply(request, comment_pk):
+    """댓글에 대댓글 작성"""
+    parent_comment = get_object_or_404(Comment, pk=comment_pk)
+
+    serializer = CommentCreateSerializer(data=request.data)
+    if serializer.is_valid():
+        # 대댓글은 parent_comment를 설정하고, review는 부모 댓글의 review를 사용
+        comment = serializer.save(
+            user=request.user, 
+            parent_comment=parent_comment,
+            review=parent_comment.review
+        )
+        response_serializer = CommentSerializer(comment, context={'request': request})
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def get_review_comments(request, review_pk):
+    """리뷰의 모든 댓글 조회 (대댓글 포함)"""
+    review = get_object_or_404(Review, pk=review_pk)
+
+    # 최상위 댓글만 가져옴 (대댓글은 CommentSerializer에서 처리)
+    comments = Comment.objects.filter(review=review, parent_comment=None).order_by('created_at')
+    serializer = CommentSerializer(comments, many=True, context={'request': request})
+
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['PUT'])
+@permission_classes([permissions.IsAuthenticated])
+def update_comment(request, comment_pk):
+    """댓글 수정"""
+    comment = get_object_or_404(Comment, pk=comment_pk, user=request.user)
+
+    serializer = CommentCreateSerializer(comment, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        response_serializer = CommentSerializer(comment, context={'request': request})
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def delete_comment(request, comment_pk):
+    """댓글 삭제"""
+    comment = get_object_or_404(Comment, pk=comment_pk, user=request.user)
+
+    comment.delete()
+    return Response(
+        {"detail": "댓글이 삭제되었습니다."}, 
+        status=status.HTTP_204_NO_CONTENT
+    )
+
+
+@api_view(['POST', 'DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def comment_like(request, comment_pk):
+    """댓글 좋아요/좋아요 취소"""
+    comment = get_object_or_404(Comment, pk=comment_pk)
+    user = request.user
+
+    if request.method == 'POST':
+        # 좋아요 추가
+        comment.likes.add(user)
+        return Response(
+            {"detail": "댓글에 좋아요를 표시했습니다.", "like_count": comment.like_count}, 
+            status=status.HTTP_200_OK
+        )
+    elif request.method == 'DELETE':
+        # 좋아요 취소
+        comment.likes.remove(user)
+        return Response(
+            {"detail": "댓글 좋아요를 취소했습니다.", "like_count": comment.like_count}, 
+            status=status.HTTP_200_OK
+        )
 
 
 ## provider DB 수집을 위해 작동하였습니다.

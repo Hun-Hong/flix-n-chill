@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import Movie, MovieProvider, Genre, Review
+from .models import Movie, MovieProvider, Genre, Review, Comment
 from django.db import models
+from accounts.models import User
 
 class MovieListSerializer(serializers.ModelSerializer):
     class GenreSerializer(serializers.ModelSerializer):
@@ -23,7 +24,7 @@ class MovieListSerializer(serializers.ModelSerializer):
         if user and user.is_authenticated:
             return obj.liked_user.filter(id=user.id).exists()
         return False
-    
+
     def get_average_rating(self, obj):
         reviews = obj.review_set.all()
         if reviews.exists():
@@ -53,14 +54,14 @@ class MovieDetailSerializer(serializers.ModelSerializer):
         model = Movie
         fields = "__all__"
         read_only_fields = ("rating", "genres")
-    
+
     def get_isLiked(self, obj):
         request = self.context.get("request", None)
         user = getattr(request, 'user', None)
         if user and user.is_authenticated:
             return obj.liked_user.filter(id=user.id).exists()
         return False
-    
+
     def get_isReviewed(self, obj):
         request = self.context.get("request", None)
         user    = getattr(request, 'user', None)
@@ -76,11 +77,16 @@ class ReviewSerializer(serializers.ModelSerializer):
             fields = ("id", "title", "poster_path", )
 
     movie = movieSerializer()
+    comments = serializers.SerializerMethodField()
 
     class Meta:
         model = Review
         fields = "__all__"
         read_only_fields = ("user", "movie", "created_at")
+
+    def get_comments(self, obj):
+        comments = obj.comments.filter(parent_comment=None).order_by('created_at')
+        return CommentSerializer(comments, many=True, context=self.context).data
 
 
 class ReviewCreateSerializer(serializers.ModelSerializer):
@@ -88,3 +94,43 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
         model = Review
         fields = "__all__"
         read_only_fields = ("user", "movie", "created_at")
+
+
+class CommentUserSerializer(serializers.ModelSerializer):
+    """Serializer for user information in comments"""
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'nickname', 'profile_image')
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    """Serializer for displaying comments"""
+    user = CommentUserSerializer(read_only=True)
+    like_count = serializers.IntegerField(read_only=True)
+    is_liked = serializers.SerializerMethodField()
+    replies = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Comment
+        fields = ('id', 'user', 'review', 'parent_comment', 'content', 'created_at', 'like_count', 'is_liked', 'replies')
+        read_only_fields = ('user', 'review', 'parent_comment', 'created_at')
+
+    def get_is_liked(self, obj):
+        request = self.context.get("request", None)
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated:
+            return obj.likes.filter(id=user.id).exists()
+        return False
+
+    def get_replies(self, obj):
+        # Only get direct replies to this comment
+        replies = obj.replies.all().order_by('created_at')
+        return CommentSerializer(replies, many=True, context=self.context).data
+
+
+class CommentCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating comments"""
+    class Meta:
+        model = Comment
+        fields = ('id', 'review', 'parent_comment', 'content', 'created_at')
+        read_only_fields = ('created_at',)

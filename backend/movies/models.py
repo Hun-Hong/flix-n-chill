@@ -6,11 +6,11 @@ class Movie(models.Model):
 
     title = models.CharField(max_length=100)
     original_title = models.CharField(max_length=100)
-    
+
     overview = models.TextField(blank=True)
-    
+
     providers = models.ManyToManyField("movies.movieprovider", blank=True)
-    
+
     adult = models.BooleanField()
     budget = models.PositiveIntegerField()
     genres = models.ManyToManyField("movies.genre", blank=True)
@@ -29,6 +29,21 @@ class Review(models.Model):
     comment = models.CharField(max_length=50, default="", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     unique_together = ('user', 'movie')
+
+class Comment(models.Model):
+    user = models.ForeignKey("accounts.user", on_delete=models.CASCADE)
+    review = models.ForeignKey("movies.review", on_delete=models.CASCADE, related_name="comments", null=True, blank=True)
+    parent_comment = models.ForeignKey("self", on_delete=models.CASCADE, related_name="replies", null=True, blank=True)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    likes = models.ManyToManyField("accounts.user", related_name="liked_comments", blank=True)
+
+    def __str__(self):
+        return f"Comment by {self.user.username} on {self.created_at.strftime('%Y-%m-%d')}"
+
+    @property
+    def like_count(self):
+        return self.likes.count()
 
 class Genre(models.Model):
     name = models.CharField(max_length=50)

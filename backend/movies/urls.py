@@ -29,5 +29,13 @@ urlpatterns = [
     path('<int:movie_pk>/review/<int:review_pk>/delete/', views.delete_review),  
     path("search/", view=views.MovieSearchView.as_view()),
 
+    # Comment URLs
+    path('review/<int:review_pk>/comments/', views.get_review_comments),
+    path('review/<int:review_pk>/comment/', views.create_comment),
+    path('comment/<int:comment_pk>/reply/', views.create_reply),
+    path('comment/<int:comment_pk>/', views.update_comment),
+    path('comment/<int:comment_pk>/delete/', views.delete_comment),
+    path('comment/<int:comment_pk>/like/', views.comment_like),
+
     # path("providers/", view=views.collect_provider),
 ]
