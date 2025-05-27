@@ -8,14 +8,8 @@
       </router-link>
 
       <!-- 모바일 토글 버튼 -->
-      <button 
-        class="navbar-toggler" 
-        type="button" 
-        @click="toggleMobileMenu"
-        :class="{ collapsed: !isMobileMenuOpen }"
-        aria-expanded="false" 
-        aria-label="Toggle navigation"
-      >
+      <button class="navbar-toggler" type="button" @click="toggleMobileMenu" :class="{ collapsed: !isMobileMenuOpen }"
+        aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
 
@@ -32,30 +26,29 @@
               <i class="bi bi-search me-1"></i>Search
             </router-link>
           </li>
+          <li class="nav-item">
+            <router-link class="nav-link" :to="{ name: 'Recommendations' }" @click="closeMobileMenu">
+              <i class="bi bi-stars me-1"></i>Recommend
+            </router-link>
+          </li>
+
           <li class="nav-item dropdown">
-            <a 
-              class="nav-link dropdown-toggle" 
-              href="#"
-              @click.prevent="toggleGenreDropdown"
-              :aria-expanded="isGenreDropdownOpen"
-              role="button"
-            >
+            <a class="nav-link dropdown-toggle" href="#" @click.prevent="toggleGenreDropdown"
+              :aria-expanded="isGenreDropdownOpen" role="button">
               <i class="bi bi-collection me-1"></i>Genre
             </a>
             <ul class="dropdown-menu" :class="{ show: isGenreDropdownOpen }">
               <li v-for="genre in genreList" :key="genre.type">
-                <router-link 
-                  class="dropdown-item" 
-                  :to="{ name: 'Genre', query: { type: genre.type } }" 
-                  @click="closeAllDropdowns"
-                >
+                <router-link class="dropdown-item" :to="{ name: 'Genre', query: { type: genre.type } }"
+                  @click="closeAllDropdowns">
                   {{ genre.name }}
                 </router-link>
               </li>
             </ul>
           </li>
           <li class="nav-item" v-if="userStore.isAuthenticated">
-            <router-link class="nav-link" :to="{ name: 'user-profile', params: {userId: userStore.userData.id} }" @click="closeMobileMenu">
+            <router-link class="nav-link" :to="{ name: 'user-profile', params: { userId: userStore.userData.id } }"
+              @click="closeMobileMenu">
               <i class="bi bi-person me-1"></i>My Page
             </router-link>
           </li>
@@ -75,24 +68,17 @@
 
           <!-- 로그인 상태 -->
           <div v-else class="dropdown">
-            <button 
+            <button
               class="btn btn-link dropdown-toggle d-flex align-items-center text-decoration-none p-0 border-0 user-profile-btn"
-              @click="toggleUserDropdown"
-              :aria-expanded="isUserDropdownOpen"
-            >
-              <img 
-                :src="userProfileImage" 
-                :alt="userStore.userName" 
-                class="rounded-circle me-2"
-                width="32" 
-                height="32"
-                @error="handleImageError"
-              >
+              @click="toggleUserDropdown" :aria-expanded="isUserDropdownOpen">
+              <img :src="userProfileImage" :alt="userStore.userName" class="rounded-circle me-2" width="32" height="32"
+                @error="handleImageError">
               <span class="text-white fw-medium d-none d-md-inline">{{ userStore.userName }}</span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end" :class="{ show: isUserDropdownOpen }">
               <li>
-                <router-link :to="{ name: 'user-profile', params: {userId: userStore.userData.id} }" class="dropdown-item" @click="closeAllDropdowns">
+                <router-link :to="{ name: 'user-profile', params: { userId: userStore.userData.id } }"
+                  class="dropdown-item" @click="closeAllDropdowns">
                   <i class="bi bi-person me-2"></i>My page
                 </router-link>
               </li>
@@ -101,7 +87,9 @@
                   <i class="bi bi-gear me-2"></i>Settings
                 </router-link>
               </li>
-              <li><hr class="dropdown-divider"></li>
+              <li>
+                <hr class="dropdown-divider">
+              </li>
               <li>
                 <button @click="showLogoutModal = true" class="dropdown-item logout-btn">
                   <i class="bi bi-box-arrow-right me-2"></i>Logout
@@ -213,19 +201,19 @@ const handleImageError = (event) => {
   const colorIndex = userName.charCodeAt(0) % 6
   const colors = ['db0000', '2563eb', '7c3aed', 'dc2626', 'ea580c', '16a34a']
   const selectedColor = colors[colorIndex]
-  
+
   event.target.src = `/defaultProfileImg.png`
 }
 
 // 프로필 이미지 관련 유틸리티 함수들 추가
 const getInitials = (name) => {
   if (!name) return 'U'
-  
+
   const words = name.trim().split(' ')
   if (words.length === 1) {
     return words[0].charAt(0).toUpperCase()
   }
-  
+
   // 두 단어 이상인 경우 첫 글자들 조합
   return words.slice(0, 2).map(word => word.charAt(0).toUpperCase()).join('')
 }
@@ -241,10 +229,10 @@ const generateAvatarUrl = (name, size = 128) => {
     { bg: 'ea580c', text: 'ffffff' },
     { bg: '16a34a', text: 'ffffff' },
   ]
-  
+
   const colorIndex = userName.charCodeAt(0) % colors.length
   const selectedColor = colors[colorIndex]
-  
+
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${selectedColor.bg}&color=${selectedColor.text}&size=${size}&font-size=0.6&bold=true&rounded=true`
 }
 
@@ -298,16 +286,16 @@ const closeAllDropdowns = () => {
 const handleLogout = async () => {
   isLoggingOut.value = true
   closeAllDropdowns()
-  
+
   try {
     // 서버에 로그아웃 요청
     const result = await userStore.logout()
-    
+
     if (result.success) {
       // 모달 닫고 성공 팝업 표시
       showLogoutModal.value = false
       showLogoutSuccess.value = true
-      
+
       if (result.warning) {
         console.warn(result.warning)
       }
@@ -353,7 +341,7 @@ onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   // 스크롤 이벤트 리스너 추가
   window.addEventListener('scroll', handleScroll)
-  
+
   // 사용자 활동 업데이트
   if (userStore.isAuthenticated) {
     userStore.updateLastActivity()
@@ -370,13 +358,13 @@ onUnmounted(() => {
 <style scoped>
 /* 🌟 GLASS MORPHISM NAVBAR WITH EPIC ANIMATIONS 🌟 */
 .navbar {
-  background: linear-gradient(135deg, 
-    rgba(0, 0, 0, 0.9) 0%, 
-    rgba(219, 0, 0, 0.15) 30%, 
-    rgba(0, 0, 0, 0.9) 100%) !important;
+  background: linear-gradient(135deg,
+      rgba(0, 0, 0, 0.9) 0%,
+      rgba(219, 0, 0, 0.15) 30%,
+      rgba(0, 0, 0, 0.9) 100%) !important;
   backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid rgba(219, 0, 0, 0.3);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.37),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   position: relative;
@@ -393,7 +381,7 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
+  background:
     radial-gradient(circle at 20% 50%, rgba(219, 0, 0, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
     radial-gradient(circle at 40% 80%, rgba(219, 0, 0, 0.08) 0%, transparent 50%);
@@ -402,15 +390,17 @@ onUnmounted(() => {
 }
 
 @keyframes particleFloat {
-  0% { 
+  0% {
     opacity: 0.6;
     transform: translateY(0px) rotate(0deg);
   }
+
   50% {
     opacity: 1;
     transform: translateY(-10px) rotate(180deg);
   }
-  100% { 
+
+  100% {
     opacity: 0.8;
     transform: translateY(-5px) rotate(360deg);
   }
@@ -420,14 +410,12 @@ onUnmounted(() => {
 .navbar-brand {
   font-size: 1.8rem !important;
   font-weight: 800 !important;
-  background: linear-gradient(
-    45deg,
-    #ff0000,
-    #ff4444,
-    #ff0000,
-    #cc0000,
-    #ff0000
-  );
+  background: linear-gradient(45deg,
+      #ff0000,
+      #ff4444,
+      #ff0000,
+      #cc0000,
+      #ff0000);
   background-size: 400% 400%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -445,8 +433,15 @@ onUnmounted(() => {
 }
 
 @keyframes holographicShine {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 /* 💎 LOGO IMAGE WITH CYBER GLOW */
@@ -454,33 +449,35 @@ onUnmounted(() => {
   height: 45px;
   width: auto;
   max-width: 55px;
-  filter: 
-    drop-shadow(0 0 10px rgba(219, 0, 0, 0.6))
-    drop-shadow(0 0 20px rgba(219, 0, 0, 0.4))
-    brightness(1.1)
-    contrast(1.2);
+  filter:
+    drop-shadow(0 0 10px rgba(219, 0, 0, 0.6)) drop-shadow(0 0 20px rgba(219, 0, 0, 0.4)) brightness(1.1) contrast(1.2);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   animation: logoFloat 4s ease-in-out infinite;
 }
 
 .navbar-brand:hover .logo-image {
   transform: rotate(5deg) scale(1.1);
-  filter: 
-    drop-shadow(0 0 15px rgba(219, 0, 0, 0.8))
-    drop-shadow(0 0 30px rgba(219, 0, 0, 0.6))
-    brightness(1.3)
-    contrast(1.4);
+  filter:
+    drop-shadow(0 0 15px rgba(219, 0, 0, 0.8)) drop-shadow(0 0 30px rgba(219, 0, 0, 0.6)) brightness(1.3) contrast(1.4);
 }
 
 @keyframes logoFloat {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-3px) rotate(2deg); }
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-3px) rotate(2deg);
+  }
 }
 
 /* ⚡ CYBER NAV LINKS WITH NEON EFFECTS - 간격 넓히기 */
 .navbar-nav {
-  gap: 2rem; /* 메뉴 간격을 2rem으로 넓힘 */
-  display: flex; 
+  gap: 2rem;
+  /* 메뉴 간격을 2rem으로 넓힘 */
+  display: flex;
   overflow: visible;
 }
 
@@ -488,14 +485,16 @@ onUnmounted(() => {
   color: #ffffff !important;
   font-weight: 600 !important;
   position: relative;
-  padding: 0.8rem 1.5rem !important; /* 클릭 영역도 넓게 */
+  padding: 0.8rem 1.5rem !important;
+  /* 클릭 영역도 넓게 */
   border-radius: 25px;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   text-transform: uppercase;
   letter-spacing: 1px;
   font-size: 0.9rem;
   overflow: hidden;
-  white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+  white-space: nowrap;
+  /* 텍스트 줄바꿈 방지 */
 }
 
 .navbar-nav .nav-link::before {
@@ -505,12 +504,10 @@ onUnmounted(() => {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(219, 0, 0, 0.3),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(219, 0, 0, 0.3),
+      transparent);
   transition: left 0.5s ease;
 }
 
@@ -529,7 +526,7 @@ onUnmounted(() => {
 .navbar-nav .nav-link:hover {
   color: #ffffff !important;
   background: rgba(219, 0, 0, 0.2);
-  box-shadow: 
+  box-shadow:
     0 0 20px rgba(219, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transform: translateY(-2px) scale(1.05);
@@ -545,10 +542,10 @@ onUnmounted(() => {
 
 /* 🎯 ACTIVE LINK WITH SPECIAL GLOW */
 .nav-link.router-link-active {
-  background: linear-gradient(135deg, 
-    rgba(219, 0, 0, 0.3), 
-    rgba(255, 68, 68, 0.2)) !important;
-  box-shadow: 
+  background: linear-gradient(135deg,
+      rgba(219, 0, 0, 0.3),
+      rgba(255, 68, 68, 0.2)) !important;
+  box-shadow:
     0 0 25px rgba(219, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(219, 0, 0, 0.5);
@@ -564,32 +561,44 @@ onUnmounted(() => {
 }
 
 @keyframes activeGlow {
-  0% { box-shadow: 0 0 5px rgba(219, 0, 0, 0.8); }
-  100% { box-shadow: 0 0 20px rgba(219, 0, 0, 1); }
+  0% {
+    box-shadow: 0 0 5px rgba(219, 0, 0, 0.8);
+  }
+
+  100% {
+    box-shadow: 0 0 20px rgba(219, 0, 0, 1);
+  }
 }
 
 /* 🔧 드롭다운 컨테이너 기본 설정 */
 .nav-item.dropdown {
-  position: relative; /* 매우 중요! 부모 위치 기준점 */
+  position: relative;
+  /* 매우 중요! 부모 위치 기준점 */
 }
 
 /* 🎭 EPIC DROPDOWN WITH MATRIX EFFECTS - 가려짐 문제 해결 */
 .dropdown-menu {
-  background: linear-gradient(135deg, 
-    rgba(0, 0, 0, 0.89) 0%,    /* 🎯 0.95 → 0.98로 변경 (더 불투명) */
-    rgba(61, 24, 65, 0.9) 50%,  /* 🎯 0.1 → 0.2로 변경 (빨간색 더 진하게) */
-    rgba(0, 0, 0, 0.95) 100%   /* 🎯 0.95 → 0.98로 변경 (더 불투명) */
-  ) !important;
+  background: linear-gradient(135deg,
+      rgba(0, 0, 0, 0.89) 0%,
+      /* 🎯 0.95 → 0.98로 변경 (더 불투명) */
+      rgba(61, 24, 65, 0.9) 50%,
+      /* 🎯 0.1 → 0.2로 변경 (빨간색 더 진하게) */
+      rgba(0, 0, 0, 0.95) 100%
+      /* 🎯 0.95 → 0.98로 변경 (더 불투명) */
+    ) !important;
   backdrop-filter: blur(20px) saturate(150%);
-  border: 1px solid rgba(219, 0, 0, 0.5) !important; /* 🎯 테두리도 더 진하게 */
+  border: 1px solid rgba(219, 0, 0, 0.5) !important;
+  /* 🎯 테두리도 더 진하게 */
   border-radius: 15px !important;
-  box-shadow: 
-    0 15px 35px rgba(0, 0, 0, 0.7),    /* 🎯 그림자도 더 진하게 */
+  box-shadow:
+    0 15px 35px rgba(0, 0, 0, 0.7),
+    /* 🎯 그림자도 더 진하게 */
     0 5px 15px rgba(219, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15); /* 🎯 내부 하이라이트도 더 밝게 */
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  /* 🎯 내부 하이라이트도 더 밝게 */
   padding: 1rem !important;
   animation: dropdownSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  
+
   position: absolute !important;
   z-index: 9999 !important;
   top: calc(100% + 0.25rem) !important;
@@ -609,10 +618,10 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    rgba(219, 0, 0, 0.8) 50%, 
-    transparent 100%);
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(219, 0, 0, 0.8) 50%,
+      transparent 100%);
 }
 
 /* 드롭다운이 보이는 상태일 때 강제 표시 */
@@ -629,6 +638,7 @@ onUnmounted(() => {
     transform: translateY(-10px) scale(0.95);
     visibility: hidden;
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -644,7 +654,8 @@ onUnmounted(() => {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
   position: relative;
   overflow: hidden;
-  white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+  white-space: nowrap;
+  /* 텍스트 줄바꿈 방지 */
 }
 
 .dropdown-item::before {
@@ -654,17 +665,17 @@ onUnmounted(() => {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(219, 0, 0, 0.2), 
-    transparent);
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(219, 0, 0, 0.2),
+      transparent);
   transition: left 0.4s ease;
 }
 
 .dropdown-item:hover {
-  background: linear-gradient(135deg, 
-    rgba(219, 0, 0, 0.2), 
-    rgba(255, 68, 68, 0.1)) !important;
+  background: linear-gradient(135deg,
+      rgba(219, 0, 0, 0.2),
+      rgba(255, 68, 68, 0.1)) !important;
   color: #ffffff !important;
   transform: translateX(5px) scale(1.02);
   box-shadow: 0 5px 15px rgba(219, 0, 0, 0.3);
@@ -690,9 +701,9 @@ onUnmounted(() => {
 
 /* 🔥 CYBER BUTTONS WITH HOLOGRAPHIC EFFECTS */
 .signin-btn {
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.9), 
-    rgba(255, 255, 255, 0.8)) !important;
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.9),
+      rgba(255, 255, 255, 0.8)) !important;
   color: #000000 !important;
   border: 2px solid rgba(255, 255, 255, 0.8) !important;
   font-weight: 600 !important;
@@ -714,10 +725,10 @@ onUnmounted(() => {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(255, 255, 255, 0.3), 
-    transparent);
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent);
   transition: left 0.5s ease;
 }
 
@@ -725,7 +736,7 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #ffffff, #f8f9fa) !important;
   color: #000000 !important;
   transform: translateY(-3px) scale(1.05);
-  box-shadow: 
+  box-shadow:
     0 10px 25px rgba(255, 255, 255, 0.2),
     0 0 20px rgba(255, 255, 255, 0.1);
 }
@@ -757,10 +768,10 @@ onUnmounted(() => {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(255, 255, 255, 0.2), 
-    transparent);
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent);
   transition: left 0.5s ease;
 }
 
@@ -768,7 +779,7 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #ff2222, #e60000) !important;
   border-color: rgba(255, 68, 68, 0.9) !important;
   transform: translateY(-3px) scale(1.05);
-  box-shadow: 
+  box-shadow:
     0 15px 35px rgba(219, 0, 0, 0.4),
     0 0 30px rgba(219, 0, 0, 0.6);
 }
@@ -797,9 +808,9 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(219, 0, 0, 0.1), 
-    transparent);
+  background: linear-gradient(135deg,
+      rgba(219, 0, 0, 0.1),
+      transparent);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -824,7 +835,7 @@ onUnmounted(() => {
 
 .user-profile-btn:hover img {
   border-color: rgba(219, 0, 0, 0.8);
-  box-shadow: 
+  box-shadow:
     0 0 25px rgba(219, 0, 0, 0.6),
     inset 0 0 10px rgba(219, 0, 0, 0.2);
   transform: scale(1.1);
@@ -857,12 +868,12 @@ onUnmounted(() => {
 
 /* 🎯 SCROLL EFFECTS */
 .navbar.scrolled {
-  background: linear-gradient(135deg, 
-    rgba(0, 0, 0, 0.98) 0%, 
-    rgba(219, 0, 0, 0.08) 30%, 
-    rgba(0, 0, 0, 0.98) 100%) !important;
+  background: linear-gradient(135deg,
+      rgba(0, 0, 0, 0.98) 0%,
+      rgba(219, 0, 0, 0.08) 30%,
+      rgba(0, 0, 0, 0.98) 100%) !important;
   backdrop-filter: blur(25px) saturate(200%);
-  box-shadow: 
+  box-shadow:
     0 12px 40px rgba(0, 0, 0, 0.5),
     0 0 60px rgba(219, 0, 0, 0.2);
 }
@@ -875,22 +886,25 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(219, 0, 0, 0.03) 25%,
-    rgba(255, 255, 255, 0.02) 50%,
-    rgba(219, 0, 0, 0.03) 75%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(219, 0, 0, 0.03) 25%,
+      rgba(255, 255, 255, 0.02) 50%,
+      rgba(219, 0, 0, 0.03) 75%,
+      transparent 100%);
   background-size: 200% 100%;
   animation: scanline 4s linear infinite;
   pointer-events: none;
 }
 
 @keyframes scanline {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 /* 컨테이너 오버플로우 방지 */
@@ -901,9 +915,10 @@ onUnmounted(() => {
 /* 화면 경계 처리 - 드롭다운이 화면 밖으로 나가지 않도록 */
 @media (max-width: 1200px) {
   .navbar-nav {
-    gap: 1.5rem; /* 중간 크기 화면에서는 간격 줄임 */
+    gap: 1.5rem;
+    /* 중간 크기 화면에서는 간격 줄임 */
   }
-  
+
   .dropdown-menu {
     right: 0 !important;
     left: auto !important;
@@ -913,20 +928,21 @@ onUnmounted(() => {
 /* 🎨 ENHANCED MOBILE STYLES */
 @media (max-width: 991.98px) {
   .navbar-nav {
-    background: linear-gradient(135deg, 
-      rgba(0, 0, 0, 0.95) 0%, 
-      rgba(219, 0, 0, 0.1) 50%,
-      rgba(0, 0, 0, 0.95) 100%);
+    background: linear-gradient(135deg,
+        rgba(0, 0, 0, 0.95) 0%,
+        rgba(219, 0, 0, 0.1) 50%,
+        rgba(0, 0, 0, 0.95) 100%);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(219, 0, 0, 0.3);
     border-radius: 15px;
     margin-top: 1rem;
     padding: 2rem 1.5rem;
-    box-shadow: 
+    box-shadow:
       0 15px 35px rgba(0, 0, 0, 0.5),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
     animation: mobileMenuSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    gap: 1rem; /* 모바일에서는 간격 줄임 */
+    gap: 1rem;
+    /* 모바일에서는 간격 줄임 */
   }
 
   @keyframes mobileMenuSlide {
@@ -934,6 +950,7 @@ onUnmounted(() => {
       opacity: 0;
       transform: translateY(-30px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -962,14 +979,14 @@ onUnmounted(() => {
   .dropdown-menu {
     position: static !important;
     transform: none !important;
-    box-shadow: 
+    box-shadow:
       0 10px 25px rgba(0, 0, 0, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(219, 0, 0, 0.3) !important;
-    background: linear-gradient(135deg, 
-      rgba(0, 0, 0, 0.9) 0%, 
-      rgba(219, 0, 0, 0.15) 50%,
-      rgba(0, 0, 0, 0.9) 100%) !important;
+    background: linear-gradient(135deg,
+        rgba(0, 0, 0, 0.9) 0%,
+        rgba(219, 0, 0, 0.15) 50%,
+        rgba(0, 0, 0, 0.9) 100%) !important;
     margin-left: 1rem;
     margin-top: 0.5rem;
     border-radius: 10px !important;
@@ -1019,8 +1036,13 @@ onUnmounted(() => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-content {
@@ -1045,6 +1067,7 @@ onUnmounted(() => {
     opacity: 0;
     transform: translateY(50px) scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -1059,9 +1082,9 @@ onUnmounted(() => {
   right: 0;
   height: 2px;
   background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(219, 0, 0, 0.8) 50%,
-    transparent 100%);
+      transparent 0%,
+      rgba(219, 0, 0, 0.8) 50%,
+      transparent 100%);
   border-radius: 20px 20px 0 0;
 }
 
@@ -1119,8 +1142,15 @@ onUnmounted(() => {
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); opacity: 0.8; }
-  100% { transform: scale(1.05); opacity: 1; }
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
 }
 
 .modal-description {
@@ -1218,8 +1248,13 @@ onUnmounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* 성공 팝업 스타일 */
@@ -1262,9 +1297,9 @@ onUnmounted(() => {
   right: 0;
   height: 2px;
   background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(75, 192, 192, 0.8) 50%,
-    transparent 100%);
+      transparent 0%,
+      rgba(75, 192, 192, 0.8) 50%,
+      transparent 100%);
   border-radius: 20px 20px 0 0;
 }
 
@@ -1280,9 +1315,17 @@ onUnmounted(() => {
 }
 
 @keyframes bounce {
-  0% { transform: scale(0); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0);
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .popup-title {
@@ -1352,12 +1395,13 @@ onUnmounted(() => {
   .navbar-brand {
     font-size: 1.5rem !important;
   }
-  
+
   .logo-image {
     height: 35px;
   }
-  
-  .signin-btn, .signup-btn {
+
+  .signin-btn,
+  .signup-btn {
     padding: 0.5rem 1rem !important;
     font-size: 0.8rem;
   }
@@ -1399,11 +1443,11 @@ onUnmounted(() => {
   .navbar-brand {
     font-size: 1.3rem !important;
   }
-  
+
   .logo-image {
     height: 30px;
   }
-  
+
   .navbar-nav .nav-link {
     font-size: 0.8rem;
     padding: 0.8rem 1rem !important;
@@ -1444,11 +1488,11 @@ onUnmounted(() => {
     background: rgba(0, 0, 0, 1) !important;
     border-bottom: 3px solid #ff0000;
   }
-  
+
   .navbar-nav .nav-link {
     border: 2px solid rgba(255, 255, 255, 0.3);
   }
-  
+
   .navbar-nav .nav-link:hover {
     border-color: #ff0000;
   }
