@@ -92,13 +92,13 @@
                 <div class="feature-icon">
                   <i class="bi bi-person-circle"></i>
                 </div>
-                <h3 class="feature-title">개인 맞춤</h3>
+                <h3 class="feature-title">개인 설정</h3>
                 <p class="feature-description">로그인하고 나만의 영화 취향을 관리하세요</p>
                 <router-link v-if="!isLoggedIn" :to="{ name: 'Login' }" class="feature-link">
                   로그인하기 <i class="bi bi-arrow-right"></i>
                 </router-link>
-                <router-link v-else :to="{ name: 'MyPage' }" class="feature-link">
-                  마이페이지 <i class="bi bi-arrow-right"></i>
+                <router-link v-else :to="{ name: 'Settings' }" class="feature-link">
+                  설정 <i class="bi bi-arrow-right"></i>
                 </router-link>
               </div>
             </div>
@@ -143,7 +143,7 @@
               <i class="bi bi-search me-2"></i>
               영화 검색
             </router-link>
-            <router-link :to="{ name: 'MyPage' }" class="btn btn-outline-light">
+            <router-link :to="{ name: 'user-profile', params: { userId: userStore.currentUser?.id } }" class="btn btn-outline-light">
               <i class="bi bi-person me-2"></i>
               마이페이지
             </router-link>
@@ -156,10 +156,25 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useUserStore } from '@/stores/accounts' // UserStore import 추가
 
-// 로그인 상태 확인
+// UserStore 사용
+const userStore = useUserStore()
+
+// 로그인 상태 확인 - UserStore의 isAuthenticated 사용
 const isLoggedIn = computed(() => {
-  return localStorage.getItem('isLoggedIn') === 'true'
+  // 디버깅용 콘솔 로그
+  console.log('🔍 로그인 상태 확인:')
+  console.log('- userStore.isAuthenticated:', userStore.isAuthenticated)
+  console.log('- userStore.token:', userStore.token)
+  console.log('- userStore.userData:', userStore.userData)
+  console.log('- localStorage token:', localStorage.getItem('token'))
+  
+  // UserStore의 isAuthenticated 사용 (토큰과 사용자 데이터가 모두 있어야 함)
+  const result = userStore.isAuthenticated
+  console.log('🎯 최종 로그인 상태:', result)
+  
+  return result
 })
 
 // 인기 장르 데이터
@@ -208,9 +223,23 @@ const popularGenres = ref([
   },
 ])
 
-onMounted(() => {
-  // 페이지 로드 시 필요한 초기화 작업
-  console.log('HomePage 로드됨')
+onMounted(async () => {
+  // 페이지 로드 시 UserStore 초기화
+  try {
+    console.log('🔄 UserStore 초기화 중...')
+    const isInitialized = await userStore.initialize()
+    console.log('✅ UserStore 초기화 완료:', isInitialized)
+    
+    // 세션 모니터링 시작
+    if (userStore.isAuthenticated) {
+      userStore.startSessionMonitoring()
+    }
+  } catch (error) {
+    console.log('⚠️ UserStore 초기화 중 오류:', error)
+  }
+  
+  // 페이지 로드 시 로그인 상태 확인
+  console.log('📋 HomePage 로드됨 - 최종 로그인 상태:', isLoggedIn.value)
 })
 </script>
 
