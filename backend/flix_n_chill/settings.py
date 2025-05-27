@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-^u3)hmt^il3*l2cg9ac7xc(sm5^9uw8_t&*8yx11nm)5nvl!ck
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["34.47.106.179", '1.0.0.127.in-addr.arpa', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ["34.47.106.179", '1.0.0.127.in-addr.arpa', '127.0.0.1', 'localhost','flix-n-chill.com', 'www.flix-n-chill.com' ]
 
 CHANNEL_LAYERS = {
     "default": {
@@ -101,7 +101,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
+    "http://localhost:5173", 'http://flix-n-chill.com', 'http://www.flix-n-chill.com'
 ]
 
 ROOT_URLCONF = 'flix_n_chill.urls'
