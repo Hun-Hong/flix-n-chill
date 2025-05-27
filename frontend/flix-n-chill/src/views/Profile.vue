@@ -9,7 +9,7 @@
             <div class="profile-avatar-section">
               <div class="avatar-container" @click="handleAvatarClick">
                 <img :src="userProfile.profile_image || `/defaultProfileImg.png`" :alt="userProfile.nickname"
-                     class="profile-avatar" @error="handleAvatarError">
+                  class="profile-avatar" @error="handleAvatarError">
                 <div class="avatar-overlay">
                   <i class="bi bi-camera"></i>
                 </div>
@@ -45,7 +45,7 @@
           <!-- 프로필 액션 버튼들 -->
           <div class="profile-actions">
             <button v-if="!isOwnProfile" class="btn follow-btn" :class="{ 'following': userProfile.isFollowing }"
-                    @click="toggleFollow" :disabled="followLoading">
+              @click="toggleFollow" :disabled="followLoading">
               <div class="btn-content">
                 <i :class="userProfile.isFollowing ? 'bi bi-person-check-fill' : 'bi bi-person-plus-fill'"></i>
                 <span>{{ userProfile.isFollowing ? '팔로잉' : '팔로우' }}</span>
@@ -90,7 +90,7 @@
       <div class="container">
         <div class="nav-tabs">
           <button v-for="tab in tabs" :key="tab.id" class="nav-tab" :class="{ 'active': activeTab === tab.id }"
-                  @click="setActiveTab(tab.id)">
+            @click="setActiveTab(tab.id)">
             <i :class="tab.icon"></i>
             <span>{{ tab.label }}</span>
             <span class="tab-count">{{ tab.count }}</span>
@@ -122,7 +122,7 @@
             <div v-for="review in sortedReviews" :key="review.id" class="review-card" @click="viewReview(review)">
               <div class="review-movie-info">
                 <img :src="review.moviePoster || '/api/placeholder/60/90'" :alt="review.movieTitle"
-                     class="review-movie-poster">
+                  class="review-movie-poster">
                 <div class="review-movie-details">
                   <h5 class="review-movie-title">{{ review.movieTitle }}</h5>
                   <div class="review-rating">
@@ -186,10 +186,10 @@
             <div class="movies-grid" :class="{ 'list-view': viewMode === 'list' }">
               <div class="row g-4">
                 <div v-for="movie in likedMovies" :key="movie.id"
-                     :class="viewMode === 'grid' ? 'col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6' : 'col-12'">
+                  :class="viewMode === 'grid' ? 'col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6' : 'col-12'">
                   <MovieCard :movie="movie" :show-details="viewMode === 'list'" @play="handlePlayMovie"
-                             @toggle-watchlist="handleToggleWatchlist" @toggle-like="handleToggleLike"
-                             @click="handleMovieClick" />
+                    @toggle-watchlist="handleToggleWatchlist" @toggle-like="handleToggleLike"
+                    @click="handleMovieClick" />
                 </div>
               </div>
             </div>
@@ -201,6 +201,129 @@
             <p>마음에 드는 영화에 하트를 눌러보세요!</p>
           </div>
         </div>
+
+        <!-- 장르 선호도 탭 -->
+        <div v-if="activeTab === 'genres'" class="tab-content">
+          <div class="content-header">
+            <h3>
+              <i class="bi bi-pie-chart-fill"></i>
+              나의 장르 선호도
+            </h3>
+          </div>
+
+          <div v-if="genrePreferences.length > 0" class="genre-preferences">
+            <div class="genre-chart">
+              <div class="chart-container">
+                <div class="genre-bars">
+                  <div v-for="genre in genrePreferences" :key="genre.id" class="genre-bar">
+                    <div class="genre-info">
+                      <span class="genre-name">{{ genre.name }}</span>
+                      
+                    </div>
+                    <div class="bar-container">
+                      <div class="bar-fill" :style="{
+                        width: genre.percentage + '%',
+                        backgroundColor: genre.color
+                      }"></div>
+                    </div>
+                    <span class="genre-percentage">{{ genre.percentage }}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="genre-summary">
+              <div class="summary-card">
+                <i class="bi bi-award-fill"></i>
+                <h4>가장 좋아하는 장르</h4>
+                <p>{{ genrePreferences[0]?.name || '데이터 없음' }}</p>
+              </div>
+              <div class="summary-card">
+                <i class="bi bi-graph-up"></i>
+                <h4>리뷰한 장르 수</h4>
+                <p>{{ genrePreferences.length }}개</p>
+              </div>
+              <div class="summary-card">
+                <i class="bi bi-star-fill"></i>
+                <h4>평균 평점</h4>
+                <p>{{ calculateAverageRating() }}/5</p>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="empty-state">
+            <i class="bi bi-pie-chart empty-icon"></i>
+            <h4>장르 선호도 데이터가 없어요</h4>
+            <p>더 많은 영화를 좋아요하고 리뷰해서 취향을 분석해보세요!</p>
+          </div>
+        </div>
+
+        <!-- 추천 유저 탭 -->
+        <div v-if="activeTab === 'recommendations'" class="tab-content">
+          <div class="content-header">
+            <h3>
+              <i class="bi bi-people-fill"></i>
+              비슷한 취향의 유저들
+            </h3>
+            <p class="header-subtitle">당신과 비슷한 영화 취향을 가진 사용자들을 추천해드려요!</p>
+          </div>
+
+          <div v-if="recommendedUsers.length > 0" class="recommended-users">
+            <div class="users-grid">
+              <div v-for="user in recommendedUsers" :key="user.id" class="user-recommendation-card">
+                <div class="user-header">
+                  <div class="user-avatar" @click="goToUserProfile(user.id)">
+                    <img :src="user.profile_image || '/defaultProfileImg.png'" :alt="user.nickname" class="avatar-image"
+                      @error="handleAvatarError">
+                  </div>
+                  <div class="user-info">
+                    <h4 class="user-nickname" @click="goToUserProfile(user.id)">
+                      {{ user.nickname }}
+                    </h4>
+                    <div class="similarity-score">
+                      <i class="bi bi-heart-fill"></i>
+                      <span>{{ Math.round(user.similarity_score) }}% 유사</span>
+                    </div>
+                  </div>
+                  <button class="follow-btn-small" :class="{ 'following': user.isFollowing }"
+                    @click="toggleRecommendedUserFollow(user.id)">
+                    <i :class="user.isFollowing ? 'bi bi-person-check-fill' : 'bi bi-person-plus-fill'"></i>
+                    {{ user.isFollowing ? '팔로잉' : '팔로우' }}
+                  </button>
+                </div>
+
+                <div class="user-stats">
+                  <div class="stat">
+                    <i class="bi bi-people"></i>
+                    <span>{{ formatNumber(user.followers_count) }} 팔로워</span>
+                  </div>
+                  <div class="stat">
+                    <i class="bi bi-chat-quote"></i>
+                    <span>{{ formatNumber(user.reviews_count) }} 리뷰</span>
+                  </div>
+                </div>
+
+                <div class="common-genres">
+                  <h5>공통 관심 장르</h5>
+                  <div class="genre-tags">
+                    <span v-for="genre in user.common_genres.slice(0, 3)" :key="genre" class="genre-tag"
+                      :style="{ backgroundColor: getGenreColor(genre) }">
+                      {{ genre }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="empty-state">
+            <i class="bi bi-people empty-icon"></i>
+            <h4>추천할 유저가 없어요</h4>
+            <p>더 많은 영화 활동을 하시면 비슷한 취향의 유저를 찾아드릴게요!</p>
+          </div>
+        </div>
+
+
 
         <!-- 활동 탭 -->
         <div v-if="activeTab === 'activity'" class="tab-content">
@@ -227,30 +350,15 @@
     </div>
 
     <!-- 모달들 -->
-    <EditProfileModal
-        :show="showEditModal"
-        :user-profile="userProfile"
-        @close="showEditModal = false"
-        @save="handleProfileSave"
-    />
+    <EditProfileModal :show="showEditModal" :user-profile="userProfile" @close="showEditModal = false"
+      @save="handleProfileSave" />
 
-    <ReviewDetailModal
-        :show="showReviewModal"
-        :review="selectedReview"
-        @close="closeReviewModal"
-        @like-toggled="handleReviewLikeToggled"
-        @comment-added="handleCommentAdded"
-    />
+    <ReviewDetailModal :show="showReviewModal" :review="selectedReview" @close="closeReviewModal"
+      @like-toggled="handleReviewLikeToggled" @comment-added="handleCommentAdded" />
 
     <!-- 🎯 FollowModal 추가 -->
-    <FollowModal
-        :is-visible="isFollowModalVisible"
-        :initial-tab="selectedFollowTab"
-        :user-id="userProfile.id"
-        @close="closeFollowModal"
-        @follow="handleFollowFromModal"
-        @unfollow="handleUnfollowFromModal"
-    />
+    <FollowModal :is-visible="isFollowModalVisible" :initial-tab="selectedFollowTab" :user-id="userProfile.id"
+      @close="closeFollowModal" @follow="handleFollowFromModal" @unfollow="handleUnfollowFromModal" />
   </div>
 </template>
 
@@ -299,6 +407,42 @@ const setUserData = (data) => {
   userProfile.value = data
 }
 
+const fetchRecommendedUsers = async () => {
+  try {
+    console.log('👥 추천 유저 API 호출 시작...')
+    
+    const response = await axios({
+      method: 'get',
+      url: `http://34.47.106.179/api/v1/movies/user/similar-users/`,
+      headers: {
+        'Authorization': `Token ${userStore.token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    console.log('👥 추천 유저 API 응답:', response.data)
+    
+    if (response.data.similar_users && response.data.similar_users.length > 0) {
+      return response.data.similar_users.map(user => ({
+        id: user.id,
+        nickname: user.nickname,
+        profile_image: user.profile_image,
+        similarity_score: user.similarity_score,
+        common_genres: user.common_genres || [],
+        followers_count: user.followers_count || 0,
+        reviews_count: user.reviews_count || 0,
+        isFollowing: user.is_following || false
+      }))
+    }
+    
+    return []
+  } catch (error) {
+    console.error('❌ 추천 유저 조회 실패:', error)
+    
+    return []
+  }
+}
+
 // Actions - 사용자 정보 가져오기
 const fetchUserData = async () => {
   isLoading.value = true
@@ -313,6 +457,37 @@ const fetchUserData = async () => {
     })
 
     setUserData(response.data)
+
+    // 🎯 장르 선호도와 추천 유저 데이터 가져오기 (본인 프로필일 때만)
+    if (isOwnProfile.value && userStore.token) {
+      try {
+        console.log('🎯 장르 선호도 및 추천 유저 데이터 로딩 시작...')
+
+        const [genreData, recommendedData] = await Promise.all([
+          fetchGenrePreferences(),
+          fetchRecommendedUsers()
+        ])
+
+        console.log('🎬 장르 선호도 데이터:', genreData)
+        console.log('👥 추천 유저 데이터:', recommendedData)
+
+        // 사용자 프로필에 추가 데이터 설정
+        userProfile.value.genre_preferences = genreData
+        userProfile.value.recommended_users = recommendedData
+
+        console.log('✅ 장르 선호도 및 추천 유저 데이터 로딩 완료')
+      } catch (error) {
+        console.warn('⚠️ 추가 데이터 로딩 실패:', error)
+        // 기본값 설정
+        userProfile.value.genre_preferences = []
+        userProfile.value.recommended_users = []
+      }
+    } else {
+      // 다른 사용자의 프로필이거나 토큰이 없는 경우 빈 배열 설정
+      userProfile.value.genre_preferences = []
+      userProfile.value.recommended_users = []
+    }
+
   } catch (error) {
     console.error('사용자 정보 가져오기 실패:', error)
   } finally {
@@ -320,27 +495,252 @@ const fetchUserData = async () => {
   }
 }
 
+const fetchGenrePreferences = async () => {
+  try {
+    console.log('🎬 장르 선호도 API 호출 시작...')
+
+    const response = await axios({
+      method: 'get',
+      url: `http://34.47.106.179/api/v1/movies/user/genre-analysis/`,
+      headers: {
+        'Authorization': `Token ${userStore.token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    console.log('🎬 장르 선호도 API 응답:', response.data)
+
+    if (response.data.genre_preferences) {
+      // 백엔드 응답을 프론트엔드 형식으로 변환
+      const preferences = Object.entries(response.data.genre_preferences).map(([name, rating], index) => ({
+        id: index + 1,
+        name: name,
+        count: Math.round(rating * 10), // 가중치를 개수처럼 표시
+        percentage: Math.round((rating / 5) * 100), // 5점 만점을 100%로 변환
+        color: getGenreColor(name)
+      }))
+
+      console.log('🎬 변환된 장르 선호도:', preferences)
+
+      // 상위 10개만 선택하고 퍼센티지 순으로 정렬
+      return preferences
+        .sort((a, b) => b.percentage - a.percentage)
+        .slice(0, 10)
+    }
+
+    return []
+  } catch (error) {
+    console.error('❌ 장르 선호도 조회 실패:', error)
+
+    // 실패 시 더미 데이터 반환 (테스트용)
+    return [
+      {
+        id: 1,
+        name: '액션',
+        count: 15,
+        percentage: 85,
+        color: getGenreColor('액션')
+      },
+      {
+        id: 2,
+        name: '드라마',
+        count: 12,
+        percentage: 70,
+        color: getGenreColor('드라마')
+      },
+      {
+        id: 3,
+        name: '코미디',
+        count: 8,
+        percentage: 60,
+        color: getGenreColor('코미디')
+      }
+    ]
+  }
+}
+
 // 탭 설정
-const tabs = computed(() => [
-  {
-    id: 'reviews',
-    label: '리뷰',
-    icon: 'bi bi-chat-quote',
-    count: userReviews.value.length
-  },
-  {
-    id: 'likes',
-    label: '좋아요',
-    icon: 'bi bi-heart-fill',
-    count: likedMovies.value.length
-  },
-  {
+const tabs = computed(() => {
+  const baseTabs = [
+    {
+      id: 'reviews',
+      label: '리뷰',
+      icon: 'bi bi-chat-quote',
+      count: userReviews.value.length
+    },
+    {
+      id: 'likes',
+      label: '좋아요',
+      icon: 'bi bi-heart-fill',
+      count: likedMovies.value.length
+    }
+  ]
+
+  // 🎯 본인 프로필일 때만 장르 선호도와 추천 유저 탭 추가
+  if (isOwnProfile.value) {
+    baseTabs.push(
+      {
+        id: 'genres',
+        label: '장르 선호도',
+        icon: 'bi bi-pie-chart-fill',
+        count: genrePreferences.value.length
+      },
+      {
+        id: 'recommendations',
+        label: '추천 유저',
+        icon: 'bi bi-people-fill',
+        count: recommendedUsers.value.length
+      }
+    )
+  }
+
+  // 활동 탭은 항상 마지막에 추가
+  baseTabs.push({
     id: 'activity',
     label: '활동',
     icon: 'bi bi-activity',
     count: userActivities.value.length
+  })
+
+  return baseTabs
+})
+
+
+const calculateAverageRating = () => {
+  if (userReviews.value.length === 0) return '0.0'
+
+  const total = userReviews.value.reduce((sum, review) => sum + review.rating, 0)
+  return (total / userReviews.value.length).toFixed(1)
+}
+
+
+const genrePreferences = computed(() => {
+  if (!userProfile.value?.genre_preferences) return []
+
+  return userProfile.value.genre_preferences.map(genre => ({
+    id: genre.id,
+    name: genre.name,
+    percentage: genre.percentage,
+    color: getGenreColor(genre.name)
+  }))
+})
+
+const recommendedUsers = computed(() => {
+  if (!userProfile.value?.recommended_users) return []
+
+  return userProfile.value.recommended_users.map(user => ({
+    id: user.id,
+    nickname: user.nickname,
+    profile_image: user.profile_image,
+    similarity_score: user.similarity_score,
+    common_genres: user.common_genres || [],
+    followers_count: user.followers_count || 0,
+    reviews_count: user.reviews_count || 0,
+    isFollowing: user.isFollowing || user.is_following || false // 두 형식 모두 체크
+  }))
+})
+
+// 장르별 색상 매핑
+const getGenreColor = (genreName) => {
+  const colors = {
+    // 한국어 장르명
+    '액션': '#e74c3c',
+    '모험': '#ff5722',
+    '애니메이션': '#ff9800',
+    '코미디': '#f39c12',
+    '범죄': '#95a5a6',
+    '다큐멘터리': '#607d8b',
+    '드라마': '#3498db',
+    '가족': '#4caf50',
+    '판타지': '#9b59b6',
+    '역사': '#ffc107',
+    '공포': '#8e44ad',
+    '음악': '#673ab7',
+    '미스터리': '#9c27b0',
+    '로맨스': '#e91e63',
+    'SF': '#1abc9c',
+    'TV 영화': '#34495e',
+    '스릴러': '#34495e',
+    '전쟁': '#795548',
+    '서부': '#8bc34a',
+
+    // 영어 장르명 (백엔드에서 영어로 올 수도 있음)
+    'Action': '#e74c3c',
+    'Adventure': '#ff5722',
+    'Animation': '#ff9800',
+    'Comedy': '#f39c12',
+    'Crime': '#95a5a6',
+    'Documentary': '#607d8b',
+    'Drama': '#3498db',
+    'Family': '#4caf50',
+    'Fantasy': '#9b59b6',
+    'History': '#ffc107',
+    'Horror': '#8e44ad',
+    'Music': '#673ab7',
+    'Mystery': '#9c27b0',
+    'Romance': '#e91e63',
+    'Science Fiction': '#1abc9c',
+    'TV Movie': '#34495e',
+    'Thriller': '#34495e',
+    'War': '#795548',
+    'Western': '#8bc34a'
   }
-])
+  return colors[genreName] || '#6c757d'
+}
+
+// 추천 유저 팔로우 토글
+const toggleRecommendedUserFollow = async (userId) => {
+  try {
+    console.log('👥 추천 유저 팔로우 토글 시작:', userId)
+    
+    const result = await userStore.toggleFollow(userId)
+    
+    console.log('👥 팔로우 결과:', result)
+
+    // 🎯 userProfile의 recommended_users 배열에서 해당 유저 찾아서 업데이트
+    if (userProfile.value.recommended_users) {
+      const userIndex = userProfile.value.recommended_users.findIndex(u => u.id === userId)
+      if (userIndex !== -1) {
+        // 원본 배열 직접 수정
+        userProfile.value.recommended_users[userIndex] = {
+          ...userProfile.value.recommended_users[userIndex],
+          isFollowing: result.is_following,
+          is_following: result.is_following, // 백엔드 형식도 함께 업데이트
+          followers_count: result.followers_count || userProfile.value.recommended_users[userIndex].followers_count
+        }
+        
+        console.log('✅ 추천 유저 상태 업데이트 완료:', {
+          userId,
+          isFollowing: result.is_following,
+          userIndex
+        })
+      }
+    }
+
+    // 메시지 표시
+    const message = result.is_following ? '팔로우했습니다!' : '언팔로우했습니다!'
+    console.log(message)
+
+  } catch (error) {
+    console.error('❌ 팔로우 오류:', error)
+    
+    let errorMessage = '팔로우 처리에 실패했습니다.'
+    if (error.response?.data?.error) {
+      errorMessage = error.response.data.error
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    
+    alert(errorMessage)
+  }
+}
+
+// 추천 유저 프로필로 이동
+const goToUserProfile = (userId) => {
+  router.push(`/profile/${userId}`)
+}
+
+
 
 // 현재 사용자 본인 프로필인지 확인
 const isOwnProfile = computed(() => {
@@ -615,8 +1015,8 @@ const viewReview = async (review) => {
       movieID: detailedReview.movie.id,
       movieTitle: detailedReview.movie.title,
       moviePoster: detailedReview.movie.poster_path
-          ? `https://image.tmdb.org/t/p/w500${detailedReview.movie.poster_path}`
-          : '/api/placeholder/100/150',
+        ? `https://image.tmdb.org/t/p/w500${detailedReview.movie.poster_path}`
+        : '/api/placeholder/100/150',
       rating: detailedReview.rating,
       content: detailedReview.comment,
       createdAt: detailedReview.created_at,
@@ -759,6 +1159,11 @@ watch(() => route.params.userId, (newUserId, oldUserId) => {
     userProfile.value = null
     isLoading.value = true
 
+    // 🎯 다른 사용자 프로필로 이동 시 장르/추천 탭에 있다면 리뷰 탭으로 변경
+    if (['genres', 'recommendations'].includes(activeTab.value)) {
+      activeTab.value = 'reviews'
+    }
+
     // 새로운 사용자 데이터 로드
     fetchUserData()
   }
@@ -807,8 +1212,8 @@ watch(activeTab, (newTab) => {
 /* 프로필 헤더 */
 .profile-header {
   background: linear-gradient(135deg,
-  rgba(255, 255, 255, 0.1) 0%,
-  rgba(255, 255, 255, 0.05) 100%);
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding: 3rem 0;
@@ -1194,6 +1599,7 @@ watch(activeTab, (newTab) => {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1258,8 +1664,8 @@ watch(activeTab, (newTab) => {
 
 .review-card {
   background: linear-gradient(135deg,
-  rgba(255, 255, 255, 0.1) 0%,
-  rgba(255, 255, 255, 0.05) 100%);
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
@@ -1579,5 +1985,289 @@ watch(activeTab, (newTab) => {
     height: 40px;
     font-size: 1rem;
   }
+}
+
+.genre-preferences {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.genre-chart {
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 2rem;
+}
+
+.genre-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.genre-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.genre-info {
+  min-width: 120px;
+  text-align: left;
+}
+
+.genre-name {
+  display: block;
+  font-weight: 600;
+  color: white;
+  font-size: 1rem;
+}
+
+.genre-count {
+  display: block;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.bar-container {
+  flex: 1;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.8s ease;
+  position: relative;
+}
+
+.bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.genre-percentage {
+  min-width: 50px;
+  text-align: right;
+  font-weight: 600;
+  color: white;
+}
+
+.genre-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.summary-card {
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.summary-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+}
+
+.summary-card i {
+  font-size: 2.5rem;
+  color: #e74c3c;
+  margin-bottom: 1rem;
+}
+
+.summary-card h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+.summary-card p {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #e74c3c;
+  margin: 0;
+}
+
+/* 추천 유저 스타일 */
+.recommended-users .header-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  margin-top: 0.5rem;
+}
+
+.users-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+}
+
+.user-recommendation-card {
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.user-recommendation-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.user-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.user-avatar {
+  cursor: pointer;
+}
+
+.avatar-image {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.user-avatar:hover .avatar-image {
+  transform: scale(1.1);
+  border-color: #e74c3c;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-nickname {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 0.5rem 0;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.user-nickname:hover {
+  color: #e74c3c;
+}
+
+.similarity-score {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #e74c3c;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.follow-btn-small {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.follow-btn-small:hover {
+  background: linear-gradient(135deg, #c0392b, #a93226);
+  transform: scale(1.05);
+}
+
+.follow-btn-small.following {
+  background: linear-gradient(135deg, #27ae60, #229954);
+}
+
+.follow-btn-small.following:hover {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.user-stats {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+}
+
+.stat i {
+  color: #e74c3c;
+}
+
+.common-genres h5 {
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.8rem;
+}
+
+.genre-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.genre-tag {
+  padding: 0.3rem 0.8rem;
+  border-radius: 15px;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 </style>

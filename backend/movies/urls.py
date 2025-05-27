@@ -45,6 +45,7 @@ urlpatterns = [
     path('user/genre-analysis/', views.get_user_genre_analysis, name='user_genre_analysis'),
     path('movies/<int:movie_id>/similar/', views.get_similar_movies, name='similar_movies'),
 
+    path('user/similar-users/', views.get_similar_users, name='similar_users'),
 
 
     # path("providers/", view=views.collect_provider),

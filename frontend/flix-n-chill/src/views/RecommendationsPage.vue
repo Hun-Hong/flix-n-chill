@@ -932,6 +932,7 @@ onMounted(async () => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative; /* 👑 이 부분이 핵심! 추가해주세요 */
 }
 
 .movie-card:hover {

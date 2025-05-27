@@ -26,7 +26,7 @@
               <i class="bi bi-search me-1"></i>Search
             </router-link>
           </li>
-          <li class="nav-item">
+          <li class="nav-item" v-if="userStore.isAuthenticated">
             <router-link class="nav-link" :to="{ name: 'Recommendations' }" @click="closeMobileMenu">
               <i class="bi bi-stars me-1"></i>Recommend
             </router-link>
