@@ -32,6 +32,9 @@ urlpatterns = [
     # Comment URLs
     path('review/<int:review_pk>/comments/', views.get_review_comments),
     path('review/<int:review_pk>/comment/', views.create_comment),
+    path('review/<int:review_pk>/like/', views.review_like, name='review_like'),
+    path('review/<int:review_pk>/', views.get_review_detail, name='review_detail'),
+
     path('comment/<int:comment_pk>/reply/', views.create_reply),
     path('comment/<int:comment_pk>/', views.update_comment),
     path('comment/<int:comment_pk>/delete/', views.delete_comment),

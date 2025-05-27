@@ -16,7 +16,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from django.db.models import Q
 from datetime import datetime
-from accounts.models import MovieLike
+from accounts.models import MovieLike, ReviewLike
 
 # Create your views here.
 
@@ -406,6 +406,92 @@ def comment_like(request, comment_pk):
             {"detail": "댓글 좋아요를 취소했습니다.", "like_count": comment.like_count}, 
             status=status.HTTP_200_OK
         )
+
+@api_view(['POST', 'DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def review_like(request, review_pk):
+    """리뷰 좋아요/좋아요 취소"""
+    review = get_object_or_404(Review, pk=review_pk)
+    user = request.user
+
+    if request.method == 'POST':
+        # 이미 좋아요 했는지 확인
+        review_like, created = ReviewLike.objects.get_or_create(
+            user=user, 
+            review=review
+        )
+        
+        if created:
+            return Response({
+                "detail": "리뷰에 좋아요를 표시했습니다.",
+                "is_liked": True,
+                "like_count": review.like_count
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return Response({
+                "detail": "이미 좋아요를 누른 리뷰입니다.",
+                "is_liked": True,
+                "like_count": review.like_count
+            }, status=status.HTTP_200_OK)
+            
+    elif request.method == 'DELETE':
+        # 좋아요 취소
+        deleted_count, _ = ReviewLike.objects.filter(
+            user=user, 
+            review=review
+        ).delete()
+        
+        if deleted_count > 0:
+            return Response({
+                "detail": "리뷰 좋아요를 취소했습니다.",
+                "is_liked": False,
+                "like_count": review.like_count
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                "detail": "좋아요를 누르지 않은 리뷰입니다.",
+                "is_liked": False,
+                "like_count": review.like_count
+            }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def get_review_detail(request, review_pk):
+    """리뷰 상세 정보 조회 (좋아요 정보 포함)"""
+    review = get_object_or_404(Review, pk=review_pk)
+    
+    # 현재 사용자의 좋아요 여부 확인
+    is_liked = False
+    if request.user.is_authenticated:
+        is_liked = ReviewLike.objects.filter(
+            user=request.user, 
+            review=review
+        ).exists()
+    
+    # 리뷰 데이터 구성
+    review_data = {
+        'id': review.id,
+        'user': {
+            'id': review.user.id,
+            'nickname': review.user.nickname or review.user.username,
+            'profile_image': review.user.profile_image.url if review.user.profile_image else None
+        },
+        'movie': {
+            'id': review.movie.id,
+            'title': review.movie.title,
+            'poster_path': review.movie.poster_path
+        },
+        'rating': review.rating,
+        'comment': review.comment,
+        'created_at': review.created_at,
+        'updated_at': review.updated_at,
+        'like_count': review.like_count,
+        'is_liked': is_liked
+    }
+    
+    return Response(review_data, status=status.HTTP_200_OK)
+
+
 
 
 ## provider DB 수집을 위해 작동하였습니다.

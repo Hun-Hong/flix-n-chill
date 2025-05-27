@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 import datetime
+from django.conf import settings
 
 # Create your models here.
 class User(AbstractUser):
@@ -59,3 +60,25 @@ class MovieLike(models.Model):
     
     def __str__(self):
         return f"{self.user.nickname} likes {self.movie.title}"
+
+
+class ReviewLike(models.Model):
+    """리뷰 좋아요 모델"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='review_likes'
+    )
+    review = models.ForeignKey(
+        'movies.Review',  # movies 앱의 Review 모델
+        on_delete=models.CASCADE,
+        related_name='likes'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'review')  # 중복 좋아요 방지
+        db_table = 'accounts_reviewlike'
+
+    def __str__(self):
+        return f'{self.user.username} likes {self.review.id}'

@@ -29,6 +29,19 @@ class Review(models.Model):
     comment = models.CharField(max_length=50, default="", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     unique_together = ('user', 'movie')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def like_count(self):
+        """리뷰 좋아요 수"""
+        return self.likes.count()
+    
+    def is_liked_by_user(self, user):
+        """특정 사용자가 좋아요 했는지 확인"""
+        if not user.is_authenticated:
+            return False
+        return self.likes.filter(user=user).exists()
+
 
 class Comment(models.Model):
     user = models.ForeignKey("accounts.user", on_delete=models.CASCADE)
