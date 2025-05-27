@@ -32,10 +32,20 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['1.0.0.127.in-addr.arpa', '127.0.0.1', 'localhost']
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
+    'chat',
     'movies',
     'accounts',
     'rest_framework',
@@ -113,6 +123,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'flix_n_chill.wsgi.application'
+ASGI_APPLICATION = 'flix_n_chill.asgi.application'
 
 
 # Database
