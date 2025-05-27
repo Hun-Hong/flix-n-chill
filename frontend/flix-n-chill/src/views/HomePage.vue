@@ -93,12 +93,13 @@
                   <i class="bi bi-person-circle"></i>
                 </div>
                 <h3 class="feature-title">개인 설정</h3>
-                <p class="feature-description">로그인하고 나만의 영화 취향을 관리하세요</p>
+                <p class="feature-description">{{ isLoggedIn ? '취향 설문을 통해 더 정확한 영화 추천을 받으세요' : '로그인하고 나만의 영화 취향을 관리하세요' }}</p>
+                <!-- 로그인 상태에 따라 다른 링크 연결 -->
                 <router-link v-if="!isLoggedIn" :to="{ name: 'Login' }" class="feature-link">
                   로그인하기 <i class="bi bi-arrow-right"></i>
                 </router-link>
-                <router-link v-else :to="{ name: 'Settings' }" class="feature-link">
-                  설정 <i class="bi bi-arrow-right"></i>
+                <router-link v-else :to="{ name: 'movie-survey' }" class="feature-link">
+                  취향 설문하기 <i class="bi bi-arrow-right"></i>
                 </router-link>
               </div>
             </div>
