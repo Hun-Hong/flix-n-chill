@@ -492,6 +492,303 @@ def get_review_detail(request, review_pk):
     return Response(review_data, status=status.HTTP_200_OK)
 
 
+from django.shortcuts import render
+from django.http import JsonResponse
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from django.db.models import Avg, Count
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+import pandas as pd
+from collections import defaultdict
+
+from .models import Movie, Review, Genre
+from .serializers import MovieListSerializer
+
+class MovieRecommendationService:
+    """
+    코사인 유사도 기반 영화 추천 서비스
+    """
+    
+    @staticmethod
+    def get_user_genre_preferences(user):
+        """
+        사용자의 장르별 선호도 계산 
+        (사용자가 평가한 영화들의 장르별 평점 가중 평균)
+        """
+        print(f"👤 사용자 {user.id}의 장르 선호도 계산 중...")
+        
+        # 사용자의 모든 리뷰 가져오기
+        user_reviews = Review.objects.filter(user=user).select_related('movie').prefetch_related('movie__genres')
+        
+        if not user_reviews.exists():
+            print("❌ 사용자 리뷰가 없어 추천할 수 없습니다.")
+            return None
+        
+        # 장르별 점수 누적
+        genre_scores = defaultdict(list)
+        
+        for review in user_reviews:
+            movie_genres = review.movie.genres.all()
+            rating = review.rating
+            
+            for genre in movie_genres:
+                genre_scores[genre.name].append(rating)
+        
+        # 장르별 평균 평점 계산 (선호도)
+        genre_preferences = {}
+        for genre_name, ratings in genre_scores.items():
+            genre_preferences[genre_name] = np.mean(ratings)
+        
+        print(f"✅ 장르 선호도 계산 완료: {len(genre_preferences)}개 장르")
+        return genre_preferences
+    
+    @staticmethod
+    def create_movie_genre_vector(movie, all_genres):
+        """
+        영화의 장르 벡터 생성 (원핫 인코딩 방식)
+        """
+        movie_genres = set(genre.name for genre in movie.genres.all())
+        return [1 if genre in movie_genres else 0 for genre in all_genres]
+    
+    @staticmethod
+    def create_user_preference_vector(user_preferences, all_genres):
+        """
+        사용자 선호도 벡터 생성
+        """
+        # 선호도가 없는 장르는 0으로 설정
+        return [user_preferences.get(genre, 0) for genre in all_genres]
+    
+    @classmethod
+    def get_movie_recommendations(cls, user, exclude_rated=True, top_k=10):
+        """
+        코사인 유사도를 이용한 영화 추천
+        
+        Args:
+            user: 추천을 받을 사용자
+            exclude_rated: 이미 평가한 영화 제외 여부
+            top_k: 추천할 영화 개수
+        
+        Returns:
+            추천 영화 리스트 (유사도 점수 포함)
+        """
+        print(f"🎯 사용자 {user.username}에게 영화 추천 시작...")
+        
+        # 1. 사용자 장르 선호도 계산
+        user_preferences = cls.get_user_genre_preferences(user)
+        if not user_preferences:
+            return []
+        
+        # 2. 모든 장르 목록 가져오기
+        all_genres = list(Genre.objects.values_list('name', flat=True).distinct())
+        print(f"🎬 전체 장르 수: {len(all_genres)}")
+        
+        # 3. 후보 영화 선택
+        candidate_movies = Movie.objects.prefetch_related('genres').all()
+        
+        if exclude_rated:
+            # 이미 평가한 영화 제외
+            rated_movie_ids = Review.objects.filter(user=user).values_list('movie_id', flat=True)
+            candidate_movies = candidate_movies.exclude(id__in=rated_movie_ids)
+        
+        print(f"📝 후보 영화 수: {candidate_movies.count()}")
+        
+        # 4. 사용자 선호도 벡터 생성
+        user_vector = cls.create_user_preference_vector(user_preferences, all_genres)
+        user_vector = np.array(user_vector).reshape(1, -1)
+        
+        # 5. 각 영화와의 코사인 유사도 계산
+        recommendations = []
+        
+        for movie in candidate_movies:
+            # 영화 장르 벡터 생성
+            movie_vector = cls.create_movie_genre_vector(movie, all_genres)
+            movie_vector = np.array(movie_vector).reshape(1, -1)
+            
+            # 코사인 유사도 계산
+            if np.sum(movie_vector) > 0:  # 장르 정보가 있는 영화만
+                similarity = cosine_similarity(user_vector, movie_vector)[0][0]
+                
+                recommendations.append({
+                    'movie': movie,
+                    'similarity_score': similarity,
+                    'user_genre_match': cls.get_genre_match_info(movie, user_preferences)
+                })
+        
+        # 6. 유사도 점수로 정렬
+        recommendations.sort(key=lambda x: x['similarity_score'], reverse=True)
+        
+        print(f"✅ 추천 완료: {len(recommendations)}개 영화 중 상위 {top_k}개 선택")
+        
+        return recommendations[:top_k]
+    
+    @staticmethod
+    def get_genre_match_info(movie, user_preferences):
+        """
+        영화와 사용자 선호도의 장르 매칭 정보
+        """
+        movie_genres = [genre.name for genre in movie.genres.all()]
+        matched_genres = []
+        
+        for genre in movie_genres:
+            if genre in user_preferences:
+                matched_genres.append({
+                    'genre': genre,
+                    'user_preference': user_preferences[genre]
+                })
+        
+        return matched_genres
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_movie_recommendations(request):
+    """
+    현재 로그인한 사용자에게 영화 추천
+    """
+    try:
+        # 쿼리 파라미터
+        top_k = int(request.GET.get('count', 10))  # 추천 개수 (기본 10개)
+        exclude_rated = request.GET.get('exclude_rated', 'true').lower() == 'true'
+        
+        # 추천 실행
+        recommendations = MovieRecommendationService.get_movie_recommendations(
+            user=request.user,
+            exclude_rated=exclude_rated,
+            top_k=top_k
+        )
+        
+        if not recommendations:
+            return Response({
+                'message': '추천할 영화가 없습니다. 먼저 몇 편의 영화를 평가해주세요!',
+                'recommendations': []
+            }, status=status.HTTP_200_OK)
+        
+        # 추천 결과 직렬화
+        recommendation_data = []
+        for rec in recommendations:
+            movie_data = MovieListSerializer(rec['movie']).data
+            movie_data['similarity_score'] = round(rec['similarity_score'], 4)
+            movie_data['genre_matches'] = rec['user_genre_match']
+            recommendation_data.append(movie_data)
+        
+        return Response({
+            'message': f'{len(recommendations)}개의 추천 영화를 찾았습니다!',
+            'user_id': request.user.id,
+            'user_name': request.user.username,
+            'recommendations': recommendation_data
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        print(f"❌ 추천 시스템 오류: {str(e)}")
+        return Response({
+            'error': '영화 추천 중 오류가 발생했습니다.',
+            'detail': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_genre_analysis(request):
+    """
+    사용자의 장르 선호도 분석 결과 반환
+    """
+    try:
+        user_preferences = MovieRecommendationService.get_user_genre_preferences(request.user)
+        
+        if not user_preferences:
+            return Response({
+                'message': '분석할 데이터가 없습니다. 영화를 평가해주세요!',
+                'genre_preferences': {}
+            }, status=status.HTTP_200_OK)
+        
+        # 선호도 순으로 정렬
+        sorted_preferences = dict(sorted(user_preferences.items(), 
+                                       key=lambda x: x[1], reverse=True))
+        
+        return Response({
+            'user_id': request.user.id,
+            'user_name': request.user.username,
+            'genre_preferences': sorted_preferences,
+            'top_genres': list(sorted_preferences.keys())[:5],  # 상위 5개 장르
+            'total_genres_rated': len(sorted_preferences)
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'error': '장르 분석 중 오류가 발생했습니다.',
+            'detail': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# 추가적인 유틸리티 함수들
+@api_view(['GET'])
+def get_similar_movies(request, movie_id):
+    """
+    특정 영화와 유사한 영화들 추천 (장르 기반)
+    """
+    try:
+        target_movie = Movie.objects.get(id=movie_id)
+        target_genres = set(genre.name for genre in target_movie.genres.all())
+        
+        if not target_genres:
+            return Response({
+                'message': '해당 영화의 장르 정보가 없습니다.',
+                'similar_movies': []
+            }, status=status.HTTP_200_OK)
+        
+        # 모든 장르 목록
+        all_genres = list(Genre.objects.values_list('name', flat=True).distinct())
+        
+        # 타겟 영화 장르 벡터
+        target_vector = np.array([1 if genre in target_genres else 0 for genre in all_genres]).reshape(1, -1)
+        
+        # 다른 영화들과 비교
+        similar_movies = []
+        other_movies = Movie.objects.exclude(id=movie_id).prefetch_related('genres')
+        
+        for movie in other_movies:
+            movie_genres = set(genre.name for genre in movie.genres.all())
+            if movie_genres:  # 장르 정보가 있는 경우만
+                movie_vector = np.array([1 if genre in movie_genres else 0 for genre in all_genres]).reshape(1, -1)
+                similarity = cosine_similarity(target_vector, movie_vector)[0][0]
+                
+                if similarity > 0:  # 유사도가 0보다 큰 경우만
+                    similar_movies.append({
+                        'movie': movie,
+                        'similarity_score': similarity,
+                        'common_genres': list(target_genres.intersection(movie_genres))
+                    })
+        
+        # 유사도순 정렬
+        similar_movies.sort(key=lambda x: x['similarity_score'], reverse=True)
+        
+        # 상위 10개만 반환
+        top_similar = similar_movies[:10]
+        
+        result_data = []
+        for sim_movie in top_similar:
+            movie_data = MovieListSerializer(sim_movie['movie']).data
+            movie_data['similarity_score'] = round(sim_movie['similarity_score'], 4)
+            movie_data['common_genres'] = sim_movie['common_genres']
+            result_data.append(movie_data)
+        
+        return Response({
+            'target_movie': MovieListSerializer(target_movie).data,
+            'similar_movies': result_data,
+            'total_found': len(similar_movies)
+        }, status=status.HTTP_200_OK)
+        
+    except Movie.DoesNotExist:
+        return Response({
+            'error': '해당 영화를 찾을 수 없습니다.'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            'error': '유사 영화 검색 중 오류가 발생했습니다.',
+            'detail': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 
 ## provider DB 수집을 위해 작동하였습니다.

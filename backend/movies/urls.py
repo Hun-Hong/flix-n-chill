@@ -40,5 +40,12 @@ urlpatterns = [
     path('comment/<int:comment_pk>/delete/', views.delete_comment),
     path('comment/<int:comment_pk>/like/', views.comment_like),
 
+    
+    path('recommendations/', views.get_movie_recommendations, name='movie_recommendations'),
+    path('user/genre-analysis/', views.get_user_genre_analysis, name='user_genre_analysis'),
+    path('movies/<int:movie_id>/similar/', views.get_similar_movies, name='similar_movies'),
+
+
+
     # path("providers/", view=views.collect_provider),
 ]
