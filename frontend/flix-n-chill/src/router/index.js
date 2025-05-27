@@ -1,5 +1,6 @@
 // router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/accounts'
 
 // 뷰 컴포넌트들 import
 import HomePage from '@/views/HomePage.vue'
@@ -60,7 +61,7 @@ const router = createRouter({
         requiresAuth: true
       }
     },
-    
+
     // 장르 페이지 - 하나의 컴포넌트로
     {
       path: '/genre',
@@ -71,7 +72,7 @@ const router = createRouter({
       }
       // query 예시: /genre?type=action, /genre?type=comedy
     },
-    
+
     // 영화 상세 페이지 (동적 라우트)
     {
       path: '/movie/:id',
@@ -119,10 +120,11 @@ router.beforeEach((to, from, next) => {
   } else if (to.meta.title) {
     document.title = to.meta.title
   }
-  
+
   // 로그인 상태 체크
-  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
-  
+  const userStore = useUserStore()
+  const isLoggedIn = userStore.isAuthenticated
+
   if (to.meta.requiresAuth && !isLoggedIn) {
     next({
       name: 'Login',

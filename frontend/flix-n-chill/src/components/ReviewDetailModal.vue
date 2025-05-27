@@ -7,7 +7,7 @@
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
-  
+
         <div class="modal-body">
           <!-- 영화 정보 -->
           <div class="movie-info">
@@ -31,7 +31,7 @@
               </div>
             </div>
           </div>
-  
+
           <!-- 리뷰어 정보 -->
           <div class="reviewer-info">
             <div class="reviewer-avatar">
@@ -46,12 +46,12 @@
               <p class="review-date">{{ formatDate(review?.createdAt) }}</p>
             </div>
           </div>
-  
+
           <!-- 리뷰 내용 -->
           <div class="review-content">
             <p class="review-text">{{ review?.content }}</p>
           </div>
-  
+
           <!-- 리뷰 액션 -->
           <div class="review-actions">
             <button 
@@ -71,13 +71,13 @@
               <span>공유</span>
             </button>
           </div>
-  
+
           <!-- 댓글 섹션 -->
           <div class="comments-section">
             <h4 class="comments-title">
               댓글 <span class="comments-count">({{ comments.length }})</span>
             </h4>
-  
+
             <!-- 댓글 입력 -->
             <div class="comment-input-section">
               <div class="user-avatar">
@@ -107,7 +107,7 @@
                 </div>
               </div>
             </div>
-  
+
             <!-- 댓글 목록 -->
             <div class="comments-list">
               <div 
@@ -128,7 +128,7 @@
                     <span class="comment-date">{{ formatRelativeTime(comment.createdAt) }}</span>
                   </div>
                   <p class="comment-text">{{ comment.content }}</p>
-                  
+
                   <!-- 댓글 액션 -->
                   <div class="comment-actions">
                     <button 
@@ -155,7 +155,7 @@
                       삭제
                     </button>
                   </div>
-  
+
                   <!-- 대댓글 입력 -->
                   <div 
                     v-if="replyingToComment === comment.id" 
@@ -193,7 +193,7 @@
                       </div>
                     </div>
                   </div>
-  
+
                   <!-- 대댓글 목록 -->
                   <div v-if="comment.replies && comment.replies.length > 0" class="replies-list">
                     <div 
@@ -217,7 +217,7 @@
                           <span v-if="reply.parentUser" class="mention">@{{ reply.parentUser?.nickname }}</span>
                           {{ reply.content }}
                         </p>
-                        
+
                         <!-- 대댓글 액션 -->
                         <div class="reply-actions">
                           <button 
@@ -255,10 +255,12 @@
       </div>
     </div>
   </template>
-  
+
   <script setup>
   import { ref, computed, watch, nextTick } from 'vue'
-  
+  import { useMovieStore } from '../stores/movie'
+  import { useUserStore } from '../stores/accounts'
+
   // Props & Emits
   const props = defineProps({
     show: {
@@ -270,176 +272,173 @@
       default: () => null
     }
   })
-  
+
   const emit = defineEmits(['close', 'like-toggled', 'comment-added'])
-  
+
   // 현재 사용자 정보
-  const currentUser = ref({
-    id: 1,
-    nickname: '영화러버',
-    avatar: '/api/placeholder/40/40'
-  })
-  
-  // 댓글 관련 상태
-  const comments = ref([
-    {
-      id: 1,
-      user: {
-        id: 2,
-        nickname: '시네마키드',
-        avatar: '/api/placeholder/40/40'
-      },
-      content: '정말 공감되는 리뷰네요! 저도 이 영화 정말 감동깊게 봤어요.',
-      createdAt: '2024-03-15T11:30:00Z',
-      likesCount: 5,
-      isLiked: false,
-      replies: [
-        {
-          id: 101,
-          user: {
-            id: 3,
-            nickname: '무비마니아',
-            avatar: '/api/placeholder/32/32'
-          },
-          parentUser: {
-            id: 2,
-            nickname: '시네마키드'
-          },
-          content: '저도 같은 생각이에요! 특히 마지막 장면이 인상적이었어요.',
-          createdAt: '2024-03-15T12:00:00Z',
-          likesCount: 2,
-          isLiked: true
-        }
-      ]
-    },
-    {
-      id: 2,
-      user: {
-        id: 4,
-        nickname: '드라마퀸',
-        avatar: '/api/placeholder/40/40'
-      },
-      content: '이런 관점에서 본 적이 없었는데 새롭네요. 다시 한번 봐야겠어요!',
-      createdAt: '2024-03-15T14:20:00Z',
-      likesCount: 3,
-      isLiked: true,
-      replies: []
+  const userStore = useUserStore()
+  const currentUser = computed(() => {
+    if (!userStore.currentUser) return { 
+      id: null, 
+      nickname: '게스트', 
+      avatar: '/api/placeholder/40/40' 
     }
-  ])
-  
+
+    return {
+      id: userStore.currentUser.id,
+      nickname: userStore.currentUser.nickname || userStore.currentUser.username || '사용자',
+      avatar: userStore.currentUser.profile_image || '/api/placeholder/40/40'
+    }
+  })
+
+  // 댓글 관련 상태
+  const comments = ref([])
+
   const newComment = ref('')
   const newReply = ref('')
   const replyingToComment = ref(null)
   const commentInput = ref(null)
-  
+
   // 메서드들
   const handleOverlayClick = () => {
     emit('close')
   }
-  
+
   const toggleLike = () => {
     console.log('리뷰 좋아요 토글')
     emit('like-toggled', props.review)
   }
-  
+
   const shareReview = () => {
     console.log('리뷰 공유')
   }
-  
+
   const focusCommentInput = () => {
     nextTick(() => {
       commentInput.value?.focus()
     })
   }
-  
-  const submitComment = () => {
+
+  const submitComment = async () => {
     if (!newComment.value.trim()) return
-  
-    const comment = {
-      id: Date.now(),
-      user: { ...currentUser.value },
-      content: newComment.value.trim(),
-      createdAt: new Date().toISOString(),
-      likesCount: 0,
-      isLiked: false,
-      replies: []
+
+    try {
+      const movieStore = useMovieStore()
+      await movieStore.createComment(props.review.id, newComment.value.trim())
+
+      // 댓글 작성 후 댓글 목록 다시 로드
+      newComment.value = ''
+      await loadComments()
+
+      console.log('✅ 댓글이 성공적으로 작성되었습니다.')
+    } catch (error) {
+      console.error('❌ 댓글 작성 실패:', error)
+      alert('댓글 작성에 실패했습니다. 다시 시도해주세요.')
     }
-  
-    comments.value.unshift(comment)
-    newComment.value = ''
-    emit('comment-added', comment)
   }
-  
-  const toggleCommentLike = (comment) => {
-    comment.isLiked = !comment.isLiked
-    comment.likesCount += comment.isLiked ? 1 : -1
+
+  const toggleCommentLike = async (comment) => {
+    try {
+      const movieStore = useMovieStore()
+      await movieStore.toggleCommentLike(comment.id, comment.isLiked)
+
+      // 토글 후 UI 업데이트
+      comment.isLiked = !comment.isLiked
+      comment.likesCount += comment.isLiked ? 1 : -1
+
+      console.log(`✅ 댓글 좋아요 ${comment.isLiked ? '추가' : '취소'} 성공`)
+    } catch (error) {
+      console.error('❌ 댓글 좋아요 토글 실패:', error)
+      alert('좋아요 처리에 실패했습니다. 다시 시도해주세요.')
+    }
   }
-  
-  const deleteComment = (commentId) => {
+
+  const deleteComment = async (commentId) => {
     if (confirm('댓글을 삭제하시겠습니까?')) {
-      const index = comments.value.findIndex(c => c.id === commentId)
-      if (index !== -1) {
-        comments.value.splice(index, 1)
+      try {
+        const movieStore = useMovieStore()
+        await movieStore.deleteComment(commentId)
+
+        // 댓글 삭제 후 댓글 목록 다시 로드
+        await loadComments()
+
+        console.log('✅ 댓글이 성공적으로 삭제되었습니다.')
+      } catch (error) {
+        console.error('❌ 댓글 삭제 실패:', error)
+        alert('댓글 삭제에 실패했습니다. 다시 시도해주세요.')
       }
     }
   }
-  
+
   const toggleReplyInput = (commentId) => {
     replyingToComment.value = replyingToComment.value === commentId ? null : commentId
     newReply.value = ''
   }
-  
+
   const cancelReply = () => {
     replyingToComment.value = null
     newReply.value = ''
   }
-  
-  const submitReply = (commentId) => {
+
+  const submitReply = async (commentId) => {
     if (!newReply.value.trim()) return
-  
+
     const comment = comments.value.find(c => c.id === commentId)
     if (!comment) return
-  
-    const reply = {
-      id: Date.now(),
-      user: { ...currentUser.value },
-      parentUser: comment.user,
-      content: newReply.value.trim(),
-      createdAt: new Date().toISOString(),
-      likesCount: 0,
-      isLiked: false
+
+    try {
+      const movieStore = useMovieStore()
+      await movieStore.createReply(commentId, newReply.value.trim())
+
+      // 대댓글 작성 후 댓글 목록 다시 로드
+      cancelReply()
+      await loadComments()
+
+      console.log('✅ 대댓글이 성공적으로 작성되었습니다.')
+    } catch (error) {
+      console.error('❌ 대댓글 작성 실패:', error)
+      alert('대댓글 작성에 실패했습니다. 다시 시도해주세요.')
     }
-  
-    if (!comment.replies) {
-      comment.replies = []
-    }
-    comment.replies.push(reply)
-  
-    cancelReply()
   }
-  
+
   const replyToReply = (commentId, targetUser) => {
     replyingToComment.value = commentId
     newReply.value = `@${targetUser.nickname} `
   }
-  
-  const toggleReplyLike = (reply) => {
-    reply.isLiked = !reply.isLiked
-    reply.likesCount += reply.isLiked ? 1 : -1
+
+  const toggleReplyLike = async (reply) => {
+    try {
+      const movieStore = useMovieStore()
+      await movieStore.toggleCommentLike(reply.id, reply.isLiked)
+
+      // 토글 후 UI 업데이트
+      reply.isLiked = !reply.isLiked
+      reply.likesCount += reply.isLiked ? 1 : -1
+
+      console.log(`✅ 대댓글 좋아요 ${reply.isLiked ? '추가' : '취소'} 성공`)
+    } catch (error) {
+      console.error('❌ 대댓글 좋아요 토글 실패:', error)
+      alert('좋아요 처리에 실패했습니다. 다시 시도해주세요.')
+    }
   }
-  
-  const deleteReply = (commentId, replyId) => {
+
+  const deleteReply = async (commentId, replyId) => {
     if (confirm('답글을 삭제하시겠습니까?')) {
-      const comment = comments.value.find(c => c.id === commentId)
-      if (comment && comment.replies) {
-        const index = comment.replies.findIndex(r => r.id === replyId)
-        if (index !== -1) {
-          comment.replies.splice(index, 1)
-        }
+      try {
+        const movieStore = useMovieStore()
+        await movieStore.deleteComment(replyId)
+
+        // 대댓글 삭제 후 댓글 목록 다시 로드
+        await loadComments()
+
+        console.log('✅ 대댓글이 성공적으로 삭제되었습니다.')
+      } catch (error) {
+        console.error('❌ 대댓글 삭제 실패:', error)
+        alert('대댓글 삭제에 실패했습니다. 다시 시도해주세요.')
       }
     }
   }
-  
+
   // 유틸리티 함수들
   const formatDate = (dateString) => {
     const date = new Date(dateString)
@@ -451,13 +450,13 @@
       minute: '2-digit'
     })
   }
-  
+
   const formatRelativeTime = (dateString) => {
     const now = new Date()
     const date = new Date(dateString)
     const diffMs = now - date
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  
+
     if (diffDays === 0) {
       const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
       if (diffHours === 0) {
@@ -473,24 +472,82 @@
       return formatDate(dateString).split(' ').slice(0, 3).join(' ')
     }
   }
-  
-  // ESC 키로 모달 닫기
+
+  // 댓글 로드
+  const loadComments = async () => {
+    if (!props.review?.id) return
+
+    try {
+      const movieStore = useMovieStore()
+      const commentsData = await movieStore.getReviewComments(props.review.id)
+
+      // API 응답 데이터를 UI에 맞게 변환
+      comments.value = commentsData.map(comment => ({
+        id: comment.id,
+        user: {
+          id: comment.user.id,
+          nickname: comment.user.nickname || comment.user.username,
+          avatar: comment.user.profile_image || '/api/placeholder/40/40'
+        },
+        content: comment.content,
+        createdAt: comment.created_at,
+        likesCount: comment.like_count,
+        isLiked: comment.is_liked,
+        replies: comment.replies.map(reply => ({
+          id: reply.id,
+          user: {
+            id: reply.user.id,
+            nickname: reply.user.nickname || reply.user.username,
+            avatar: reply.user.profile_image || '/api/placeholder/32/32'
+          },
+          parentUser: reply.parent_comment ? {
+            id: comment.user.id,
+            nickname: comment.user.nickname || comment.user.username
+          } : null,
+          content: reply.content,
+          createdAt: reply.created_at,
+          likesCount: reply.like_count,
+          isLiked: reply.is_liked
+        }))
+      }))
+
+      console.log('✅ 댓글 로드 완료:', comments.value.length, '개의 댓글')
+    } catch (error) {
+      console.error('❌ 댓글 로드 실패:', error)
+      // 에러 발생 시 빈 배열로 초기화
+      comments.value = []
+    }
+  }
+
+  // 리뷰가 변경되면 댓글 로드
+  watch(() => props.review?.id, (newReviewId) => {
+    if (newReviewId) {
+      loadComments()
+    } else {
+      comments.value = []
+    }
+  }, { immediate: true })
+
+  // 모달이 표시될 때 댓글 로드
   watch(() => props.show, (newShow) => {
-    if (newShow) {
+    if (newShow && props.review?.id) {
+      loadComments()
+
+      // ESC 키로 모달 닫기
       const handleEscape = (e) => {
         if (e.key === 'Escape') {
           emit('close')
         }
       }
       document.addEventListener('keydown', handleEscape)
-      
+
       return () => {
         document.removeEventListener('keydown', handleEscape)
       }
     }
   })
   </script>
-  
+
   <style scoped>
   /* 모달 기본 스타일 */
   .modal-overlay {
@@ -506,7 +563,7 @@
     z-index: 9999;
     padding: 2rem;
   }
-  
+
   .modal-container {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
     border-radius: 20px;
@@ -517,7 +574,7 @@
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
-  
+
   .modal-header {
     display: flex;
     justify-content: space-between;
@@ -525,14 +582,14 @@
     padding: 2rem 2rem 1rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
-  
+
   .modal-title {
     font-size: 1.5rem;
     font-weight: 700;
     color: #ffffff;
     margin: 0;
   }
-  
+
   .close-btn {
     background: transparent;
     border: none;
@@ -543,18 +600,18 @@
     border-radius: 50%;
     transition: all 0.3s ease;
   }
-  
+
   .close-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     color: #ffffff;
   }
-  
+
   .modal-body {
     padding: 2rem;
     overflow-y: auto;
     max-height: calc(90vh - 100px);
   }
-  
+
   /* 영화 정보 */
   .movie-info {
     display: flex;
@@ -565,47 +622,47 @@
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
-  
+
   .movie-poster {
     width: 100px;
     height: 150px;
     object-fit: cover;
     border-radius: 12px;
   }
-  
+
   .movie-details {
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
   }
-  
+
   .movie-title {
     font-size: 1.8rem;
     font-weight: 700;
     color: #ffffff;
     margin-bottom: 1rem;
   }
-  
+
   .movie-rating {
     display: flex;
     align-items: center;
     gap: 0.8rem;
   }
-  
+
   .stars {
     display: flex;
     gap: 0.3rem;
     color: #ffd700;
     font-size: 1.2rem;
   }
-  
+
   .rating-text {
     font-size: 1.1rem;
     color: #ffffff;
     font-weight: 600;
   }
-  
+
   /* 리뷰어 정보 */
   .reviewer-info {
     display: flex;
@@ -613,7 +670,7 @@
     gap: 1rem;
     margin-bottom: 1.5rem;
   }
-  
+
   .reviewer-avatar .avatar {
     width: 50px;
     height: 50px;
@@ -621,32 +678,32 @@
     object-fit: cover;
     border: 2px solid rgba(255, 255, 255, 0.2);
   }
-  
+
   .reviewer-name {
     font-size: 1.2rem;
     font-weight: 600;
     color: #ffffff;
     margin: 0 0 0.2rem 0;
   }
-  
+
   .review-date {
     color: rgba(255, 255, 255, 0.6);
     font-size: 0.9rem;
     margin: 0;
   }
-  
+
   /* 리뷰 내용 */
   .review-content {
     margin-bottom: 2rem;
   }
-  
+
   .review-text {
     color: #ffffff;
     font-size: 1.1rem;
     line-height: 1.7;
     margin: 0;
   }
-  
+
   /* 리뷰 액션 */
   .review-actions {
     display: flex;
@@ -656,7 +713,7 @@
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
-  
+
   .action-btn {
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -670,22 +727,22 @@
     gap: 0.5rem;
     font-size: 0.95rem;
   }
-  
+
   .action-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.4);
   }
-  
+
   .like-btn.liked {
     border-color: #e74c3c;
     color: #e74c3c;
   }
-  
+
   /* 댓글 섹션 */
   .comments-section {
     margin-top: 2rem;
   }
-  
+
   .comments-title {
     font-size: 1.3rem;
     font-weight: 600;
@@ -695,19 +752,19 @@
     align-items: center;
     gap: 0.5rem;
   }
-  
+
   .comments-count {
     color: rgba(255, 255, 255, 0.6);
     font-weight: 400;
   }
-  
+
   /* 댓글 입력 */
   .comment-input-section {
     display: flex;
     gap: 1rem;
     margin-bottom: 2rem;
   }
-  
+
   .user-avatar .avatar {
     width: 40px;
     height: 40px;
@@ -715,16 +772,16 @@
     object-fit: cover;
     border: 2px solid rgba(255, 255, 255, 0.2);
   }
-  
+
   .user-avatar .avatar.small {
     width: 32px;
     height: 32px;
   }
-  
+
   .comment-input-container {
     flex: 1;
   }
-  
+
   .comment-input {
     width: 100%;
     background: rgba(255, 255, 255, 0.05);
@@ -738,23 +795,23 @@
     min-height: 80px;
     transition: all 0.3s ease;
   }
-  
+
   .comment-input:focus {
     outline: none;
     border-color: rgba(255, 255, 255, 0.4);
     background: rgba(255, 255, 255, 0.08);
   }
-  
+
   .comment-input::placeholder {
     color: rgba(255, 255, 255, 0.5);
   }
-  
+
   .comment-input-actions {
     display: flex;
     justify-content: flex-end;
     margin-top: 0.5rem;
   }
-  
+
   .submit-comment-btn {
     background: linear-gradient(135deg, #3498db, #2980b9);
     border: none;
@@ -765,28 +822,28 @@
     font-weight: 600;
     transition: all 0.3s ease;
   }
-  
+
   .submit-comment-btn:hover:not(:disabled) {
     background: linear-gradient(135deg, #2980b9, #21618c);
     transform: translateY(-1px);
   }
-  
+
   .submit-comment-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-  
+
   /* 댓글 목록 */
   .comments-list {
     space-y: 1.5rem;
   }
-  
+
   .comment-item {
     display: flex;
     gap: 1rem;
     margin-bottom: 1.5rem;
   }
-  
+
   .comment-avatar .avatar {
     width: 40px;
     height: 40px;
@@ -794,42 +851,42 @@
     object-fit: cover;
     border: 2px solid rgba(255, 255, 255, 0.2);
   }
-  
+
   .comment-content {
     flex: 1;
   }
-  
+
   .comment-header {
     display: flex;
     align-items: center;
     gap: 0.8rem;
     margin-bottom: 0.5rem;
   }
-  
+
   .comment-author {
     font-size: 1rem;
     font-weight: 600;
     color: #ffffff;
     margin: 0;
   }
-  
+
   .comment-date {
     color: rgba(255, 255, 255, 0.5);
     font-size: 0.85rem;
   }
-  
+
   .comment-text {
     color: #ffffff;
     font-size: 1rem;
     line-height: 1.6;
     margin-bottom: 0.8rem;
   }
-  
+
   .comment-actions {
     display: flex;
     gap: 1rem;
   }
-  
+
   .comment-action-btn {
     background: transparent;
     border: none;
@@ -841,15 +898,15 @@
     gap: 0.3rem;
     transition: color 0.3s ease;
   }
-  
+
   .comment-action-btn:hover {
     color: rgba(255, 255, 255, 0.9);
   }
-  
+
   .comment-action-btn.liked {
     color: #e74c3c;
   }
-  
+
   /* 대댓글 입력 */
   .reply-input-section {
     display: flex;
@@ -858,11 +915,11 @@
     padding-left: 1rem;
     border-left: 2px solid rgba(255, 255, 255, 0.1);
   }
-  
+
   .reply-input-container {
     flex: 1;
   }
-  
+
   .reply-input {
     width: 100%;
     background: rgba(255, 255, 255, 0.03);
@@ -876,24 +933,24 @@
     min-height: 60px;
     transition: all 0.3s ease;
   }
-  
+
   .reply-input:focus {
     outline: none;
     border-color: rgba(255, 255, 255, 0.3);
     background: rgba(255, 255, 255, 0.05);
   }
-  
+
   .reply-input::placeholder {
     color: rgba(255, 255, 255, 0.4);
   }
-  
+
   .reply-input-actions {
     display: flex;
     justify-content: flex-end;
     gap: 0.5rem;
     margin-top: 0.5rem;
   }
-  
+
   .cancel-reply-btn {
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -904,12 +961,12 @@
     font-size: 0.85rem;
     transition: all 0.3s ease;
   }
-  
+
   .cancel-reply-btn:hover {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.3);
   }
-  
+
   .submit-reply-btn {
     background: linear-gradient(135deg, #27ae60, #229954);
     border: none;
@@ -921,30 +978,30 @@
     font-weight: 600;
     transition: all 0.3s ease;
   }
-  
+
   .submit-reply-btn:hover:not(:disabled) {
     background: linear-gradient(135deg, #229954, #1e8449);
     transform: translateY(-1px);
   }
-  
+
   .submit-reply-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-  
+
   /* 대댓글 목록 */
   .replies-list {
     margin-top: 1rem;
     padding-left: 1rem;
     border-left: 2px solid rgba(255, 255, 255, 0.1);
   }
-  
+
   .reply-item {
     display: flex;
     gap: 0.8rem;
     margin-bottom: 1rem;
   }
-  
+
   .reply-avatar .avatar {
     width: 32px;
     height: 32px;
@@ -952,47 +1009,47 @@
     object-fit: cover;
     border: 2px solid rgba(255, 255, 255, 0.2);
   }
-  
+
   .reply-content {
     flex: 1;
   }
-  
+
   .reply-header {
     display: flex;
     align-items: center;
     gap: 0.6rem;
     margin-bottom: 0.3rem;
   }
-  
+
   .reply-author {
     font-size: 0.9rem;
     font-weight: 600;
     color: #ffffff;
     margin: 0;
   }
-  
+
   .reply-date {
     color: rgba(255, 255, 255, 0.5);
     font-size: 0.8rem;
   }
-  
+
   .reply-text {
     color: #ffffff;
     font-size: 0.9rem;
     line-height: 1.5;
     margin-bottom: 0.6rem;
   }
-  
+
   .mention {
     color: #3498db;
     font-weight: 600;
   }
-  
+
   .reply-actions {
     display: flex;
     gap: 0.8rem;
   }
-  
+
   .reply-action-btn {
     background: transparent;
     border: none;
@@ -1004,125 +1061,125 @@
     gap: 0.25rem;
     transition: color 0.3s ease;
   }
-  
+
   .reply-action-btn:hover {
     color: rgba(255, 255, 255, 0.8);
   }
-  
+
   .reply-action-btn.liked {
     color: #e74c3c;
   }
-  
+
   /* 반응형 디자인 */
   @media (max-width: 768px) {
     .modal-overlay {
       padding: 1rem;
     }
-    
+
     .modal-container {
       max-height: 95vh;
     }
-    
+
     .modal-header {
       padding: 1.5rem 1.5rem 1rem;
     }
-    
+
     .modal-body {
       padding: 1.5rem;
     }
-    
+
     .movie-info {
       flex-direction: column;
       text-align: center;
     }
-    
+
     .movie-poster {
       width: 80px;
       height: 120px;
       align-self: center;
     }
-    
+
     .movie-title {
       font-size: 1.5rem;
     }
-    
+
     .review-actions {
       flex-wrap: wrap;
       gap: 0.5rem;
     }
-    
+
     .action-btn {
       flex: 1;
       min-width: 100px;
       justify-content: center;
     }
-    
+
     .comment-input-section,
     .reply-input-section {
       flex-direction: column;
       gap: 0.8rem;
     }
-    
+
     .user-avatar {
       align-self: flex-start;
     }
   }
-  
+
   @media (max-width: 480px) {
     .modal-header {
       padding: 1rem;
     }
-    
+
     .modal-body {
       padding: 1rem;
     }
-    
+
     .modal-title {
       font-size: 1.3rem;
     }
-    
+
     .movie-info {
       padding: 1rem;
     }
-    
+
     .movie-title {
       font-size: 1.3rem;
     }
-    
+
     .comment-item,
     .reply-item {
       gap: 0.8rem;
     }
   }
-  
+
   /* 스크롤바 */
   .modal-body::-webkit-scrollbar {
     width: 6px;
   }
-  
+
   .modal-body::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 3px;
   }
-  
+
   .modal-body::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 3px;
   }
-  
+
   .modal-body::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
   }
-  
+
   /* 애니메이션 */
   .modal-overlay {
     animation: fadeIn 0.3s ease;
   }
-  
+
   .modal-container {
     animation: slideIn 0.3s ease;
   }
-  
+
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -1131,7 +1188,7 @@
       opacity: 1;
     }
   }
-  
+
   @keyframes slideIn {
     from {
       opacity: 0;

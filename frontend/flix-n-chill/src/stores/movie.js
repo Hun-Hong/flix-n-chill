@@ -68,7 +68,7 @@ export const useMovieStore = defineStore('movie', () => {
           ordering, 
           year,
           page: page,
-          page_size: 20  // 백엔드에서 사용하는 파라미터명에 맞게 조정
+          page_size: 20
         },
         headers,
       })
@@ -78,14 +78,14 @@ export const useMovieStore = defineStore('movie', () => {
         title: movie.title,
         rating: movie.vote_average,
         year: movie.release_date ? new Date(movie.release_date).getFullYear() : 2024,
-        genre: movie.genres[0]?.name || 'Unknown', // 안전한 접근
+        genre: movie.genres[0]?.name || 'Unknown',
         genres: movie.genres?.map((genre) => genre.name) || [],
         poster: movie.poster_path
           ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
           : '/api/placeholder/300/450',
         isInWatchlist: false,
-        isLiked: movie.is_liked || false, // 기본값 설정
-        like_count: movie.like_count || 0, // 기본값 설정
+        isLiked: movie.is_liked || false,
+        like_count: movie.like_count || 0,
       }))
 
       // 기존 영화 목록에 새로운 영화들 추가
@@ -96,9 +96,9 @@ export const useMovieStore = defineStore('movie', () => {
       console.log(`🎬 페이지 ${page} 로드 완료 - 현재 영화 수: ${cacheData.movies.length}, 전체: ${cacheData.totalCount}`)
 
       return {
-        movies: transformedMovies, // 새로 로드된 영화들만 반환
+        movies: transformedMovies,
         total: cacheData.totalCount,
-        hasMore: cacheData.movies.length < cacheData.totalCount // 현재 로드된 영화 수 < 전체 영화 수
+        hasMore: cacheData.movies.length < cacheData.totalCount
       }
 
     } catch (err) {
@@ -114,11 +114,11 @@ export const useMovieStore = defineStore('movie', () => {
     }
   }
 
-  // 캐시 초기화 메서드 추가
+  // 캐시 초기화 메서드
   const clearGenreMovies = (genreType, ordering = 'top', year = '') => {
     const userKey = getUserKey()
     const cacheKey = getCacheKey(genreType, ordering, year)
-    
+
     if (moviesByGenre.value[userKey]?.[cacheKey]) {
       moviesByGenre.value[userKey][cacheKey] = {
         movies: [],
@@ -139,7 +139,7 @@ export const useMovieStore = defineStore('movie', () => {
     // 1) 캐시에서 모든 데이터 참조 가져오기
     const userKey = getUserKey()
     const userCache = moviesByGenre.value[userKey] || {}
-    
+
     // 2) 현재 토글할 값 계산
     let currentLiked = null
     let targetMovie = null
@@ -156,12 +156,12 @@ export const useMovieStore = defineStore('movie', () => {
       }
       return false
     })
-    
+
     if (currentLiked === null || !targetMovie) {
       console.warn('해당 영화를 찾을 수 없습니다.')
       return
     }
-    
+
     const nextLiked = !currentLiked
 
     // 3) 서버에 요청 (POST/DELETE 분기)
@@ -183,18 +183,28 @@ export const useMovieStore = defineStore('movie', () => {
           })
         }
       })
-      
+
       console.log(`✅ 좋아요 ${nextLiked ? '추가' : '제거'} 성공: ${movieId}`)
-      
+
     } catch (e) {
       console.error('❌ 좋아요 토글 실패:', e)
       error.value = e.message || '좋아요 처리 중 오류가 발생했습니다.'
     }
   }
 
+  // 찜 토글
+  const toggleWatchlist = async (movieId) => {
+    console.log('찜 토글:', movieId)
+    // 필요시 구현
+  }
+
   // 리뷰 생성
   const createReview = async (movieId, payload) => {
     const userStore = useUserStore()
+    if (!userStore.token) {
+      throw new Error('로그인이 필요합니다.')
+    }
+
     try {
       const response = await axios({
         method: 'post',
@@ -216,6 +226,10 @@ export const useMovieStore = defineStore('movie', () => {
   // 사용자 리뷰 조회
   const getUserReview = async (movieId) => {
     const userStore = useUserStore()
+    if (!userStore.token) {
+      throw new Error('로그인이 필요합니다.')
+    }
+
     try {
       const response = await axios({
         method: 'get',
@@ -228,8 +242,7 @@ export const useMovieStore = defineStore('movie', () => {
       return response.data
     } catch (error) {
       if (error.response?.status === 404) {
-        // 리뷰가 없는 경우 (정상적인 상황)
-        console.log('기존 리뷰 없음')
+        console.log('ℹ️ 기존 리뷰 없음')
         return null
       }
       console.error('리뷰 조회 실패:', error)
@@ -240,6 +253,10 @@ export const useMovieStore = defineStore('movie', () => {
   // 리뷰 수정
   const updateReview = async (movieId, reviewId, payload) => {
     const userStore = useUserStore()
+    if (!userStore.token) {
+      throw new Error('로그인이 필요합니다.')
+    }
+
     try {
       const response = await axios({
         method: 'put',
@@ -261,6 +278,10 @@ export const useMovieStore = defineStore('movie', () => {
   // 리뷰 삭제
   const deleteReview = async (movieId, reviewId) => {
     const userStore = useUserStore()
+    if (!userStore.token) {
+      throw new Error('로그인이 필요합니다.')
+    }
+
     try {
       const response = await axios({
         method: 'delete',
@@ -277,7 +298,169 @@ export const useMovieStore = defineStore('movie', () => {
     }
   }
 
+  // 리뷰 상세 조회 추가
+  const getReviewDetail = async (reviewId) => {
+    const userStore = useUserStore()
+    const headers = {}
+    if (userStore.token) {
+      headers['Authorization'] = `Token ${userStore.token}`
+    }
+
+    try {
+      const response = await axios({
+        method: 'get',
+        url: `http://127.0.0.1:8000/api/v1/reviews/${reviewId}/`,
+        headers,
+      })
+      console.log('✅ 리뷰 상세 조회 성공:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('❌ 리뷰 상세 조회 실패:', error)
+      throw error
+    }
+  }
+
+  // 리뷰 좋아요 토글 추가
+  const toggleReviewLike = async (reviewId) => {
+    const userStore = useUserStore()
+    if (!userStore.token) {
+      throw new Error('로그인이 필요합니다.')
+    }
+
+    try {
+      const response = await axios({
+        method: 'post',
+        url: `http://127.0.0.1:8000/api/v1/reviews/${reviewId}/like/`,
+        headers: { Authorization: `Token ${userStore.token}` }
+      })
+      console.log('✅ 리뷰 좋아요 토글 성공:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('❌ 리뷰 좋아요 토글 실패:', error)
+      throw error
+    }
+  }
+
+  // 리뷰에 댓글 작성
+  const createComment = async (reviewId, content) => {
+    const userStore = useUserStore()
+    if (!userStore.token) {
+      throw new Error('로그인이 필요합니다.')
+    }
+
+    try {
+      const response = await axios({
+        method: 'post',
+        url: `http://localhost:8000/api/v1/movies/review/${reviewId}/comment/`,
+        data: { content },
+        headers: { 
+          Authorization: `Token ${userStore.token}`,
+          'Content-Type': 'application/json'
+        },
+      })
+      console.log('✅ 댓글 작성 성공:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('❌ 댓글 작성 실패:', error)
+      throw error
+    }
+  }
+
+  // 댓글에 대댓글 작성
+  const createReply = async (commentId, content) => {
+    const userStore = useUserStore()
+    if (!userStore.token) {
+      throw new Error('로그인이 필요합니다.')
+    }
+
+    try {
+      const response = await axios({
+        method: 'post',
+        url: `http://localhost:8000/api/v1/movies/comment/${commentId}/reply/`,
+        data: { content },
+        headers: { 
+          Authorization: `Token ${userStore.token}`,
+          'Content-Type': 'application/json'
+        },
+      })
+      console.log('✅ 대댓글 작성 성공:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('❌ 대댓글 작성 실패:', error)
+      throw error
+    }
+  }
+
+  // 리뷰의 모든 댓글 조회
+  const getReviewComments = async (reviewId) => {
+    const userStore = useUserStore()
+    const headers = {}
+    if (userStore.token) {
+      headers['Authorization'] = `Token ${userStore.token}`
+    }
+
+    try {
+      const response = await axios({
+        method: 'get',
+        url: `http://localhost:8000/api/v1/movies/review/${reviewId}/comments/`,
+        headers,
+      })
+      console.log('✅ 댓글 목록 조회 성공:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('❌ 댓글 목록 조회 실패:', error)
+      throw error
+    }
+  }
+
+  // 댓글 삭제
+  const deleteComment = async (commentId) => {
+    const userStore = useUserStore()
+    if (!userStore.token) {
+      throw new Error('로그인이 필요합니다.')
+    }
+
+    try {
+      const response = await axios({
+        method: 'delete',
+        url: `http://localhost:8000/api/v1/movies/comment/${commentId}/delete/`,
+        headers: { 
+          Authorization: `Token ${userStore.token}`,
+        },
+      })
+      console.log('✅ 댓글 삭제 성공')
+      return response.data
+    } catch (error) {
+      console.error('❌ 댓글 삭제 실패:', error)
+      throw error
+    }
+  }
+
+  // 댓글 좋아요 토글
+  const toggleCommentLike = async (commentId, isCurrentlyLiked) => {
+    const userStore = useUserStore()
+    if (!userStore.token) {
+      throw new Error('로그인이 필요합니다.')
+    }
+
+    try {
+      const response = await axios({
+        method: isCurrentlyLiked ? 'delete' : 'post',
+        url: `http://localhost:8000/api/v1/movies/comment/${commentId}/like/`,
+        headers: { 
+          Authorization: `Token ${userStore.token}`,
+        },
+      })
+      console.log(`✅ 댓글 좋아요 ${isCurrentlyLiked ? '취소' : '추가'} 성공:`, commentId)
+      return response.data
+    } catch (error) {
+      console.error('❌ 댓글 좋아요 토글 실패:', error)
+      throw error
+    }
+  }
+
   return {
+    BE_API_PATH,
     moviesByGenre,
     loading,
     error,
@@ -288,5 +471,13 @@ export const useMovieStore = defineStore('movie', () => {
     getUserReview,
     updateReview,
     deleteReview,
+    toggleWatchlist,
+    getReviewDetail,
+    toggleReviewLike,
+    createComment,
+    createReply,
+    getReviewComments,
+    deleteComment,
+    toggleCommentLike,
   }
 })
