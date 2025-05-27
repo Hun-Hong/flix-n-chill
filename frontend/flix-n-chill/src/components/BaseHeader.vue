@@ -157,7 +157,7 @@
           </p>
         </div>
         <div class="popup-actions">
-          <button class="popup-btn primary" @click="goToLogin">로그인 페이지로</button>
+          <button class="popup-btn primary" @click="goToHome">메인 페이지로</button>
         </div>
       </div>
     </div>
@@ -330,13 +330,13 @@ const handleLogout = async () => {
 // 성공 팝업 닫기
 const closeSuccessPopup = () => {
   showLogoutSuccess.value = false
-  goToLogin()
+  goToHome()
 }
 
 // 로그인 페이지로 이동
-const goToLogin = () => {
+const goToHome = () => {
   showLogoutSuccess.value = false
-  router.push({ name: 'Login' })
+  router.push({ name: 'Home' })
 }
 
 // 외부 클릭 시 드롭다운 닫기

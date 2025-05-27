@@ -159,6 +159,107 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  // 팔로우/팔로워 목록 가져오기
+const getFollowList = async (userId, type = 'both') => {
+  if (!userId) {
+    throw new Error('사용자 ID가 필요합니다.')
+  }
+
+  try {
+    console.log(`🔄 ${type} 목록 로딩 시작:`, userId)
+
+    const response = await axios({
+      method: 'get',
+      url: `${BE_API_PATH}auth/${userId}/detail/`,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token.value && { 'Authorization': `Token ${token.value}` })
+      }
+    })
+
+    const userData = response.data
+    
+    // 팔로잉/팔로워 목록 정규화
+    const normalizeUser = (user) => ({
+      id: user.id,
+      username: user.username,
+      nickname: user.nickname || user.username,
+      profile_image: user.profile_image,
+      profile_bio: user.profile_bio || '',
+      following_count: user.following_count || 0,
+      followers_count: user.followers_count || 0,
+      is_following: user.is_following || false
+    })
+
+    const result = {
+      following: (userData.following || []).map(normalizeUser),
+      followers: (userData.followers || []).map(normalizeUser),
+      total_following: userData.following_count || 0,
+      total_followers: userData.followers_count || 0
+    }
+
+    console.log('✅ 팔로우 목록 로딩 완료:', {
+      following: result.following.length,
+      followers: result.followers.length
+    })
+
+    return {
+      success: true,
+      data: result
+    }
+
+  } catch (error) {
+    console.error('❌ 팔로우 목록 로딩 실패:', error)
+
+    let errorMessage = '팔로우 목록을 불러오는데 실패했습니다.'
+    
+    if (error.response?.status === 404) {
+      errorMessage = '사용자를 찾을 수 없습니다.'
+    } else if (error.response?.status === 401) {
+      errorMessage = '로그인이 필요합니다.'
+    } else if (error.response?.data?.detail) {
+      errorMessage = error.response.data.detail
+    }
+
+    return {
+      success: false,
+      error: errorMessage,
+      data: {
+        following: [],
+        followers: [],
+        total_following: 0,
+        total_followers: 0
+      }
+    }
+  }
+}
+
+// 팔로우 상태 일괄 확인 (여러 사용자)
+const checkMultipleFollowStatus = async (userIds) => {
+  if (!token.value || !userIds.length) {
+    return {}
+  }
+
+  try {
+    const promises = userIds.map(userId => 
+      checkFollowStatus(userId).catch(() => ({ is_following: false }))
+    )
+    
+    const results = await Promise.all(promises)
+    
+    const statusMap = {}
+    userIds.forEach((userId, index) => {
+      statusMap[userId] = results[index]
+    })
+    
+    return statusMap
+
+  } catch (error) {
+    console.error('다중 팔로우 상태 확인 실패:', error)
+    return {}
+  }
+}
+
 
   // Actions - 로그인
   const login = async (credentials) => {
@@ -470,6 +571,8 @@ export const useUserStore = defineStore('user', () => {
     stopSessionMonitoring,
     toggleFollow,
     checkFollowStatus,
+    getFollowList,
+    checkMultipleFollowStatus,
 
   }
 })

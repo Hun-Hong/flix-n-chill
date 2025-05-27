@@ -26,11 +26,11 @@
 
               <!-- 팔로우 정보 -->
               <div class="follow-stats">
-                <div class="stat-item" @click="showFollowersModal">
+                <div class="stat-item" @click="openFollowModal('followers')">
                   <span class="stat-number">{{ formatNumber(userProfile.followers_count) }}</span>
                   <span class="stat-label">팔로워</span>
                 </div>
-                <div class="stat-item" @click="showFollowingModal">
+                <div class="stat-item" @click="openFollowModal('following')">
                   <span class="stat-number">{{ formatNumber(userProfile.following_count) }}</span>
                   <span class="stat-label">팔로잉</span>
                 </div>
@@ -55,7 +55,6 @@
                 <span>언팔로우</span>
               </div>
             </button>
-
 
             <div class="dropdown">
               <button class="btn btn-outline" @click="toggleDropdown">
@@ -221,11 +220,33 @@
         </div>
       </div>
     </div>
-    <EditProfileModal :show="showEditModal" :user-profile="userProfile" @close="showEditModal = false"
-      @save="handleProfileSave" />
+
+    <!-- 모달들 -->
+    <EditProfileModal 
+      :show="showEditModal" 
+      :user-profile="userProfile" 
+      @close="showEditModal = false"
+      @save="handleProfileSave" 
+    />
+
+    <ReviewDetailModal 
+      :show="showReviewModal" 
+      :review="selectedReview" 
+      @close="closeReviewModal"
+      @like-toggled="handleReviewLikeToggled" 
+      @comment-added="handleCommentAdded" 
+    />
+
+    <!-- 🎯 FollowModal 추가 -->
+    <FollowModal
+      :is-visible="isFollowModalVisible"
+      :initial-tab="selectedFollowTab"
+      :user-id="userProfile.id"
+      @close="closeFollowModal"
+      @follow="handleFollowFromModal"
+      @unfollow="handleUnfollowFromModal"
+    />
   </div>
-  <ReviewDetailModal :show="showReviewModal" :review="selectedReview" @close="closeReviewModal"
-    @like-toggled="handleReviewLikeToggled" @comment-added="handleCommentAdded" />
 </template>
 
 <script setup>
@@ -235,21 +256,18 @@ import { useMovieStore } from '@/stores/movie'
 import { useUserStore } from '@/stores/accounts'
 import MovieCard from '@/components/MovieCard.vue'
 import EditProfileModal from '@/components/EditProfileModal.vue'
-import axios from 'axios'
 import ReviewDetailModal from '@/components/ReviewDetailModal.vue'
+import FollowModal from '@/components/FollowModal.vue' // 🎯 FollowModal import
+import axios from 'axios'
 
 // 모달 상태
 const showEditModal = ref(false)
-
-// 🎯 모달 관련 상태 추가 (다른 ref들과 함께)
 const showReviewModal = ref(false)
 const selectedReview = ref(null)
 
-// 🎯 closeReviewModal 함수도 추가
-const closeReviewModal = () => {
-  showReviewModal.value = false
-  selectedReview.value = null
-}
+// 🎯 FollowModal 관련 상태 추가
+const isFollowModalVisible = ref(false)
+const selectedFollowTab = ref('followers')
 
 // Stores
 const movieStore = useMovieStore()
@@ -265,7 +283,6 @@ const followLoading = ref(false)
 const showDropdown = ref(false)
 const isLoading = ref(false)
 
-
 const setActiveTab = (tabId) => {
   activeTab.value = tabId
 }
@@ -275,8 +292,6 @@ const userProfile = ref("")
 
 const setUserData = (data) => {
   userProfile.value = data
-  // localStorage.setItem('userData', JSON.stringify(data))
-  // updateLastActivity()
 }
 
 // Actions - 사용자 정보 가져오기
@@ -295,10 +310,8 @@ const fetchUserData = async () => {
     setUserData(response.data)
   } catch (error) {
     console.error('사용자 정보 가져오기 실패:', error)
-
   } finally {
     isLoading.value = false
-
   }
 }
 
@@ -329,9 +342,11 @@ const isOwnProfile = computed(() => {
   // 실제로는 로그인한 사용자 ID와 비교
   return route.params.userId == userStore.userData.id
 })
+
 computed(() => {
   return userProfile.value.reviews
 })
+
 // 리뷰 데이터
 const userReviews = computed(() => {
   if (!userProfile.value?.reviews) return []
@@ -340,64 +355,14 @@ const userReviews = computed(() => {
     id: review.id,
     movieID: review.movie_id,
     movieTitle: review.movie_title,
-    moviePoster: review.poster_path ? `https://image.tmdb.org/t/p/w500${review.poster_path}` : '/api/placeholder/300/450', // TMDB 이미지 URL 생성
-    rating: review.rating, // rating 필드 추가
+    moviePoster: review.poster_path ? `https://image.tmdb.org/t/p/w500${review.poster_path}` : '/api/placeholder/300/450',
+    rating: review.rating,
     content: review.comment,
     createdAt: review.created_at,
-
     commentsCount: 0,
     likesCount: 0,
-
   }))
 })
-// const userReviews = ref([
-//     {
-//         id: 1,
-//         movieId: 1,
-//         movieTitle: '기생충',
-//         moviePoster: '/api/placeholder/60/90',
-//         rating: 5,
-//         content: '정말 놀라운 작품이었습니다. 봉준호 감독님의 연출력과 배우들의 연기가 완벽하게 조화를 이뤘어요. 사회적 메시지도 강렬하면서 영화적 재미도 놓치지 않은 걸작입니다.',
-//         likesCount: 23,
-//         commentsCount: 7,
-//         createdAt: '2024-03-15T10:30:00Z'
-//     },
-//     {
-//         id: 2,
-//         movieId: 2,
-//         movieTitle: '어벤져스: 엔드게임',
-//         moviePoster: '/api/placeholder/60/90',
-//         rating: 4,
-//         content: 'MCU의 집대성이라고 할 수 있는 작품. 11년간의 여정이 이렇게 마무리되다니... 감동적이면서도 아쉬웠습니다.',
-//         likesCount: 45,
-//         commentsCount: 12,
-//         createdAt: '2024-03-10T15:20:00Z'
-//     }
-// ])
-
-// 좋아요한 영화 데이터
-// const likedMovies = ref([
-//     {
-//         id: 1,
-//         title: '기생충',
-//         rating: 8.6,
-//         year: 2019,
-//         genre: 'Drama',
-//         poster: '/api/placeholder/300/450',
-//         isInWatchlist: true,
-//         isLiked: true
-//     },
-//     {
-//         id: 2,
-//         title: '어벤져스: 엔드게임',
-//         rating: 8.4,
-//         year: 2019,
-//         genre: 'Action',
-//         poster: '/api/placeholder/300/450',
-//         isInWatchlist: false,
-//         isLiked: true
-//     }
-// ])
 
 const handleCommentAdded = (commentData) => {
   try {
@@ -428,20 +393,20 @@ const likedMovies = computed(() => {
 
   return userProfile.value.like_movies.map(movie => ({
     id: movie.id,
-    title: movie.title || movie.original_title, // title 필드 통일
+    title: movie.title || movie.original_title,
     original_title: movie.original_title,
-    rating: movie.vote_average || movie.average_rating, // rating 필드 추가
+    rating: movie.vote_average || movie.average_rating,
     vote_average: movie.vote_average,
     average_rating: movie.average_rating,
     year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
     release_date: movie.release_date,
-    genre: movie.genres?.[0]?.name || 'Unknown', // 첫 번째 장르
+    genre: movie.genres?.[0]?.name || 'Unknown',
     genres: movie.genres || [],
     activities: movie.activities,
-    poster: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '/api/placeholder/300/450', // TMDB 이미지 URL 생성
+    poster: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '/api/placeholder/300/450',
     poster_path: movie.poster_path,
-    isInWatchlist: false, // 기본값 설정 (실제로는 API에서 받아야 함)
-    isLiked: movie.is_liked !== undefined ? movie.is_liked : true // 좋아하는 영화 목록이므로 기본적으로 true
+    isInWatchlist: false,
+    isLiked: movie.is_liked !== undefined ? movie.is_liked : true
   }))
 })
 
@@ -453,32 +418,8 @@ const userActivities = computed(() => {
     type: activity.action,
     text: activity.text,
     createdAt: activity.created_at,
-
   }))
 })
-
-
-// 활동 데이터
-// const userActivities = ref([
-//   {
-//     id: 1,
-//     type: 'review',
-//     text: '기생충에 리뷰를 작성했습니다',
-//     createdAt: '2024-03-15T10:30:00Z'
-//   },
-//   {
-//     id: 2,
-//     type: 'like',
-//     text: '어벤져스: 엔드게임을 좋아요했습니다',
-//     createdAt: '2024-03-14T18:45:00Z'
-//   },
-//   {
-//     id: 3,
-//     type: 'follow',
-//     text: '영화매니아님을 팔로우했습니다',
-//     createdAt: '2024-03-13T14:20:00Z'
-//   }
-// ])
 
 // 계산된 속성들
 const sortedReviews = computed(() => {
@@ -495,25 +436,53 @@ const sortedReviews = computed(() => {
   }
 })
 
-// 메서드들
+// 🎯 FollowModal 관련 메서드들
+const openFollowModal = (tab) => {
+  console.log('🚀 팔로우 모달 열기:', tab)
+  selectedFollowTab.value = tab
+  isFollowModalVisible.value = true
+}
 
+const closeFollowModal = () => {
+  console.log('❌ 팔로우 모달 닫기')
+  isFollowModalVisible.value = false
+}
+
+const handleFollowFromModal = (user) => {
+  console.log('👥 모달에서 팔로우:', user)
+  // 팔로우 성공 시 프로필 정보 업데이트
+  if (userProfile.value.following_count !== undefined) {
+    userProfile.value.following_count++
+  }
+}
+
+const handleUnfollowFromModal = (user) => {
+  console.log('👋 모달에서 언팔로우:', user)
+  // 언팔로우 성공 시 프로필 정보 업데이트
+  if (userProfile.value.following_count !== undefined && userProfile.value.following_count > 0) {
+    userProfile.value.following_count--
+  }
+}
+
+const closeReviewModal = () => {
+  showReviewModal.value = false
+  selectedReview.value = null
+}
+
+// 메서드들
 const handleReviewLikeToggled = async (likeData) => {
   try {
-    // 🎯 emit된 데이터에서 reviewId와 currentLiked 추출
     const { reviewId, currentLiked, review } = likeData
 
     console.log('🔄 리뷰 좋아요 토글 시작:', { reviewId, currentLiked })
 
-    // store 함수 호출 시 currentLiked 전달
     const result = await movieStore.toggleReviewLike(reviewId, currentLiked)
 
-    // selectedReview 업데이트 (모달이 열려있는 경우)
     if (selectedReview.value && selectedReview.value.id === reviewId) {
       selectedReview.value.isLiked = result.is_liked
       selectedReview.value.likesCount = result.like_count
     }
 
-    // 🎯 userReviews 배열에서도 해당 리뷰의 좋아요 정보 업데이트
     const reviewIndex = userReviews.value.findIndex(r => r.id === reviewId)
     if (reviewIndex !== -1) {
       userReviews.value[reviewIndex].isLiked = result.is_liked
@@ -540,19 +509,15 @@ const handleReviewLikeToggled = async (likeData) => {
   }
 }
 
-
 const toggleFollow = async () => {
   followLoading.value = true
 
   try {
-    // userStore의 toggleFollow 함수 호출
     const result = await userStore.toggleFollow(route.params.userId)
 
-    // UI 업데이트
     userProfile.value.isFollowing = result.is_following
     userProfile.value.followers_count = result.followers_count
 
-    // 성공 메시지
     const message = result.is_following ? '팔로우했습니다!' : '언팔로우했습니다!'
     console.log(message)
 
@@ -570,6 +535,7 @@ const toggleFollow = async () => {
     followLoading.value = false
   }
 }
+
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
 }
@@ -588,7 +554,6 @@ const editProfile = () => {
 
 const handleAvatarClick = () => {
   if (isOwnProfile.value) {
-    // 프로필 이미지 변경
     console.log('프로필 이미지 변경')
   }
 }
@@ -597,23 +562,12 @@ const handleAvatarError = (event) => {
   event.target.src = '/api/placeholder/200/200'
 }
 
-const showFollowersModal = () => {
-  console.log('팔로워 목록 모달')
-}
-
-const showFollowingModal = () => {
-  console.log('팔로잉 목록 모달')
-}
-
-
 const viewReview = async (review) => {
   try {
     console.log('🔍 리뷰 상세 정보 로딩:', review.id)
 
-    // movieStore에서 실제 리뷰 상세 정보 가져오기
     const detailedReview = await movieStore.getReviewDetail(review.id)
 
-    // 실제 데이터로 selectedReview 설정
     selectedReview.value = {
       id: detailedReview.id,
       movieID: detailedReview.movie.id,
@@ -624,11 +578,8 @@ const viewReview = async (review) => {
       rating: detailedReview.rating,
       content: detailedReview.comment,
       createdAt: detailedReview.created_at,
-
-      // 🎯 실제 좋아요 정보 사용
       likesCount: detailedReview.like_count || 0,
       isLiked: detailedReview.is_liked || false,
-
       reviewer: {
         id: detailedReview.user.id,
         nickname: detailedReview.user.nickname,
@@ -642,7 +593,6 @@ const viewReview = async (review) => {
   } catch (error) {
     console.error('❌ 리뷰 상세 정보 로딩 실패:', error)
 
-    // 에러 시 기본 데이터 사용 (폴백)
     selectedReview.value = {
       ...review,
       likesCount: 0,
@@ -655,12 +605,10 @@ const viewReview = async (review) => {
     }
     showReviewModal.value = true
 
-    // 사용자에게 에러 알림 (선택사항)
     console.warn('⚠️ 리뷰 정보를 불러오는데 실패했지만 기본 정보로 표시합니다.')
   }
 }
 
-// MovieCard 이벤트 핸들러들
 const handlePlayMovie = (movie) => {
   console.log('영화 재생:', movie.title)
 }
@@ -668,7 +616,6 @@ const handlePlayMovie = (movie) => {
 const handleToggleLike = (movie) => {
   movieStore.toggleLike(movie.id)
 
-  // 좋아요 목록에서 제거/추가 처리
   const likedIndex = likedMovies.value.findIndex(m => m.id === movie.id)
   if (likedIndex !== -1) {
     likedMovies.value.splice(likedIndex, 1)
@@ -676,17 +623,14 @@ const handleToggleLike = (movie) => {
 }
 
 const handleProfileSave = async (updatedData) => {
-  // updatedData는 { nickname, bio, profileImageFile } 을 포함하고 있다고 가정
   const { success, data, error } = await userStore.updateProfile(updatedData)
 
   if (!success) {
-    // 실패한 경우, 에러 메시지 표시
     const msg = error?.message || (typeof error === 'string' ? error : '프로필 업데이트에 실패했습니다.')
     alert(msg)
     return
   }
 
-  // 성공 시, userProfile 값을 API에서 받은 최신 데이터로 덮어쓰기
   userProfile.value = {
     ...userProfile.value,
     ...data
@@ -762,16 +706,42 @@ const handleClickOutside = (event) => {
 }
 
 // 생명주기
+// 🎯 라우트 변경 감지 추가 (새로 추가)
+watch(() => route.params.userId, (newUserId, oldUserId) => {
+  console.log('🔄 사용자 ID 변경 감지:', { oldUserId, newUserId })
+  
+  if (newUserId && newUserId !== oldUserId) {
+    console.log('📊 새로운 사용자 데이터 로딩 시작')
+    
+    // 이전 데이터 초기화
+    userProfile.value = null
+    isLoading.value = true
+    
+    // 새로운 사용자 데이터 로드
+    fetchUserData()
+  }
+}, { immediate: false })
+
+// 기존 생명주기 (수정됨)
 onMounted(() => {
-  // URL 파라미터에서 탭 정보 가져오기
+  console.log('🚀 Profile 컴포넌트 마운트:', route.params.userId)
+  
   if (route.query.tab) {
     activeTab.value = route.query.tab
   }
-  // 유저 정보 가져오기
+  
+  // 초기 데이터 로드
   fetchUserData()
-
-  // 외부 클릭 이벤트 리스너 등록
+  
   document.addEventListener('click', handleClickOutside)
+})
+
+// 탭 변경 시 URL 업데이트 (기존과 동일)
+watch(activeTab, (newTab) => {
+  router.push({
+    path: route.path,
+    query: { ...route.query, tab: newTab }
+  })
 })
 
 // 탭 변경 시 URL 업데이트
@@ -873,7 +843,6 @@ watch(activeTab, (newTab) => {
   transition: background-color 0.3s ease;
 }
 
-
 /* 프로필 정보 */
 .profile-info {
   flex: 1;
@@ -935,7 +904,7 @@ watch(activeTab, (newTab) => {
   max-width: 500px;
 }
 
-/* 팔로우 통계 */
+/* 🎯 팔로우 통계 스타일 개선 */
 .follow-stats {
   display: flex;
   gap: 2rem;
@@ -944,24 +913,33 @@ watch(activeTab, (newTab) => {
 .stat-item {
   text-align: center;
   cursor: pointer;
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .stat-item:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(219, 0, 0, 0.3);
+  box-shadow: 0 8px 25px rgba(219, 0, 0, 0.2);
 }
 
 .stat-number {
   display: block;
   font-size: 1.5rem;
   font-weight: 700;
-  color: #ffffff;
+  color: #db0000;
+  margin-bottom: 0.2rem;
 }
 
 .stat-label {
   display: block;
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
 }
 
 /* 프로필 액션 */
@@ -1174,7 +1152,6 @@ watch(activeTab, (newTab) => {
     opacity: 0;
     transform: translateY(20px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1469,7 +1446,6 @@ watch(activeTab, (newTab) => {
     bottom: 100%;
     transform: translateY(10px);
   }
-
 }
 
 @media (max-width: 768px) {
@@ -1515,12 +1491,22 @@ watch(activeTab, (newTab) => {
   .dropdown-menu {
     top: auto;
     bottom: 100%;
-    /* 위쪽으로 열림 */
     transform: translateY(10px);
   }
 
   .dropdown-menu.show {
     transform: translateY(0);
+  }
+
+  /* 🎯 모바일에서 팔로우 통계 조정 */
+  .follow-stats {
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .stat-item {
+    min-width: 80px;
   }
 }
 
