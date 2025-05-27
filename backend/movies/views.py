@@ -790,6 +790,92 @@ def get_similar_movies(request, movie_id):
 
 
 
+# movies/views.py에 추가
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_similar_users(request):
+    """
+    현재 사용자와 비슷한 취향의 사용자들 추천
+    """
+    try:
+        current_user = request.user
+        current_preferences = MovieRecommendationService.get_user_genre_preferences(current_user)
+        
+        if not current_preferences:
+            return Response({
+                'message': '분석할 데이터가 없습니다.',
+                'similar_users': []
+            }, status=status.HTTP_200_OK)
+        
+        # 다른 사용자들의 선호도 계산
+        from accounts.models import User
+        all_users = User.objects.exclude(id=current_user.id)
+        similar_users = []
+        
+        for user in all_users:
+            user_preferences = MovieRecommendationService.get_user_genre_preferences(user)
+            if user_preferences:
+                # 코사인 유사도 계산
+                similarity = calculate_user_similarity(current_preferences, user_preferences)
+                if similarity > 0.5:  # 50% 이상 유사한 사용자만
+                    similar_users.append({
+                        'user': user,
+                        'similarity_score': similarity,
+                        'common_genres': get_common_genres(current_preferences, user_preferences)
+                    })
+        
+        # 유사도순 정렬
+        similar_users.sort(key=lambda x: x['similarity_score'], reverse=True)
+        
+        # 상위 3명만 반환
+        top_similar = similar_users[:3]
+        
+        result_data = []
+        for sim_user in top_similar:
+            user_data = {
+                'id': sim_user['user'].id,
+                'nickname': sim_user['user'].nickname or sim_user['user'].username,
+                'profile_image': sim_user['user'].profile_image.url if sim_user['user'].profile_image else None,
+                'similarity_score': round(sim_user['similarity_score'] * 100, 1),
+                'common_genres': sim_user['common_genres'],
+                'followers_count': sim_user['user'].followers.count(),
+                'reviews_count': Review.objects.filter(user=sim_user['user']).count(),
+                'is_following': current_user.following.filter(id=sim_user['user'].id).exists()
+            }
+            result_data.append(user_data)
+        
+        return Response({
+            'similar_users': result_data,
+            'total_found': len(similar_users)
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'error': '유사 사용자 검색 중 오류가 발생했습니다.',
+            'detail': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def calculate_user_similarity(prefs1, prefs2):
+    """두 사용자의 장르 선호도 유사도 계산"""
+    common_genres = set(prefs1.keys()) & set(prefs2.keys())
+    if not common_genres:
+        return 0
+    
+    similarity_sum = 0
+    for genre in common_genres:
+        # 평점 차이를 유사도로 변환 (차이가 적을수록 유사도 높음)
+        diff = abs(prefs1[genre] - prefs2[genre])
+        similarity = 1 - (diff / 5)  # 5점 만점 기준
+        similarity_sum += similarity
+    
+    return similarity_sum / len(common_genres)
+
+def get_common_genres(prefs1, prefs2):
+    """공통 관심 장르 반환"""
+    common_genres = set(prefs1.keys()) & set(prefs2.keys())
+    return list(common_genres)
+
+
 
 ## provider DB 수집을 위해 작동하였습니다.
 ## basic fixture에 해당 DB를 dump하여 해당 코드를 비활성화 합니다.
