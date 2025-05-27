@@ -968,7 +968,7 @@ onUnmounted(() => {
 }
 
 .genre-percentage {
-  color: #8e2de2;
+  color: #de7a2e;
   font-weight: 600;
   font-size: 1.1rem;
 }
