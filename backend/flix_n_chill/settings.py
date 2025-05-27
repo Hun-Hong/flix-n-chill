@@ -37,6 +37,8 @@ ALLOWED_HOSTS = ['1.0.0.127.in-addr.arpa', '127.0.0.1', 'localhost']
 
 INSTALLED_APPS = [
     'movies',
+    'channels',
+    'chat',
     'accounts',
     'rest_framework',
     'corsheaders',
@@ -54,6 +56,25 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+
+ASGI_APPLICATION = 'config.asgi.application'
+
+# 채널 레이어 설정 (개발환경용 - 메모리)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
+
+# 프로덕션용 Redis 설정 (나중에)
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             "hosts": [('127.0.0.1', 6379)],
+#         },
+#     },
+# }
 
 SITE_ID = 1
 
