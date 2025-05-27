@@ -11,6 +11,7 @@ import SettingsPage from '@/views/SettingsPage.vue'
 import MovieSurveyPage from '@/views/MovieSurveyPage.vue'
 import Profile from '@/views/Profile.vue'
 import RecommendationsPage from '@/views/RecommendationsPage.vue'
+import ChatRoom from '@/views/ChatRoom.vue'
 
 // 장르 페이지 - 하나로 통합
 import GenrePage from '@/views/GenrePage.vue'
@@ -97,6 +98,16 @@ const router = createRouter({
       path: '/recommendations',
       name: 'Recommendations',
       component: RecommendationsPage
+    },
+    {
+      path: '/chat/:roomId',
+      name: 'ChatRoom',
+      component: ChatRoom,
+      props: true,
+      meta: {
+        title: 'FLIXnCHILL - 채팅',
+        requiresAuth: true
+      }
     }
   ]
 })

@@ -9,7 +9,7 @@
             <div class="profile-avatar-section">
               <div class="avatar-container" @click="handleAvatarClick">
                 <img :src="userProfile.profile_image || `/defaultProfileImg.png`" :alt="userProfile.nickname"
-                  class="profile-avatar" @error="handleAvatarError">
+                     class="profile-avatar" @error="handleAvatarError">
                 <div class="avatar-overlay">
                   <i class="bi bi-camera"></i>
                 </div>
@@ -45,7 +45,7 @@
           <!-- 프로필 액션 버튼들 -->
           <div class="profile-actions">
             <button v-if="!isOwnProfile" class="btn follow-btn" :class="{ 'following': userProfile.isFollowing }"
-              @click="toggleFollow" :disabled="followLoading">
+                    @click="toggleFollow" :disabled="followLoading">
               <div class="btn-content">
                 <i :class="userProfile.isFollowing ? 'bi bi-person-check-fill' : 'bi bi-person-plus-fill'"></i>
                 <span>{{ userProfile.isFollowing ? '팔로잉' : '팔로우' }}</span>
@@ -90,7 +90,7 @@
       <div class="container">
         <div class="nav-tabs">
           <button v-for="tab in tabs" :key="tab.id" class="nav-tab" :class="{ 'active': activeTab === tab.id }"
-            @click="setActiveTab(tab.id)">
+                  @click="setActiveTab(tab.id)">
             <i :class="tab.icon"></i>
             <span>{{ tab.label }}</span>
             <span class="tab-count">{{ tab.count }}</span>
@@ -122,7 +122,7 @@
             <div v-for="review in sortedReviews" :key="review.id" class="review-card" @click="viewReview(review)">
               <div class="review-movie-info">
                 <img :src="review.moviePoster || '/api/placeholder/60/90'" :alt="review.movieTitle"
-                  class="review-movie-poster">
+                     class="review-movie-poster">
                 <div class="review-movie-details">
                   <h5 class="review-movie-title">{{ review.movieTitle }}</h5>
                   <div class="review-rating">
@@ -186,10 +186,10 @@
             <div class="movies-grid" :class="{ 'list-view': viewMode === 'list' }">
               <div class="row g-4">
                 <div v-for="movie in likedMovies" :key="movie.id"
-                  :class="viewMode === 'grid' ? 'col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6' : 'col-12'">
+                     :class="viewMode === 'grid' ? 'col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6' : 'col-12'">
                   <MovieCard :movie="movie" :show-details="viewMode === 'list'" @play="handlePlayMovie"
-                    @toggle-watchlist="handleToggleWatchlist" @toggle-like="handleToggleLike"
-                    @click="handleMovieClick" />
+                             @toggle-watchlist="handleToggleWatchlist" @toggle-like="handleToggleLike"
+                             @click="handleMovieClick" />
                 </div>
               </div>
             </div>
@@ -227,29 +227,29 @@
     </div>
 
     <!-- 모달들 -->
-    <EditProfileModal 
-      :show="showEditModal" 
-      :user-profile="userProfile" 
-      @close="showEditModal = false"
-      @save="handleProfileSave" 
+    <EditProfileModal
+        :show="showEditModal"
+        :user-profile="userProfile"
+        @close="showEditModal = false"
+        @save="handleProfileSave"
     />
 
-    <ReviewDetailModal 
-      :show="showReviewModal" 
-      :review="selectedReview" 
-      @close="closeReviewModal"
-      @like-toggled="handleReviewLikeToggled" 
-      @comment-added="handleCommentAdded" 
+    <ReviewDetailModal
+        :show="showReviewModal"
+        :review="selectedReview"
+        @close="closeReviewModal"
+        @like-toggled="handleReviewLikeToggled"
+        @comment-added="handleCommentAdded"
     />
 
     <!-- 🎯 FollowModal 추가 -->
     <FollowModal
-      :is-visible="isFollowModalVisible"
-      :initial-tab="selectedFollowTab"
-      :user-id="userProfile.id"
-      @close="closeFollowModal"
-      @follow="handleFollowFromModal"
-      @unfollow="handleUnfollowFromModal"
+        :is-visible="isFollowModalVisible"
+        :initial-tab="selectedFollowTab"
+        :user-id="userProfile.id"
+        @close="closeFollowModal"
+        @follow="handleFollowFromModal"
+        @unfollow="handleUnfollowFromModal"
     />
   </div>
 </template>
@@ -553,6 +553,43 @@ const blockUser = () => {
   console.log('사용자 차단')
 }
 
+const startChat = async () => {
+  try {
+    // 로딩 상태 표시
+    isLoading.value = true
+
+    // 채팅방 생성 또는 조회 API 호출
+    const response = await axios({
+      method: 'get',
+      url: `http://127.0.0.1:8000/api/chat/with/${userProfile.value.id}/`,
+      headers: {
+        'Authorization': `Token ${userStore.token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    // 채팅방 ID 가져오기
+    const roomId = response.data.room_id
+
+    // 채팅방으로 이동
+    router.push(`/chat/${roomId}`)
+
+  } catch (error) {
+    console.error('채팅방 생성 실패:', error)
+
+    let errorMessage = '채팅방을 생성할 수 없습니다.'
+    if (error.response?.data?.error) {
+      errorMessage = error.response.data.error
+    } else if (error.response?.status === 401) {
+      errorMessage = '로그인이 필요합니다.'
+    }
+
+    alert(errorMessage)
+  } finally {
+    isLoading.value = false
+  }
+}
+
 const editProfile = () => {
   showEditModal.value = true
 }
@@ -578,8 +615,8 @@ const viewReview = async (review) => {
       movieID: detailedReview.movie.id,
       movieTitle: detailedReview.movie.title,
       moviePoster: detailedReview.movie.poster_path
-        ? `https://image.tmdb.org/t/p/w500${detailedReview.movie.poster_path}`
-        : '/api/placeholder/100/150',
+          ? `https://image.tmdb.org/t/p/w500${detailedReview.movie.poster_path}`
+          : '/api/placeholder/100/150',
       rating: detailedReview.rating,
       content: detailedReview.comment,
       createdAt: detailedReview.created_at,
@@ -714,14 +751,14 @@ const handleClickOutside = (event) => {
 // 🎯 라우트 변경 감지 추가 (새로 추가)
 watch(() => route.params.userId, (newUserId, oldUserId) => {
   console.log('🔄 사용자 ID 변경 감지:', { oldUserId, newUserId })
-  
+
   if (newUserId && newUserId !== oldUserId) {
     console.log('📊 새로운 사용자 데이터 로딩 시작')
-    
+
     // 이전 데이터 초기화
     userProfile.value = null
     isLoading.value = true
-    
+
     // 새로운 사용자 데이터 로드
     fetchUserData()
   }
@@ -730,14 +767,14 @@ watch(() => route.params.userId, (newUserId, oldUserId) => {
 // 기존 생명주기 (수정됨)
 onMounted(() => {
   console.log('🚀 Profile 컴포넌트 마운트:', route.params.userId)
-  
+
   if (route.query.tab) {
     activeTab.value = route.query.tab
   }
-  
+
   // 초기 데이터 로드
   fetchUserData()
-  
+
   document.addEventListener('click', handleClickOutside)
 })
 
@@ -770,8 +807,8 @@ watch(activeTab, (newTab) => {
 /* 프로필 헤더 */
 .profile-header {
   background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.1) 0%,
-      rgba(255, 255, 255, 0.05) 100%);
+  rgba(255, 255, 255, 0.1) 0%,
+  rgba(255, 255, 255, 0.05) 100%);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding: 3rem 0;
@@ -1221,8 +1258,8 @@ watch(activeTab, (newTab) => {
 
 .review-card {
   background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.1) 0%,
-      rgba(255, 255, 255, 0.05) 100%);
+  rgba(255, 255, 255, 0.1) 0%,
+  rgba(255, 255, 255, 0.05) 100%);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
