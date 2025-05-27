@@ -74,9 +74,9 @@
 
                 <!-- 평가하기 버튼 추가 -->
                 <button v-if="isAuth" @click.stop="openReviewModal" class="btn btn-outline-light review-btn" :class="{
-                  active: movieDetail.isReviewed,           // active 클래스 토글
+                  active: movieDetail.isReviewed,           
                   'btn-outline-light': !movieDetail.isReviewed,
-                  'btn-warning': movieDetail.isReviewed     // 원한다면 색 바꾸기
+                  'btn-warning': movieDetail.isReviewed     
                 }" :title="movieDetail.userReview ? '리뷰 수정' : '평가하기'">
                   <i class="bi" :class="movieDetail.isReviewed ? 'bi-star-fill' : 'bi-star'"></i>
                 </button>
@@ -97,15 +97,28 @@
           <div class="section" v-if="movieDetail.providers && movieDetail.providers.length">
             <h3 class="section-title">감상 가능한 플랫폼</h3>
             <div class="providers-container">
-              <div v-for="provider in movieDetail.providers" :key="provider.id" class="provider-item">
+              <div 
+                v-for="provider in movieDetail.providers" 
+                :key="provider.id" 
+                class="provider-item"
+                @click="openProviderPlatform(provider)"
+                :title="`${provider.name}에서 감상하기`"
+              >
                 <div class="provider-logo">
                   <img
                     :src="provider.logo_path ? `https://image.tmdb.org/t/p/w92${provider.logo_path}` : '/api/placeholder/40/40'"
-                    :alt="provider.name" @error="handleImageError" />
+                    :alt="provider.name" 
+                    @error="handleImageError" 
+                  />
                 </div>
                 <span class="provider-name">{{ provider.name }}</span>
+                <i class="bi bi-box-arrow-up-right provider-link-icon"></i>
               </div>
             </div>
+            <p class="provider-notice">
+              <i class="bi bi-info-circle me-2"></i>
+              플랫폼을 클릭하면 해당 서비스 메인 페이지로 이동합니다
+            </p>
           </div>
 
           <!-- 상세 정보 -->
@@ -143,9 +156,8 @@
 <script setup>
 import { ref, watch, onBeforeUnmount } from 'vue'
 import axios from 'axios'
-import MovieReviewModal from './MovieReviewModal.vue'  // 새로운 리뷰 모달 import
+import MovieReviewModal from './MovieReviewModal.vue'
 import { useUserStore } from '@/stores/accounts'
-
 
 // Props
 const props = defineProps({
@@ -172,6 +184,70 @@ const loading = ref(false)
 const error = ref(null)
 const showReviewModal = ref(false)
 
+// 플랫폼 메인 페이지 URL 매핑 객체
+const platformUrls = {
+  'Netflix': 'https://www.netflix.com',
+  '넷플릭스': 'https://www.netflix.com',
+  'Amazon Prime Video': 'https://www.primevideo.com',
+  'Disney Plus': 'https://www.disneyplus.com',
+  '디즈니 플러스': 'https://www.disneyplus.com',
+  'Apple TV Plus': 'https://tv.apple.com',
+  'Hulu': 'https://www.hulu.com',
+  'HBO Max': 'https://www.hbomax.com',
+  'Paramount Plus': 'https://www.paramountplus.com',
+  'Peacock': 'https://www.peacocktv.com',
+  'Crunchyroll': 'https://www.crunchyroll.com',
+  'Funimation': 'https://www.funimation.com',
+  'YouTube': 'https://www.youtube.com',
+  'Google Play Movies': 'https://play.google.com/store/movies',
+  'iTunes': 'https://tv.apple.com',
+  'Vudu': 'https://www.vudu.com',
+  'Tubi': 'https://tubitv.com',
+  'Pluto TV': 'https://pluto.tv',
+  'IMDb TV': 'https://www.imdb.com/tv',
+  'Kanopy': 'https://www.kanopy.com',
+  'Hoopla': 'https://www.hoopladigital.com',
+  'Showtime': 'https://www.showtime.com',
+  'Starz': 'https://www.starz.com',
+  'Cinemax': 'https://www.hbomax.com',
+  'Epix': 'https://www.epix.com',
+  'Shudder': 'https://www.shudder.com',
+  'BritBox': 'https://www.britbox.com',
+  'Acorn TV': 'https://acorn.tv',
+  'Sundance Now': 'https://www.sundancenow.com',
+  'Mubi': 'https://mubi.com',
+  'Criterion Channel': 'https://www.criterionchannel.com',
+  'Filmstruck': 'https://filmstruck.com',
+  'FilmRise': 'https://filmrise.com',
+  'Plex': 'https://watch.plex.tv',
+  'Roku': 'https://therokuchannel.roku.com',
+  'Crackle': 'https://www.crackle.com',
+  'Popcornflix': 'https://www.popcornflix.com',
+  // 한국 플랫폼들
+  'Wavve': 'https://www.wavve.com',
+  '웨이브': 'https://www.wavve.com',
+  'Tving': 'https://www.tving.com',
+  '티빙': 'https://www.tving.com',
+  'Coupang Play': 'https://www.coupangplay.com',
+  '쿠팡플레이': 'https://www.coupangplay.com',
+  'KakaoTV': 'https://tv.kakao.com',
+  '카카오TV': 'https://tv.kakao.com',
+  'Naver Series': 'https://series.naver.com',
+  '네이버 시리즈': 'https://series.naver.com',
+  'Olleh TV': 'https://www.olleh.tv',
+  '올레TV': 'https://www.olleh.tv',
+  'Seezn': 'https://seezn.com',
+  '시즌': 'https://seezn.com',
+  // 왓챠 추가!
+  'Watcha': 'https://watcha.com',
+  '왓챠': 'https://watcha.com',
+  // 기타 한국 플랫폼들
+  'Laftel': 'https://laftel.net',
+  '라프텔': 'https://laftel.net',
+  'Soribada': 'https://www.soribada.com',
+  '소리바다': 'https://www.soribada.com'
+}
+
 // 영화 상세 정보 가져오기
 const fetchMovieDetail = async () => {
   if (!props.movieId) return
@@ -180,7 +256,6 @@ const fetchMovieDetail = async () => {
   error.value = null
 
   try {
-    // Django API 호출
     const userStore = useUserStore()
 
     const config = {
@@ -233,7 +308,7 @@ const fetchMovieDetail = async () => {
       original_language: movie.original_language,
       vote_count: movie.vote_count,
       budget: movie.budget,
-      isLiked: movie.isLiked, // 실제로는 사용자 상태에 따라
+      isLiked: movie.isLiked,
       isReviewed: movie.isReviewed,
       providers: movie.providers,
     }
@@ -246,13 +321,66 @@ const fetchMovieDetail = async () => {
   }
 }
 
+// 플랫폼 메인 페이지로 이동하는 함수
+const openProviderPlatform = (provider) => {
+  try {
+    // 디버깅을 위해 실제 provider 데이터 확인
+    console.log('🔍 클릭된 Provider 정보:', provider)
+    console.log('🔍 Provider Name:', provider.name)
+    console.log('🔍 사용 가능한 플랫폼 키들:', Object.keys(platformUrls))
+    
+    let url = null
+
+    // 플랫폼별 메인 페이지 URL 가져오기
+    if (platformUrls[provider.name]) {
+      url = platformUrls[provider.name]
+      console.log(`✅ 매칭 성공! ${provider.name} → ${url}`)
+    } else {
+      console.log(`❌ 매칭 실패! "${provider.name}"에 대한 URL을 찾을 수 없음`)
+      // 일반적인 플랫폼 이름들로 다시 시도
+      const commonMappings = {
+        'netflix': 'https://www.netflix.com',
+        'amazon prime': 'https://www.primevideo.com',
+        'disney+': 'https://www.disneyplus.com',
+        'disney plus': 'https://www.disneyplus.com',
+        'apple tv+': 'https://tv.apple.com',
+        'apple tv plus': 'https://tv.apple.com',
+        'hbo max': 'https://www.hbomax.com',
+        'youtube': 'https://www.youtube.com',
+        'wavve': 'https://www.wavve.com',
+        'tving': 'https://www.tving.com',
+        'coupang play': 'https://www.coupangplay.com'
+      }
+      
+      const lowerName = provider.name.toLowerCase()
+      if (commonMappings[lowerName]) {
+        url = commonMappings[lowerName]
+        console.log(`✅ 소문자 매칭 성공! ${lowerName} → ${url}`)
+      } else {
+        // 기본 구글 검색으로 폴백
+        url = `https://www.google.com/search?q=${encodeURIComponent(provider.name + ' 스트리밍 서비스')}`
+        console.log(`🔄 구글 검색으로 폴백: ${url}`)
+      }
+    }
+
+    // 새 탭에서 열기
+    window.open(url, '_blank', 'noopener,noreferrer')
+    
+    // 성공 로그
+    console.log(`🚀 ${provider.name} 페이지로 이동 중...`)
+    
+  } catch (error) {
+    console.error('❌ 플랫폼 링크 열기 오류:', error)
+    alert('링크를 여는 중 오류가 발생했습니다.')
+  }
+}
+
 // Watchers
 watch(() => props.isVisible, (newValue) => {
   if (newValue && props.movieId) {
     fetchMovieDetail()
   }
 
-  // 모달이 열릴 때 스크롤 방지
   if (newValue) {
     document.body.style.overflow = 'hidden'
   } else {
@@ -287,37 +415,30 @@ const handleReviewSubmit = (result) => {
     let message = ''
 
     if (result.isDelete) {
-      // 삭제된 경우
       message = '리뷰가 삭제되었습니다!'
       console.log('리뷰 삭제 성공!')
       movieDetail.value.isReviewed = false
     } else if (result.isEdit) {
-      // 수정된 경우
       message = '리뷰가 수정되었습니다!'
       console.log('리뷰 수정 성공!')
     } else {
-      // 새로 생성된 경우
       message = '리뷰가 등록되었습니다!'
       console.log('리뷰 생성 성공!')
       movieDetail.value.isReviewed = true
     }
 
-    // 성공 메시지 표시
     alert(message)
 
-    // 부모 컴포넌트에 리뷰 변경 사실 알림
     emit('review-submitted', {
       movieId: props.movieId,
       action: result.isDelete ? 'deleted' : (result.isEdit ? 'updated' : 'created'),
       reviewData: result
     })
 
-    // 리뷰 모달 닫기
     closeReviewModal()
 
   } else if (result.error) {
     console.error('리뷰 처리 실패:', result.message)
-    // 에러는 이미 리뷰 모달에서 alert로 처리됨
   }
 }
 
