@@ -418,6 +418,7 @@ const likedMovies = computed(() => {
     release_date: movie.release_date,
     genre: movie.genres?.[0]?.name || 'Unknown', // 첫 번째 장르
     genres: movie.genres || [],
+    activities: movie.activities,
     poster: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '/api/placeholder/300/450', // TMDB 이미지 URL 생성
     poster_path: movie.poster_path,
     isInWatchlist: false, // 기본값 설정 (실제로는 API에서 받아야 함)
@@ -425,27 +426,40 @@ const likedMovies = computed(() => {
   }))
 })
 
+const userActivities = computed(() => {
+  if (!userProfile.value?.activities) return []
+
+  return userProfile.value.activities.map(activity => ({
+    id: activity.id,
+    type: activity.action,
+    text: activity.text,
+    createdAt: activity.created_at,
+
+  }))
+})
+
+
 // 활동 데이터
-const userActivities = ref([
-  {
-    id: 1,
-    type: 'review',
-    text: '기생충에 리뷰를 작성했습니다',
-    createdAt: '2024-03-15T10:30:00Z'
-  },
-  {
-    id: 2,
-    type: 'like',
-    text: '어벤져스: 엔드게임을 좋아요했습니다',
-    createdAt: '2024-03-14T18:45:00Z'
-  },
-  {
-    id: 3,
-    type: 'follow',
-    text: '영화매니아님을 팔로우했습니다',
-    createdAt: '2024-03-13T14:20:00Z'
-  }
-])
+// const userActivities = ref([
+//   {
+//     id: 1,
+//     type: 'review',
+//     text: '기생충에 리뷰를 작성했습니다',
+//     createdAt: '2024-03-15T10:30:00Z'
+//   },
+//   {
+//     id: 2,
+//     type: 'like',
+//     text: '어벤져스: 엔드게임을 좋아요했습니다',
+//     createdAt: '2024-03-14T18:45:00Z'
+//   },
+//   {
+//     id: 3,
+//     type: 'follow',
+//     text: '영화매니아님을 팔로우했습니다',
+//     createdAt: '2024-03-13T14:20:00Z'
+//   }
+// ])
 
 // 계산된 속성들
 const sortedReviews = computed(() => {
@@ -475,25 +489,34 @@ const handleCommentAdded = (comment) => {
 }
 
 const toggleFollow = async () => {
-  followLoading.value = true
+    followLoading.value = true
 
-  try {
-    // 실제로는 API 호출
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    userProfile.value.isFollowing = !userProfile.value.isFollowing
-
-    if (userProfile.value.isFollowing) {
-      userProfile.value.followersCount++
-    } else {
-      userProfile.value.followersCount--
+    try {
+        // userStore의 toggleFollow 함수 호출
+        const result = await userStore.toggleFollow(route.params.userId)
+        
+        // UI 업데이트
+        userProfile.value.isFollowing = result.is_following
+        userProfile.value.followers_count = result.followers_count
+        
+        // 성공 메시지
+        const message = result.is_following ? '팔로우했습니다!' : '언팔로우했습니다!'
+        console.log(message)
+        
+    } catch (error) {
+        console.error('팔로우 오류:', error)
+        
+        let errorMessage = '팔로우 처리에 실패했습니다.'
+        if (error.response?.data?.error) {
+            errorMessage = error.response.data.error
+        }
+        
+        alert(errorMessage)
+        
+    } finally {
+        followLoading.value = false
     }
-  } catch (error) {
-    console.error('팔로우 처리 중 오류:', error)
-  } finally {
-    followLoading.value = false
-  }
 }
-
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
 }
@@ -638,10 +661,9 @@ const truncateText = (text, length) => {
 
 const getActivityIcon = (type) => {
   const icons = {
-    review: 'bi bi-chat-quote-fill',
-    like: 'bi bi-heart-fill',
-    follow: 'bi bi-person-plus-fill',
-    watchlist: 'bi bi-bookmark-fill'
+    created: 'bi bi-chat-quote-fill',
+    liked: 'bi bi-heart-fill',
+    followed: 'bi bi-person-plus-fill',
   }
   return icons[type] || 'bi bi-circle-fill'
 }
@@ -1285,15 +1307,15 @@ watch(activeTab, (newTab) => {
   flex-shrink: 0;
 }
 
-.activity-icon.review {
+.activity-icon.created {
   background: linear-gradient(135deg, #3498db, #2980b9);
 }
 
-.activity-icon.like {
+.activity-icon.liked {
   background: linear-gradient(135deg, #e74c3c, #c0392b);
 }
 
-.activity-icon.follow {
+.activity-icon.followed {
   background: linear-gradient(135deg, #27ae60, #229954);
 }
 
