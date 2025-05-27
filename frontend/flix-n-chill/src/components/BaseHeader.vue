@@ -202,22 +202,7 @@ const userProfileImage = computed(() => {
     return `http://127.0.0.1:8000/media/${userStore.currentUser.profile_image}`
   }
 
-  const firstLetter = userStore.userName ? userStore.userName.charAt(0).toUpperCase() : 'U'
-  const colors = [
-    { bg: 'db0000', text: 'ffffff' }, // 브랜드 레드
-    { bg: '2563eb', text: 'ffffff' }, // 블루
-    { bg: '7c3aed', text: 'ffffff' }, // 바이올렛
-    { bg: 'dc2626', text: 'ffffff' }, // 레드
-    { bg: 'ea580c', text: 'ffffff' }, // 오렌지
-    { bg: '16a34a', text: 'ffffff' }, // 그린
-  ]
-  
-  // 사용자 이름 기반으로 색상 선택 (일관성 유지)
-  const userName = userStore.userName || 'User'
-  const colorIndex = userName.charCodeAt(0) % colors.length
-  const selectedColor = colors[colorIndex]
-  
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(firstLetter)}&background=${selectedColor.bg}&color=${selectedColor.text}&size=128&font-size=0.6&bold=true`
+  return "/defaultProfileImg.png"
 })
 
 // 이미지 로드 에러 처리를 위한 함수 추가
@@ -229,7 +214,7 @@ const handleImageError = (event) => {
   const colors = ['db0000', '2563eb', '7c3aed', 'dc2626', 'ea580c', '16a34a']
   const selectedColor = colors[colorIndex]
   
-  event.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(firstLetter)}&background=${selectedColor}&color=ffffff&size=128&font-size=0.6&bold=true`
+  event.target.src = `/defaultProfileImg.png`
 }
 
 // 프로필 이미지 관련 유틸리티 함수들 추가

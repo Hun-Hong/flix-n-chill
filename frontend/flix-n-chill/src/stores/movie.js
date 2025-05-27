@@ -143,8 +143,8 @@ export const useMovieStore = defineStore('movie', () => {
     // 2) 현재 토글할 값 계산
     let currentLiked = null
     let targetMovie = null
-
-    // 올바른 데이터 구조로 접근
+    
+    // 올바른 데이터 구조로 접근 - cacheData.movies 배열에서 찾기
     Object.values(userCache).some(cacheData => {
       if (cacheData.movies) {
         const movie = cacheData.movies.find(m => m.id === movieId)
@@ -215,10 +215,10 @@ export const useMovieStore = defineStore('movie', () => {
           'Content-Type': 'application/json'
         },
       })
-      console.log('✅ 리뷰 생성 성공:', response.data)
+      console.log('리뷰 생성 성공:', response.data)
       return response.data
     } catch (error) {
-      console.error('❌ 리뷰 생성 실패:', error)
+      console.error('리뷰 생성 실패:', error)
       throw error
     }
   }
@@ -238,14 +238,14 @@ export const useMovieStore = defineStore('movie', () => {
           Authorization: `Token ${userStore.token}`,
         },
       })
-      console.log('✅ 기존 리뷰 조회 성공:', response.data)
+      console.log('기존 리뷰 조회 성공:', response.data)
       return response.data
     } catch (error) {
       if (error.response?.status === 404) {
         console.log('ℹ️ 기존 리뷰 없음')
         return null
       }
-      console.error('❌ 리뷰 조회 실패:', error)
+      console.error('리뷰 조회 실패:', error)
       throw error
     }
   }
@@ -267,10 +267,10 @@ export const useMovieStore = defineStore('movie', () => {
           'Content-Type': 'application/json'
         },
       })
-      console.log('✅ 리뷰 수정 성공:', response.data)
+      console.log('리뷰 수정 성공:', response.data)
       return response.data
     } catch (error) {
-      console.error('❌ 리뷰 수정 실패:', error)
+      console.error('리뷰 수정 실패:', error)
       throw error
     }
   }
@@ -290,10 +290,10 @@ export const useMovieStore = defineStore('movie', () => {
           Authorization: `Token ${userStore.token}`,
         },
       })
-      console.log('✅ 리뷰 삭제 성공')
+      console.log('리뷰 삭제 성공')
       return response.data
     } catch (error) {
-      console.error('❌ 리뷰 삭제 실패:', error)
+      console.error('리뷰 삭제 실패:', error)
       throw error
     }
   }
@@ -466,7 +466,6 @@ export const useMovieStore = defineStore('movie', () => {
     error,
     getMoviesByGenreSync,
     fetchMoviesByGenre,
-    clearGenreMovies,
     toggleLike,
     createReview,
     getUserReview,
