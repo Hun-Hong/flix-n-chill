@@ -85,7 +85,7 @@ const router = createRouter({
     },
     {
       path: '/survey',
-      name: 'movie-survey', 
+      name: 'movie-survey',
       component: MovieSurveyPage
     },
     {
@@ -105,7 +105,14 @@ const router = createRouter({
       path: '/recommendations',
       name: 'Recommendations',
       component: RecommendationsPage
+    },
+    {
+      path: '/chat/:roomId',
+      name: 'Chat',
+      component: () => import('@/views/ChatView.vue'),
+      props: true
     }
+
   ]
 })
 // 라우트 가드
@@ -114,7 +121,7 @@ router.beforeEach((to, from, next) => {
   if (to.name === 'Genre' && to.query.type) {
     const genreNames = {
       action: '액션',
-      comedy: '코미디', 
+      comedy: '코미디',
       drama: '드라마',
       horror: '호러',
       adventure: '모험',
@@ -136,7 +143,7 @@ router.beforeEach((to, from, next) => {
       name: 'Login',
       query: { redirect: to.fullPath }
     })
-  // 예: 로그인을 이미 한 사용자가 다시 로그인 페이지로 가려고 하면 -> 홈 페이지를 보여줌  
+    // 예: 로그인을 이미 한 사용자가 다시 로그인 페이지로 가려고 하면 -> 홈 페이지를 보여줌  
   } else if (to.meta.requiresGuest && isLoggedIn) {
     next({ name: 'Home' })
   } else {
