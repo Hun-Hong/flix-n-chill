@@ -10,7 +10,7 @@ export const useUserStore = defineStore('user', () => {
   const isLoading = ref(false)
   const lastActivity = ref(Date.now())
 
-  const BE_API_PATH = "http://localhost:8000"
+  const BE_API_PATH = "http://34.47.106.179"
 
   // Computed - 로그인 상태 확인
   const isAuthenticated = computed(() => {

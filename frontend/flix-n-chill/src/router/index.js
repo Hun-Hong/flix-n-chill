@@ -96,7 +96,7 @@ const router = createRouter({
     },
     {
       path: '/recommendations',
-      name: 'Recommendations',
+      name: 'Recommend',
       component: RecommendationsPage
     },
     {

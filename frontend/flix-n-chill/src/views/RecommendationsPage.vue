@@ -287,7 +287,7 @@ const checkMovieLikeStatus = async (movieId) => {
   try {
     console.log('🔍 API로 좋아요 상태 확인:', movieId)
     const response = await axios.get(
-      `http://127.0.0.1:8000/api/v1/movies/${movieId}/`,
+      `http://34.47.106.179/api/v1/movies/${movieId}/`,
       {
         headers: {
           'Authorization': `Token ${userStore.token}`,
@@ -330,7 +330,7 @@ const handleToggleLikeWithStatusCheck = async (movie) => {
     console.log('📊 현재 좋아요 상태:', isCurrentlyLiked)
     
     let response
-    const url = `http://127.0.0.1:8000/api/v1/movies/${movie.id}/like/`
+    const url = `http://34.47.106.179/api/v1/movies/${movie.id}/like/`
     const config = {
       headers: {
         'Authorization': `Token ${userStore.token}`,
@@ -416,7 +416,7 @@ const handleToggleLike = async (movie) => {
     const isCurrentlyLiked = movie.isLiked || false
     
     let response
-    const url = `http://127.0.0.1:8000/api/v1/movies/${movie.id}/like/`
+    const url = `http://34.47.106.179/api/v1/movies/${movie.id}/like/`
     const config = {
       headers: {
         'Authorization': `Token ${userStore.token}`,

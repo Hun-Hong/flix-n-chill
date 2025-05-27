@@ -172,7 +172,7 @@ const showReviewModal = ref(false)
 const reviewMovie = ref(null)
 
 // API 설정 - 백엔드 URL (Django 주소)
-const API_BASE_URL = 'http://127.0.0.1:8000/api/v1'
+const API_BASE_URL = 'http://34.47.106.179/api/v1'
 
 // 백엔드 API 호출 함수
 const searchMoviesFromAPI = async (query) => {

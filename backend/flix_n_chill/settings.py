@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-^u3)hmt^il3*l2cg9ac7xc(sm5^9uw8_t&*8yx11nm)5nvl!ck
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['1.0.0.127.in-addr.arpa', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ["34.47.106.179", '1.0.0.127.in-addr.arpa', '127.0.0.1', 'localhost','flix-n-chill.com', 'www.flix-n-chill.com' ]
 
 CHANNEL_LAYERS = {
     "default": {
@@ -89,20 +89,39 @@ REST_AUTH = {
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
-    "allauth.account.middleware.AccountMiddleware",
-    "django.middleware.common.CommonMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
+    "django.middleware.common.CommonMiddleware",  # 한 번만
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    "allauth.account.middleware.AccountMiddleware",
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    'http://flix-n-chill.com',
+    'https://flix-n-chill.com',     # HTTPS 추가
+    'http://www.flix-n-chill.com',
+    'https://www.flix-n-chill.com', # HTTPS 추가
 ]
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+
 
 ROOT_URLCONF = 'flix_n_chill.urls'
 

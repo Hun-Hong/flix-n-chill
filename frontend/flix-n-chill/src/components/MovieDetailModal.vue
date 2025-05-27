@@ -266,7 +266,7 @@ const fetchMovieDetail = async () => {
     }
     console.log(config)
     const response = await axios.get(
-      `http://127.0.0.1:8000/api/v1/movies/${props.movieId}/`,
+      `http://34.47.106.179/api/v1/movies/${props.movieId}/`,
       config)
 
     const genreList = {

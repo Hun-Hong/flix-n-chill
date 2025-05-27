@@ -450,7 +450,7 @@ const fetchUserData = async () => {
     console.log('유저 조회 요청 보냄')
     const response = await axios({
       method: 'get',
-      url: `http://127.0.0.1:8000/auth/${route.params.userId}/detail/`,
+      url: `http://34.47.106.179/auth/${route.params.userId}/detail/`,
       headers: {
         'Content-Type': 'application/json'
       }
@@ -961,7 +961,7 @@ const startChat = async () => {
     // 채팅방 생성 또는 조회 API 호출
     const response = await axios({
       method: 'get',
-      url: `http://127.0.0.1:8000/api/chat/with/${userProfile.value.id}/`,
+      url: `http://34.47.106.179/api/chat/with/${userProfile.value.id}/`,
       headers: {
         'Authorization': `Token ${userStore.token}`,
         'Content-Type': 'application/json'
