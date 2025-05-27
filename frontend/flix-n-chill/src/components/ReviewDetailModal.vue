@@ -11,13 +11,21 @@
       <div class="modal-body">
         <!-- 영화 정보 -->
         <div class="movie-info">
-          <img :src="review?.moviePoster || '/api/placeholder/100/150'" :alt="review?.movieTitle" class="movie-poster">
+          <img 
+            :src="review?.moviePoster || '/api/placeholder/100/150'" 
+            :alt="review?.movieTitle"
+            class="movie-poster"
+          >
           <div class="movie-details">
             <h3 class="movie-title">{{ review?.movieTitle }}</h3>
             <div class="movie-rating">
               <div class="stars">
-                <i v-for="star in 5" :key="star" class="bi"
-                  :class="star <= review?.rating ? 'bi-star-fill' : 'bi-star'"></i>
+                <i 
+                  v-for="star in 5" 
+                  :key="star" 
+                  class="bi"
+                  :class="star <= review?.rating ? 'bi-star-fill' : 'bi-star'"
+                ></i>
               </div>
               <span class="rating-text">{{ review?.rating }}/5</span>
             </div>
@@ -27,8 +35,12 @@
         <!-- 리뷰어 정보 -->
         <div class="reviewer-info">
           <div class="reviewer-avatar">
-            <img :src="review?.reviewer?.avatar || '/api/placeholder/50/50'" :alt="review?.reviewer?.nickname"
-              class="avatar">
+            <img 
+              :src="review?.reviewer?.avatar || '/defaultProfileImg.png'" 
+              :alt="review?.reviewer?.nickname"
+              class="avatar"
+              @error="handleAvatarError"
+            >
           </div>
           <div class="reviewer-details">
             <h4 class="reviewer-name">{{ review?.reviewer?.nickname }}</h4>
@@ -43,13 +55,17 @@
 
         <!-- 리뷰 액션 -->
         <div class="review-actions">
-          <button class="action-btn like-btn" :class="{ 'liked': review?.isLiked }" @click="toggleLike">
+          <button 
+            class="action-btn like-btn" 
+            :class="{ 'liked': review?.isLiked }"
+            @click="toggleLike"
+          >
             <i :class="review?.isLiked ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
             <span>{{ review?.likesCount || 0 }}</span>
           </button>
           <button class="action-btn comment-btn" @click="focusCommentInput">
             <i class="bi bi-chat"></i>
-            <span>{{ comments.length }}</span>
+            <span>{{ totalCommentsCount }}</span>
           </button>
           <button class="action-btn share-btn" @click="shareReview">
             <i class="bi bi-share"></i>
@@ -60,19 +76,34 @@
         <!-- 댓글 섹션 -->
         <div class="comments-section">
           <h4 class="comments-title">
-            댓글 <span class="comments-count">({{ comments.length }})</span>
+            댓글 <span class="comments-count">({{ totalCommentsCount }})</span>
           </h4>
 
           <!-- 댓글 입력 -->
           <div class="comment-input-section">
             <div class="user-avatar">
-              <img :src="currentUser?.avatar || '/api/placeholder/40/40'" :alt="currentUser?.nickname" class="avatar">
+              <img 
+                :src="currentUser?.avatar || '/defaultProfileImg.png'" 
+                :alt="currentUser?.nickname"
+                class="avatar"
+                @error="handleCurrentUserAvatarError"
+              >
             </div>
             <div class="comment-input-container">
-              <textarea ref="commentInput" v-model="newComment" placeholder="댓글을 작성해주세요..." class="comment-input"
-                rows="2" @keydown.ctrl.enter="submitComment"></textarea>
+              <textarea 
+                ref="commentInput"
+                v-model="newComment"
+                placeholder="댓글을 작성해주세요..."
+                class="comment-input"
+                rows="2"
+                @keydown.ctrl.enter="submitComment"
+              ></textarea>
               <div class="comment-input-actions">
-                <button class="submit-comment-btn" @click="submitComment" :disabled="!newComment.trim()">
+                <button 
+                  class="submit-comment-btn"
+                  @click="submitComment"
+                  :disabled="!newComment.trim()"
+                >
                   댓글 작성
                 </button>
               </div>
@@ -81,10 +112,18 @@
 
           <!-- 댓글 목록 -->
           <div class="comments-list">
-            <div v-for="comment in comments" :key="comment.id" class="comment-item">
+            <div 
+              v-for="comment in comments" 
+              :key="comment.id" 
+              class="comment-item"
+            >
               <div class="comment-avatar">
-                <img :src="comment.user?.avatar || '/api/placeholder/40/40'" :alt="comment.user?.nickname"
-                  class="avatar">
+                <img 
+                  :src="comment.user?.avatar || '/defaultProfileImg.png'" 
+                  :alt="comment.user?.nickname"
+                  class="avatar"
+                  @error="(e) => handleCommentAvatarError(e)"
+                >
               </div>
               <div class="comment-content">
                 <div class="comment-header">
@@ -95,36 +134,64 @@
 
                 <!-- 댓글 액션 -->
                 <div class="comment-actions">
-                  <button class="comment-action-btn like-btn" :class="{ 'liked': comment.isLiked }"
-                    @click="toggleCommentLike(comment)">
+                  <button 
+                    class="comment-action-btn like-btn"
+                    :class="{ 'liked': comment.isLiked }"
+                    @click="toggleCommentLike(comment)"
+                  >
                     <i :class="comment.isLiked ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
                     <span v-if="comment.likesCount > 0">{{ comment.likesCount }}</span>
                   </button>
-                  <button class="comment-action-btn reply-btn" @click="toggleReplyInput(comment.id)">
+                  <button 
+                    class="comment-action-btn reply-btn"
+                    @click="toggleReplyInput(comment.id)"
+                  >
                     <i class="bi bi-reply"></i>
                     답글
                   </button>
-                  <button v-if="comment.user?.id === currentUser?.id" class="comment-action-btn delete-btn"
-                    @click="deleteComment(comment.id)">
+                  <button 
+                    v-if="comment.user?.id === currentUser?.id"
+                    class="comment-action-btn delete-btn"
+                    @click="deleteComment(comment.id)"
+                  >
                     <i class="bi bi-trash3"></i>
                     삭제
                   </button>
                 </div>
 
                 <!-- 대댓글 입력 -->
-                <div v-if="replyingToComment === comment.id" class="reply-input-section">
+                <div 
+                  v-if="replyingToComment === comment.id" 
+                  class="reply-input-section"
+                >
                   <div class="user-avatar">
-                    <img :src="currentUser?.avatar || '/api/placeholder/32/32'" :alt="currentUser?.nickname"
-                      class="avatar small">
+                    <img 
+                      :src="currentUser?.avatar || '/defaultProfileImg.png'" 
+                      :alt="currentUser?.nickname"
+                      class="avatar small"
+                      @error="handleCurrentUserAvatarError"
+                    >
                   </div>
                   <div class="reply-input-container">
-                    <textarea v-model="newReply" :placeholder="`@${comment.user?.nickname}님에게 답글...`"
-                      class="reply-input" rows="2" @keydown.ctrl.enter="submitReply(comment.id)"></textarea>
+                    <textarea 
+                      v-model="newReply"
+                      :placeholder="`@${comment.user?.nickname}님에게 답글...`"
+                      class="reply-input"
+                      rows="2"
+                      @keydown.ctrl.enter="submitReply(comment.id)"
+                    ></textarea>
                     <div class="reply-input-actions">
-                      <button class="cancel-reply-btn" @click="cancelReply">
+                      <button 
+                        class="cancel-reply-btn"
+                        @click="cancelReply"
+                      >
                         취소
                       </button>
-                      <button class="submit-reply-btn" @click="submitReply(comment.id)" :disabled="!newReply.trim()">
+                      <button 
+                        class="submit-reply-btn"
+                        @click="submitReply(comment.id)"
+                        :disabled="!newReply.trim()"
+                      >
                         답글 작성
                       </button>
                     </div>
@@ -133,10 +200,18 @@
 
                 <!-- 대댓글 목록 -->
                 <div v-if="comment.replies && comment.replies.length > 0" class="replies-list">
-                  <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
+                  <div 
+                    v-for="reply in comment.replies" 
+                    :key="reply.id" 
+                    class="reply-item"
+                  >
                     <div class="reply-avatar">
-                      <img :src="reply.user?.avatar || '/api/placeholder/32/32'" :alt="reply.user?.nickname"
-                        class="avatar small">
+                      <img 
+                        :src="reply.user?.avatar || '/defaultProfileImg.png'" 
+                        :alt="reply.user?.nickname"
+                        class="avatar small"
+                        @error="(e) => handleReplyAvatarError(e)"
+                      >
                     </div>
                     <div class="reply-content">
                       <div class="reply-header">
@@ -150,17 +225,26 @@
 
                       <!-- 대댓글 액션 -->
                       <div class="reply-actions">
-                        <button class="reply-action-btn like-btn" :class="{ 'liked': reply.isLiked }"
-                          @click="toggleReplyLike(reply)">
+                        <button 
+                          class="reply-action-btn like-btn"
+                          :class="{ 'liked': reply.isLiked }"
+                          @click="toggleReplyLike(reply)"
+                        >
                           <i :class="reply.isLiked ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
                           <span v-if="reply.likesCount > 0">{{ reply.likesCount }}</span>
                         </button>
-                        <button class="reply-action-btn reply-btn" @click="replyToReply(comment.id, reply.user)">
+                        <button 
+                          class="reply-action-btn reply-btn"
+                          @click="replyToReply(comment.id, reply.user)"
+                        >
                           <i class="bi bi-reply"></i>
                           답글
                         </button>
-                        <button v-if="reply.user?.id === currentUser?.id" class="reply-action-btn delete-btn"
-                          @click="deleteReply(comment.id, reply.id)">
+                        <button 
+                          v-if="reply.user?.id === currentUser?.id"
+                          class="reply-action-btn delete-btn"
+                          @click="deleteReply(comment.id, reply.id)"
+                        >
                           <i class="bi bi-trash3"></i>
                           삭제
                         </button>
@@ -196,9 +280,7 @@ const props = defineProps({
   }
 })
 
-
 const emit = defineEmits(['close', 'like-toggled', 'comment-added'])
-
 
 const componentId = ref(`modal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
 
@@ -208,20 +290,19 @@ const currentUser = computed(() => {
   if (!userStore.currentUser) return {
     id: null,
     nickname: '게스트',
-    avatar: '/api/placeholder/40/40'
+    avatar: '/defaultProfileImg.png'
   }
 
   return {
     id: userStore.currentUser.id,
     nickname: userStore.currentUser.nickname || userStore.currentUser.username || '사용자',
-    avatar: userStore.currentUser.profile_image || '/api/placeholder/40/40'
+    avatar: userStore.currentUser.profile_image || '/defaultProfileImg.png'
   }
 })
 
 const isCurrentReviewProcessing = computed(() => {
   return props.review?.id ? isProcessingLike.value.has(props.review.id) : false
 })
-
 
 // 댓글 관련 상태
 const comments = ref([])
@@ -235,6 +316,29 @@ const isLikeLoading = ref(false)
 const isLoadingComments = ref(false)
 const loadedReviewId = ref(null) // 마지막으로 로드한 리뷰 ID
 
+// 총 댓글 개수 계산 (댓글 + 대댓글)
+const totalCommentsCount = computed(() => {
+  return comments.value.reduce((total, comment) => {
+    return total + 1 + (comment.replies?.length || 0)
+  }, 0)
+})
+
+// 이미지 오류 처리 함수들
+const handleAvatarError = (event) => {
+  event.target.src = '/defaultProfileImg.png'
+}
+
+const handleCurrentUserAvatarError = (event) => {
+  event.target.src = '/defaultProfileImg.png'
+}
+
+const handleCommentAvatarError = (event) => {
+  event.target.src = '/defaultProfileImg.png'
+}
+
+const handleReplyAvatarError = (event) => {
+  event.target.src = '/defaultProfileImg.png'
+}
 
 // 메서드들
 const handleOverlayClick = () => {
@@ -265,21 +369,6 @@ async function toggleLike() {
   }
 }
 
-// 🎯 이벤트 핸들러 - 이벤트 전파 완전 차단
-const handleLikeClick = (event) => {
-  // 모든 이벤트 전파 차단
-  event.preventDefault()
-  event.stopPropagation()
-  event.stopImmediatePropagation()
-
-  console.log(`🖱️ [${componentId.value}] 좋아요 버튼 클릭됨`)
-
-  // 좋아요 처리 실행
-  toggleLike()
-}
-
-
-
 const shareReview = () => {
   console.log('리뷰 공유')
 }
@@ -301,17 +390,13 @@ const submitComment = async () => {
     await loadComments(props.review.id, true)
     
     // 댓글 개수 계산 및 emit
-    const totalComments = comments.value.reduce((total, comment) => {
-      return total + 1 + (comment.replies?.length || 0)
-    }, 0)
-
     emit('comment-added', {
       reviewId: props.review.id,
-      commentCount: totalComments
+      commentCount: totalCommentsCount.value
     })
 
     newComment.value = ''
-    console.log('✅ 댓글이 성공적으로 작성되었습니다. 총 댓글:', totalComments)
+    console.log('✅ 댓글이 성공적으로 작성되었습니다. 총 댓글:', totalCommentsCount.value)
   } catch (error) {
     console.error('❌ 댓글 작성 실패:', error)
     alert('댓글 작성에 실패했습니다. 다시 시도해주세요.')
@@ -340,20 +425,16 @@ const deleteComment = async (commentId) => {
       const movieStore = useMovieStore()
       await movieStore.deleteComment(commentId)
 
-      // 🎯 먼저 댓글 목록을 다시 로드하고 완료를 기다림
-      await loadComments()
+      // 🎯 강제 새로고침으로 댓글 목록 로드
+      await loadComments(props.review.id, true)
 
-      // 🎯 로드 완료 후 새로운 댓글 개수로 emit
-      const totalComments = comments.value.reduce((total, comment) => {
-        return total + 1 + (comment.replies?.length || 0)
-      }, 0)
-
+      // 댓글 개수 계산 및 emit
       emit('comment-added', {
         reviewId: props.review.id,
-        commentCount: totalComments
+        commentCount: totalCommentsCount.value
       })
 
-      console.log('✅ 댓글이 성공적으로 삭제되었습니다. 총 댓글:', totalComments)
+      console.log('✅ 댓글이 성공적으로 삭제되었습니다. 총 댓글:', totalCommentsCount.value)
     } catch (error) {
       console.error('❌ 댓글 삭제 실패:', error)
       alert('댓글 삭제에 실패했습니다. 다시 시도해주세요.')
@@ -381,21 +462,17 @@ const submitReply = async (commentId) => {
     const movieStore = useMovieStore()
     await movieStore.createReply(commentId, newReply.value.trim())
 
-    // 🎯 먼저 댓글 목록을 다시 로드하고 완료를 기다림
+    // 🎯 강제 새로고침으로 댓글 목록 로드
     cancelReply()
-    await loadComments()
+    await loadComments(props.review.id, true)
 
-    // 🎯 로드 완료 후 새로운 댓글 개수로 emit
-    const totalComments = comments.value.reduce((total, comment) => {
-      return total + 1 + (comment.replies?.length || 0)
-    }, 0)
-
+    // 댓글 개수 계산 및 emit
     emit('comment-added', {
       reviewId: props.review.id,
-      commentCount: totalComments
+      commentCount: totalCommentsCount.value
     })
 
-    console.log('✅ 대댓글이 성공적으로 작성되었습니다. 총 댓글:', totalComments)
+    console.log('✅ 대댓글이 성공적으로 작성되었습니다. 총 댓글:', totalCommentsCount.value)
   } catch (error) {
     console.error('❌ 대댓글 작성 실패:', error)
     alert('대댓글 작성에 실패했습니다. 다시 시도해주세요.')
@@ -429,20 +506,16 @@ const deleteReply = async (commentId, replyId) => {
       const movieStore = useMovieStore()
       await movieStore.deleteComment(replyId)
 
-      // 🎯 먼저 댓글 목록을 다시 로드하고 완료를 기다림
-      await loadComments()
+      // 🎯 강제 새로고침으로 댓글 목록 로드
+      await loadComments(props.review.id, true)
 
-      // 🎯 로드 완료 후 새로운 댓글 개수로 emit
-      const totalComments = comments.value.reduce((total, comment) => {
-        return total + 1 + (comment.replies?.length || 0)
-      }, 0)
-
+      // 댓글 개수 계산 및 emit
       emit('comment-added', {
         reviewId: props.review.id,
-        commentCount: totalComments
+        commentCount: totalCommentsCount.value
       })
 
-      console.log('✅ 대댓글이 성공적으로 삭제되었습니다. 총 댓글:', totalComments)
+      console.log('✅ 대댓글이 성공적으로 삭제되었습니다. 총 댓글:', totalCommentsCount.value)
     } catch (error) {
       console.error('❌ 대댓글 삭제 실패:', error)
       alert('대댓글 삭제에 실패했습니다. 다시 시도해주세요.')
@@ -484,7 +557,7 @@ const formatRelativeTime = (dateString) => {
   }
 }
 
-// 댓글 로드
+// 댓글 로드 함수 - forceReload 매개변수 추가
 const loadComments = async (reviewId = null, forceReload = false) => {
   const targetReviewId = reviewId || props.review?.id
 
@@ -537,7 +610,7 @@ const loadComments = async (reviewId = null, forceReload = false) => {
       user: {
         id: comment.user?.id || 0,
         nickname: comment.user?.nickname || comment.user?.username || '익명',
-        avatar: comment.user?.profile_image || '/api/placeholder/40/40'
+        avatar: comment.user?.profile_image || '/defaultProfileImg.png'
       },
       content: comment.content || '',
       createdAt: comment.created_at,
@@ -548,7 +621,7 @@ const loadComments = async (reviewId = null, forceReload = false) => {
         user: {
           id: reply.user?.id || 0,
           nickname: reply.user?.nickname || reply.user?.username || '익명',
-          avatar: reply.user?.profile_image || '/api/placeholder/32/32'
+          avatar: reply.user?.profile_image || '/defaultProfileImg.png'
         },
         parentUser: reply.parent_comment ? {
           id: comment.user?.id || 0,
@@ -583,7 +656,7 @@ watch(
 
       // 리뷰 ID가 있으면 댓글 로드
       if (props.review?.id) {
-        loadComments(props.review.id)
+        loadComments(props.review.id, false) // 초기 로드는 캐시 허용
       }
 
       // ESC 키 이벤트 등록
@@ -623,12 +696,10 @@ watch(
     // 모달이 열려있고, 리뷰 ID가 실제로 변경되었을 때만
     if (props.show && newId && newId !== oldId) {
       console.log(`🔄 새로운 리뷰로 댓글 로드: ${newId}`)
-      loadComments(newId)
+      loadComments(newId, false) // 새 리뷰 로드는 캐시 허용
     }
   }
 )
-
-
 
 onMounted(() => {
   console.log(`🚀 [${componentId.value}] ReviewDetailModal 마운트됨`)
@@ -644,11 +715,6 @@ onUnmounted(() => {
     console.log(`🧹 [${componentId.value}] 언마운트 시 처리 중이던 리뷰 ${reviewId} 정리`)
   }
 })
-
-
-
-
-
 </script>
 
 <style scoped>

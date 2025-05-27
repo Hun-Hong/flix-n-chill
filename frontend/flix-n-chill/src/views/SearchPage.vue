@@ -96,8 +96,15 @@
                     <div class="row g-4">
                         <div v-for="movie in searchResults" :key="movie.id"
                             class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6">
-                            <MovieCard :movie="movie" @play="handlePlayMovie" @toggle-like="handleToggleLike"
-                                @click="handleMovieClick" />
+                            <div class="movie-card-wrapper">
+                                <MovieCard :movie="movie" @play="handlePlayMovie" @toggle-like="handleToggleLike"
+                                    @click="handleMovieClick" />
+                                <!-- 평가 버튼 추가 -->
+                                <button @click="openReviewModal(movie)" class="rate-movie-btn">
+                                    <i class="bi bi-star-fill"></i>
+                                    <span>평가하기</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -116,13 +123,21 @@
                 </div>
             </div>
 
+            <!-- 영화 상세 모달 -->
             <MovieDetailModal :is-visible="showModal" :movie-id="selectedMovieId" @close="closeModal"
                 @toggle-watchlist="handleModalToggleWatchlist" @toggle-like="handleModalToggleLike"
                 @play="handleModalPlay" />
+
+            <!-- 평가 모달 -->
+            <MovieReviewModal 
+                :is-visible="showReviewModal" 
+                :movie="reviewMovie" 
+                @close="closeReviewModal"
+                @submit="handleReviewSubmit" 
+            />
         </div>
     </div>
 </template>
-
 
 <script setup>
 import { ref, onMounted } from 'vue'
@@ -131,6 +146,7 @@ import SearchInput from '@/components/SearchInput.vue'
 import MovieCard from '@/components/MovieCard.vue'
 import { useMovieStore } from '@/stores/movie'
 import MovieDetailModal from '@/components/MovieDetailModal.vue'
+import MovieReviewModal from '@/components/MovieReviewModal.vue'
 import axios from 'axios'
 
 // Router & Store
@@ -148,6 +164,12 @@ const sortBy = ref('latest')
 const selectedYear = ref('')
 const availableYears = ref([])
 const filteredResults = ref([])
+
+// 모달 관련
+const selectedMovieId = ref(null)
+const showModal = ref(false)
+const showReviewModal = ref(false)
+const reviewMovie = ref(null)
 
 // API 설정 - 백엔드 URL (Django 주소)
 const API_BASE_URL = 'http://127.0.0.1:8000/api/v1'
@@ -219,7 +241,6 @@ const applySortAndFilter = () => {
     filteredResults.value = results
 }
 
-
 const handleSearch = (query) => {
     searchQuery.value = query
     performSearch(query)
@@ -289,24 +310,14 @@ const handlePlayMovie = (movie) => {
     console.log('🎬 영화 재생:', movie.title)
 }
 
-//   const handleToggleWatchlist = (movie) => {
-//     console.log('🎬 찜하기 토글:', movie.title)
-//     store.toggleWatchlist(movie.id)
-//   }
-
 const handleToggleLike = (movie) => {
     console.log('🎬 좋아요 토글:', movie.title)
     store.toggleLike(movie.id)
 }
 
-const selectedMovieId = ref(null)
-
-const showModal = ref(false)
 // 영화 클릭 이벤트
 const handleMovieClick = (movie) => {
     console.log('🎬 영화 클릭:', movie.title)
-    // 실제로는 영화 상세 페이지로 이동
-    // router.push({ name: 'MovieDetail', params: { id: movie.id } })
     selectedMovieId.value = movie.id
     showModal.value = true
 }
@@ -327,6 +338,35 @@ const handleModalToggleLike = (movie) => {
 
 const handleModalPlay = (movie) => {
     // 재생 로직
+}
+
+// 평가 모달 관련
+const openReviewModal = (movie) => {
+    reviewMovie.value = movie
+    showReviewModal.value = true
+    console.log('⭐ 평가 모달 열기:', movie.title)
+}
+
+const closeReviewModal = () => {
+    showReviewModal.value = false
+    reviewMovie.value = null
+}
+
+const handleReviewSubmit = (data) => {
+    console.log('⭐ 평가 제출:', data)
+    
+    if (data.success) {
+        if (data.isDelete) {
+            alert(`"${data.movie.title}" 리뷰가 삭제되었습니다!`)
+        } else if (data.isEdit) {
+            alert(`"${data.movie.title}" 리뷰가 수정되었습니다!`)
+        } else {
+            alert(`"${data.movie.title}" 평가가 완료되었습니다!`)
+        }
+        closeReviewModal()
+    } else if (data.error) {
+        // 에러는 이미 모달에서 처리됨
+    }
 }
 
 // URL 쿼리에서 검색어 가져오기
@@ -459,6 +499,43 @@ onMounted(() => {
     margin-bottom: 2rem;
 }
 
+/* 영화 카드 래퍼 */
+.movie-card-wrapper {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 평가 버튼 스타일 */
+.rate-movie-btn {
+    margin-top: 0.75rem;
+    padding: 0.6rem 1rem;
+    background: linear-gradient(135deg, #ffd700, #ffb347);
+    border: none;
+    border-radius: 20px;
+    color: #1a1a1a;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+}
+
+.rate-movie-btn:hover {
+    background: linear-gradient(135deg, #ffb347, #ffa500);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+}
+
+.rate-movie-btn i {
+    font-size: 0.9rem;
+}
+
 /* 검색 결과 없음 */
 .no-results {
     text-align: center;
@@ -497,69 +574,6 @@ onMounted(() => {
     color: #ffffff;
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(219, 0, 0, 0.3);
-}
-
-/* 반응형 디자인 */
-@media (max-width: 992px) {
-    .search-title {
-        font-size: 2.5rem;
-    }
-
-    .results-title {
-        font-size: 1.75rem;
-    }
-}
-
-@media (max-width: 768px) {
-    .search-header {
-        padding: 1.5rem 0;
-    }
-
-    .search-title {
-        font-size: 2rem;
-    }
-
-    .search-subtitle {
-        font-size: 1rem;
-    }
-
-    .search-title-section {
-        margin-bottom: 2rem;
-    }
-
-    .results-title {
-        font-size: 1.5rem;
-    }
-
-    .welcome-icon {
-        font-size: 4rem;
-    }
-
-    .search-welcome h3 {
-        font-size: 1.5rem;
-    }
-}
-
-@media (max-width: 576px) {
-    .search-page {
-        padding-top: 76px;
-    }
-
-    .search-title {
-        font-size: 1.75rem;
-    }
-
-    .search-welcome {
-        padding: 2rem 0;
-    }
-
-    .no-results {
-        padding: 2rem 0;
-    }
-
-    .no-results-icon {
-        font-size: 4rem;
-    }
 }
 
 /* 검색 컨트롤 스타일 */
@@ -607,10 +621,80 @@ onMounted(() => {
     color: white;
 }
 
+/* 반응형 디자인 */
+@media (max-width: 992px) {
+    .search-title {
+        font-size: 2.5rem;
+    }
+
+    .results-title {
+        font-size: 1.75rem;
+    }
+}
+
 @media (max-width: 768px) {
+    .search-header {
+        padding: 1.5rem 0;
+    }
+
+    .search-title {
+        font-size: 2rem;
+    }
+
+    .search-subtitle {
+        font-size: 1rem;
+    }
+
+    .search-title-section {
+        margin-bottom: 2rem;
+    }
+
+    .results-title {
+        font-size: 1.5rem;
+    }
+
+    .welcome-icon {
+        font-size: 4rem;
+    }
+
+    .search-welcome h3 {
+        font-size: 1.5rem;
+    }
+
     .search-controls {
         flex-direction: column;
         gap: 1rem;
+    }
+
+    .rate-movie-btn {
+        font-size: 0.8rem;
+        padding: 0.5rem 0.8rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .search-page {
+        padding-top: 76px;
+    }
+
+    .search-title {
+        font-size: 1.75rem;
+    }
+
+    .search-welcome {
+        padding: 2rem 0;
+    }
+
+    .no-results {
+        padding: 2rem 0;
+    }
+
+    .no-results-icon {
+        font-size: 4rem;
+    }
+
+    .rate-movie-btn span {
+        font-size: 0.75rem;
     }
 }
 </style>
