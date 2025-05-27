@@ -8,7 +8,7 @@ export const useMovieStore = defineStore('movie', () => {
   const loading = ref(false)
   const error = ref(null)
 
-  const BE_API_PATH = "http://127.0.0.1:8000"
+  const BE_API_PATH = "http://localhost:8000"
 
   const getUserKey = () => {
     const userStore = useUserStore()
@@ -63,7 +63,7 @@ export const useMovieStore = defineStore('movie', () => {
     try {
       const response = await axios({
         method: 'get',
-        url: `http://127.0.0.1:8000/api/v1/movies/list/${genreType}/`,
+        url: `${BE_API_PATH}/api/v1/movies/list/${genreType}/`,
         params: {
           ordering,
           year,
@@ -168,7 +168,7 @@ export const useMovieStore = defineStore('movie', () => {
     try {
       await axios({
         method: nextLiked ? 'post' : 'delete',
-        url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/like/`,
+        url: `${BE_API_PATH}/api/v1/movies/${movieId}/like/`,
         headers: { Authorization: `Token ${userStore.token}` }
       })
 
@@ -208,7 +208,7 @@ export const useMovieStore = defineStore('movie', () => {
     try {
       const response = await axios({
         method: 'post',
-        url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/review/`,
+        url: `${BE_API_PATH}/api/v1/movies/${movieId}/review/`,
         data: payload,
         headers: {
           Authorization: `Token ${userStore.token}`,
@@ -233,7 +233,7 @@ export const useMovieStore = defineStore('movie', () => {
     try {
       const response = await axios({
         method: 'get',
-        url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/user-review/`,
+        url: `${BE_API_PATH}/api/v1/movies/${movieId}/user-review/`,
         headers: {
           Authorization: `Token ${userStore.token}`,
         },
@@ -260,7 +260,7 @@ export const useMovieStore = defineStore('movie', () => {
     try {
       const response = await axios({
         method: 'put',
-        url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/review/${reviewId}/`,
+        url: `${BE_API_PATH}/api/v1/movies/${movieId}/review/${reviewId}/`,
         data: payload,
         headers: {
           Authorization: `Token ${userStore.token}`,
@@ -285,7 +285,7 @@ export const useMovieStore = defineStore('movie', () => {
     try {
       const response = await axios({
         method: 'delete',
-        url: `http://127.0.0.1:8000/api/v1/movies/${movieId}/review/${reviewId}/delete/`,
+        url: `${BE_API_PATH}/api/v1/movies/${movieId}/review/${reviewId}/delete/`,
         headers: {
           Authorization: `Token ${userStore.token}`,
         },
@@ -309,7 +309,7 @@ export const useMovieStore = defineStore('movie', () => {
     try {
       const response = await axios({
         method: 'get',
-        url: `http://127.0.0.1:8000/api/v1/movies/review/${reviewId}/`,
+        url: `${BE_API_PATH}/api/v1/movies/review/${reviewId}/`,
         headers,
       })
 
@@ -401,7 +401,7 @@ async function toggleReviewLike(reviewId, currentlyLiked) {
     try {
       const response = await axios({
         method: 'get',
-        url: `http://127.0.0.1:8000/api/v1/movies/review/${reviewId}/comments/`,
+        url: `${BE_API_PATH}/api/v1/movies/review/${reviewId}/comments/`,
         headers,
       })
 
