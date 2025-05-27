@@ -10,7 +10,7 @@ export const useUserStore = defineStore('user', () => {
   const isLoading = ref(false)
   const lastActivity = ref(Date.now())
 
-  const BE_API_PATH = "http://127.0.0.1:8000/"
+  const BE_API_PATH = "http://localhost:8000"
 
   // Computed - 로그인 상태 확인
   const isAuthenticated = computed(() => {
@@ -58,7 +58,7 @@ export const useUserStore = defineStore('user', () => {
       console.log('유저 요청 보냄')
       const response = await axios({
         method: 'get',
-        url: 'http://127.0.0.1:8000/accounts/user/',
+        url: `${BE_API_PATH}/accounts/user/`,
         headers: {
           'Authorization': `Token ${token.value}`,
           'Content-Type': 'application/json'
@@ -88,7 +88,7 @@ export const useUserStore = defineStore('user', () => {
       // 먼저 현재 팔로우 상태 확인
       const statusResponse = await axios({
         method: 'get',
-        url: `http://127.0.0.1:8000/auth/${userId}/follow-status/`,
+        url: `${BE_API_PATH}/auth/${userId}/follow-status/`,
         headers: {
           'Authorization': `Token ${token.value}`,
           'Content-Type': 'application/json'
@@ -101,7 +101,7 @@ export const useUserStore = defineStore('user', () => {
       // 팔로우/언팔로우 요청
       const response = await axios({
         method: method,
-        url: `http://127.0.0.1:8000/auth/${userId}/follow/`,
+        url: `${BE_API_PATH}/auth/${userId}/follow/`,
         headers: {
           'Authorization': `Token ${token.value}`,
           'Content-Type': 'application/json'
@@ -144,7 +144,7 @@ export const useUserStore = defineStore('user', () => {
     try {
       const response = await axios({
         method: 'get',
-        url: `http://127.0.0.1:8000/auth/${userId}/follow-status/`,
+        url: `${BE_API_PATH}/auth/${userId}/follow-status/`,
         headers: {
           'Authorization': `Token ${token.value}`,
           'Content-Type': 'application/json'
@@ -170,7 +170,7 @@ const getFollowList = async (userId, type = 'both') => {
 
     const response = await axios({
       method: 'get',
-      url: `${BE_API_PATH}auth/${userId}/detail/`,
+      url: `${BE_API_PATH}/auth/${userId}/detail/`,
       headers: {
         'Content-Type': 'application/json',
         ...(token.value && { 'Authorization': `Token ${token.value}` })
@@ -267,7 +267,7 @@ const checkMultipleFollowStatus = async (userIds) => {
     try {
       const response = await axios({
         method: 'post',
-        url: 'http://127.0.0.1:8000/accounts/login/',
+        url: `${BE_API_PATH}/accounts/login/`,
         headers: { 'Content-Type': 'application/json' },
         data: {
           username: credentials.email,
@@ -302,7 +302,7 @@ const checkMultipleFollowStatus = async (userIds) => {
       // 서버에 로그아웃 요청
       await axios({
         method: 'post',
-        url: 'http://127.0.0.1:8000/accounts/logout/',
+        url: `${BE_API_PATH}/accounts/logout/`,
         headers: {
           'Authorization': `Token ${token.value}`,
           'Content-Type': 'application/json'
@@ -365,7 +365,7 @@ const checkMultipleFollowStatus = async (userIds) => {
     try {
       const response = await axios({
         method: 'post',
-        url: 'http://127.0.0.1:8000/accounts/token/refresh/',
+        url: `${BE_API_PATH}/accounts/token/refresh/`,
         headers: {
           'Authorization': `Token ${token.value}`,
           'Content-Type': 'application/json'
@@ -406,7 +406,7 @@ const checkMultipleFollowStatus = async (userIds) => {
 
       // 2) axios 요청: Content-Type 은 multipart/form-data 로
       const response = await axios.patch(
-        'http://127.0.0.1:8000/accounts/user/',
+        `${BE_API_PATH}/accounts/user/`,
         form,
         {
           headers: {
@@ -440,7 +440,7 @@ const checkMultipleFollowStatus = async (userIds) => {
     try {
       const response = await axios({
         method: 'post',
-        url: 'http://127.0.0.1:8000/accounts/password/change/',
+        url: `${BE_API_PATH}/accounts/password/change/`,
         headers: {
           'Authorization': `Token ${token.value}`,
           'Content-Type': 'application/json'
@@ -472,7 +472,7 @@ const checkMultipleFollowStatus = async (userIds) => {
     try {
       await axios({
         method: 'delete',
-        url: 'http://127.0.0.1:8000/accounts/user/',
+        url: `${BE_API_PATH}/accounts/user/`,
         headers: {
           'Authorization': `Token ${token.value}`,
           'Content-Type': 'application/json'
