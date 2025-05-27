@@ -413,7 +413,7 @@ const fetchRecommendedUsers = async () => {
     
     const response = await axios({
       method: 'get',
-      url: `http://127.0.0.1:8000/api/v1/movies/user/similar-users/`,
+      url: `http://34.47.106.179/api/v1/movies/user/similar-users/`,
       headers: {
         'Authorization': `Token ${userStore.token}`,
         'Content-Type': 'application/json'
@@ -501,7 +501,7 @@ const fetchGenrePreferences = async () => {
 
     const response = await axios({
       method: 'get',
-      url: `http://127.0.0.1:8000/api/v1/movies/user/genre-analysis/`,
+      url: `http://34.47.106.179/api/v1/movies/user/genre-analysis/`,
       headers: {
         'Authorization': `Token ${userStore.token}`,
         'Content-Type': 'application/json'
