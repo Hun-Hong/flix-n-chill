@@ -34,14 +34,49 @@ def follow(request, user_pk):
     if request.method == "POST":
         if Follow.objects.filter(follower=request.user, following=user).exists():
             return Response({'error': "이미 팔로우 중입니다."}, status=status.HTTP_400_BAD_REQUEST)
+        
         Follow.objects.create(follower=request.user, following=user)
-        return Response({'detail': "팔로우 성공!"}, status=status.HTTP_201_CREATED)
+        
+        # 팔로우 성공 후 업데이트된 팔로워/팔로잉 수 반환
+        return Response({
+            'detail': "팔로우 성공!",
+            'is_following': True,
+            'followers_count': user.followers.count(),
+            'following_count': request.user.following.count()
+        }, status=status.HTTP_201_CREATED)
 
     elif request.method == "DELETE":
-        if Follow.objects.filter(follower=request.user, following=user).exists():
+        # 수정: exists() 확인을 올바르게 수정
+        follow_relation = Follow.objects.filter(follower=request.user, following=user)
+        if not follow_relation.exists():
             return Response({'error': "팔로우한 적이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
-        Follow.objects.filter(follower=request.user, following=user).delete()
-        return Response({'detail': "언팔로우 성공!"}, status=status.HTTP_204_NO_CONTENT)
+        
+        follow_relation.delete()
+        
+        # 언팔로우 성공 후 업데이트된 팔로워/팔로잉 수 반환
+        return Response({
+            'detail': "언팔로우 성공!",
+            'is_following': False,
+            'followers_count': user.followers.count(),
+            'following_count': request.user.following.count()
+        }, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def check_follow_status(request, user_pk):
+    """특정 사용자와의 팔로우 상태 확인"""
+    user = get_object_or_404(User, pk=user_pk)
+    
+    if user == request.user:
+        return Response({'error': "자기 자신과의 팔로우 상태는 확인할 수 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    is_following = Follow.objects.filter(follower=request.user, following=user).exists()
+    
+    return Response({
+        'is_following': is_following,
+        'followers_count': user.followers.count(),
+        'following_count': user.following.count()
+    }, status=status.HTTP_200_OK)
 
 
 class CustomUserDetailsView(UserDetailsView):

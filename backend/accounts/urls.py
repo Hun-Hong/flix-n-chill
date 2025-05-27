@@ -21,5 +21,7 @@ from . import views
 urlpatterns = [
     path("email_check/", view=views.EmailDuplicateCheckView.as_view()),
     path("<int:user_pk>/follow/", view=views.follow),
+    path('<int:user_pk>/follow-status/', views.check_follow_status, name='check_follow_status'),
+
     path("<int:user_pk>/detail/", view=views.detail),
 ]
