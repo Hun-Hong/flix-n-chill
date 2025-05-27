@@ -15,7 +15,7 @@ const useRecommendationStore = defineStore('recommendation', () => {
 
 
   // API 설정
-  const API_BASE_URL = 'http://localhost:8000/api/v1/movies'
+  const API_BASE_URL = 'http://34.47.106.179/api/v1/movies'
 
 
   // Axios 설정

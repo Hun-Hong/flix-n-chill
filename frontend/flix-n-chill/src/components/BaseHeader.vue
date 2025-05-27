@@ -192,14 +192,14 @@ const userProfileImage = computed(() => {
   if (userStore.currentUser?.profile_image) {
     // 상대 경로인 경우 절대 경로로 변환
     if (userStore.currentUser.profile_image.startsWith('/')) {
-      return `http://127.0.0.1:8000${userStore.currentUser.profile_image}`
+      return `http://34.47.106.179/${userStore.currentUser.profile_image}`
     }
     // 이미 절대 경로인 경우 그대로 사용
     if (userStore.currentUser.profile_image.startsWith('http')) {
       return userStore.currentUser.profile_image
     }
     // 상대 경로인 경우 미디어 URL과 결합
-    return `http://127.0.0.1:8000/media/${userStore.currentUser.profile_image}`
+    return `http://34.47.106.179/media/${userStore.currentUser.profile_image}`
   }
 
   return "/defaultProfileImg.png"

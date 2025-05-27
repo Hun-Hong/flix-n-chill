@@ -8,7 +8,7 @@ export const useMovieStore = defineStore('movie', () => {
   const loading = ref(false)
   const error = ref(null)
 
-  const BE_API_PATH = "http://localhost:8000"
+  const BE_API_PATH = "http://34.47.106.179"
 
   const getUserKey = () => {
     const userStore = useUserStore()
@@ -350,7 +350,7 @@ async function toggleReviewLike(reviewId, currentlyLiked) {
     try {
       const response = await axios({
         method: 'post',
-        url: `http://localhost:8000/api/v1/movies/review/${reviewId}/comment/`,
+        url: `http://34.47.106.179/api/v1/movies/review/${reviewId}/comment/`,
         data: { content },
         headers: {
           Authorization: `Token ${userStore.token}`,
@@ -375,7 +375,7 @@ async function toggleReviewLike(reviewId, currentlyLiked) {
     try {
       const response = await axios({
         method: 'post',
-        url: `http://localhost:8000/api/v1/movies/comment/${commentId}/reply/`,
+        url: `http://34.47.106.179/api/v1/movies/comment/${commentId}/reply/`,
         data: { content },
         headers: {
           Authorization: `Token ${userStore.token}`,
@@ -423,7 +423,7 @@ async function toggleReviewLike(reviewId, currentlyLiked) {
     try {
       const response = await axios({
         method: 'delete',
-        url: `http://localhost:8000/api/v1/movies/comment/${commentId}/delete/`,
+        url: `http://34.47.106.179/api/v1/movies/comment/${commentId}/delete/`,
         headers: {
           Authorization: `Token ${userStore.token}`,
         },
@@ -446,7 +446,7 @@ async function toggleReviewLike(reviewId, currentlyLiked) {
     try {
       const response = await axios({
         method: isCurrentlyLiked ? 'delete' : 'post',
-        url: `http://localhost:8000/api/v1/movies/comment/${commentId}/like/`,
+        url: `http://34.47.106.179/api/v1/movies/comment/${commentId}/like/`,
         headers: {
           Authorization: `Token ${userStore.token}`,
         },

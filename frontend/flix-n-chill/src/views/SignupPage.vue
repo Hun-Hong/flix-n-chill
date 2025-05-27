@@ -598,7 +598,7 @@ const checkEmailDuplicate = async () => {
 	try {
 		const response = await axios({
 			method: 'get',
-			url: 'http://127.0.0.1:8000/auth/email_check/',
+			url: 'http://34.47.106.179/auth/email_check/',
 			params: {
 				email: formData.value.email  // 또는 원하는 이메일 변수
 			}
@@ -766,7 +766,7 @@ const handleSubmit = async () => {
 				birth: formData.value.birthdate,
 			}
 
-			const response = await fetch('http://127.0.0.1:8000/accounts/registration/', {
+			const response = await fetch('http://34.47.106.179/accounts/registration/', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
