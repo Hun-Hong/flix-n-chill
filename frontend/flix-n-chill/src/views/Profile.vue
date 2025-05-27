@@ -8,7 +8,7 @@
           <div class="profile-main-info">
             <div class="profile-avatar-section">
               <div class="avatar-container" @click="handleAvatarClick">
-                <img :src="userProfile.profile_image || `${userStore.BE_API_PATH}/media/profile/default_profile_img.png`" :alt="userProfile.nickname"
+                <img :src="userProfile.profile_image || `/defaultProfileImg.png`" :alt="userProfile.nickname"
                   class="profile-avatar" @error="handleAvatarError">
                 <div class="avatar-overlay">
                   <i class="bi bi-camera"></i>
@@ -123,8 +123,12 @@
                   <h5 class="review-movie-title">{{ review.movieTitle }}</h5>
                   <div class="review-rating">
                     <div class="stars">
-                      <i v-for="star in 5" :key="star" class="bi"
-                        :class="star <= review.rating ? 'bi-star-fill' : 'bi-star'"></i>
+                      <i v-for="star in 5" :key="star" class="bi" :class="review.rating >= star
+                          ? 'bi-star-fill'                    // 꽉 찬 별
+                          : review.rating >= star - 0.5
+                            ? 'bi-star-half'                    // 반쪽 별
+                            : 'bi-star'                          // 빈 별
+                        "></i>
                     </div>
                     <span class="rating-text">{{ review.rating }}/5</span>
                   </div>
@@ -461,13 +465,13 @@ const sortedReviews = computed(() => {
 // 메서드들
 
 const handleReviewLikeToggled = (review) => {
+  // 리뷰 좋아요 상태 업데이트 로직
   console.log('리뷰 좋아요 토글:', review)
-  // 필요시 프로필의 리뷰 목록에서도 좋아요 상태 업데이트
 }
 
 const handleCommentAdded = (comment) => {
+  // 댓글 추가 후 처리 로직
   console.log('댓글 추가됨:', comment)
-  // 필요시 리뷰의 댓글 수 업데이트
 }
 
 const toggleFollow = async () => {
@@ -525,11 +529,26 @@ const showFollowingModal = () => {
   console.log('팔로잉 목록 모달')
 }
 
+// const viewReview = (review) => {
+//   router.push(`/reviews/${review.id}`)
+// }
+
+// Profile.vue의 viewReview 함수를 이렇게 바꾸세요:
 
 const viewReview = (review) => {
-  selectedReviewId.value = review.id  // 리뷰 객체 대신 ID만 전달
+  // 임시 데이터로 리뷰 정보 확장
+  selectedReview.value = {
+    ...review,
+    likesCount: Math.floor(Math.random() * 50) + 5, // 5-55 사이 랜덤
+    isLiked: Math.random() > 0.5, // 랜덤 좋아요 상태
+    reviewer: {
+      id: userProfile.value?.id || 1,
+      nickname: userProfile.value?.nickname || '영화리뷰어',
+      avatar: userProfile.value?.profile_image || '/api/placeholder/50/50'
+    }
+  }
   showReviewModal.value = true
-  console.log('리뷰 모달 열기, ID:', review.id)
+  console.log('리뷰 모달 열기:', selectedReview.value)
 }
 
 // MovieCard 이벤트 핸들러들
@@ -547,7 +566,7 @@ const handleToggleLike = (movie) => {
   }
 }
 
-const handleProfileSave = async(updatedData) => {
+const handleProfileSave = async (updatedData) => {
   // updatedData는 { nickname, bio, profileImageFile } 을 포함하고 있다고 가정
   const { success, data, error } = await userStore.updateProfile(updatedData)
 

@@ -12,11 +12,14 @@ import { useUserStore } from './stores/accounts'
 
 const userStore = useUserStore()
 
-// onMounted(() => {
-//   if (localStorage.getItem('token')) {
-//     userStore.restoreUser()
-//   }
-// })
+onMounted(async () => {
+  // 사용자 정보 초기화
+  await userStore.initialize()
+
+  // 세션 모니터링 시작
+  userStore.startSessionMonitoring()
+})
+
 </script>
 
 <style>
