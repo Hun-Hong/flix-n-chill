@@ -41,6 +41,9 @@ COPY deploy/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 # 정적 파일 및 미디어 디렉토리 생성
 RUN mkdir -p /app/backend/static /app/backend/media
 
+# 데이터베이스 디렉토리 권한 설정 및 기존 db 파일 정리
+RUN rm -rf /app/backend/db.sqlite3
+
 # 환경 변수 설정
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
