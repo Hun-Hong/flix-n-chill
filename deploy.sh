@@ -80,25 +80,21 @@ setup_firewall() {
     fi
 }
 
-# 프론트엔드 빌드
+# 프론트엔드 빌드 (Docker 내에서 처리)
 build_frontend() {
-    log_info "프론트엔드 빌드 중..."
+    log_info "프론트엔드 빌드는 Docker 내에서 처리됩니다..."
     
-    cd frontend/flix-n-chill
-    
-    # Node.js 설치 확인
-    if ! command -v node &> /dev/null; then
-        log_error "Node.js가 설치되지 않았습니다."
-        echo "Node.js 18 이상을 설치하세요: https://nodejs.org/"
-        exit 1
+    # Node.js 설치 확인 (선택사항)
+    if command -v node &> /dev/null; then
+        log_info "Node.js가 설치되어 있어 로컬에서 빌드합니다."
+        cd frontend/flix-n-chill
+        npm ci
+        npm run build
+        cd ../..
+        log_info "로컬 프론트엔드 빌드 완료"
+    else
+        log_info "Node.js가 없으므로 Docker 멀티스테이지 빌드를 사용합니다."
     fi
-    
-    # 패키지 설치 및 빌드
-    npm ci
-    npm run build
-    
-    cd ../..
-    log_info "프론트엔드 빌드 완료"
 }
 
 # 환경 변수 파일 생성
