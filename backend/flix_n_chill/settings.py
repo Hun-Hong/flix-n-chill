@@ -25,12 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-^u3)hmt^il3*l2cg9ac7xc(sm5^9uw8_t&*8yx11nm)5nvl!ck'
+SECRET_KEY = config('DJANGO_SECRET_KEY', default='django-insecure-^u3)hmt^il3*l2cg9ac7xc(sm5^9uw8_t&*8yx11nm)5nvl!ck')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DJANGO_DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ["34.47.106.179", '1.0.0.127.in-addr.arpa', '127.0.0.1', 'localhost','flix-n-chill.com', 'www.flix-n-chill.com' ]
+ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=lambda v: [s.strip() for s in v.split(',')])
 
 CHANNEL_LAYERS = {
     "default": {

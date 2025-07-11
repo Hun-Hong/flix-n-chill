@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "80:80"
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-your-secret-key-here}
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - DJANGO_DEBUG=${DJANGO_DEBUG:-False}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+    volumes:
+      - ./backend/media:/app/backend/media
+      - ./backend/db.sqlite3:/app/backend/db.sqlite3
+    restart: unless-stopped
+
+# 개발용 서비스 (선택사항)
+  web-dev:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      - DJANGO_SECRET_KEY=dev-secret-key
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - DJANGO_DEBUG=True
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend/flix-n-chill/dist:/app/frontend/dist
+    profiles:
+      - dev
