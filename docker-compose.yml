@@ -10,7 +10,6 @@ services:
       - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
     volumes:
       - ./backend/media:/app/backend/media
-      - ./backend/db.sqlite3:/app/backend/db.sqlite3
     restart: unless-stopped
 
 # 개발용 서비스 (선택사항)
