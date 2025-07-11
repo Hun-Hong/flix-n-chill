@@ -5,7 +5,7 @@ FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 COPY frontend/flix-n-chill/package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 
 COPY frontend/flix-n-chill/ ./
 RUN npm run build
