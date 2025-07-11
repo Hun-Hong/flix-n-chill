@@ -1,8 +1,8 @@
 // API 설정 중앙화
 export const API_CONFIG = {
-  // 개발환경: localhost:8000, 배포환경: 환경변수 필수 설정
-  BASE_URL: import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '' : 'http://localhost:8000'),
-  WS_BASE_URL: import.meta.env.VITE_WS_BASE_URL || (import.meta.env.PROD ? '' : 'ws://localhost:8000'),
+  // 개발환경: localhost:8000, 배포환경: 현재 도메인 사용 (상대 경로)
+  BASE_URL: import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:8000'),
+  WS_BASE_URL: import.meta.env.VITE_WS_BASE_URL || (import.meta.env.PROD ? `ws://${window.location.host}` : 'ws://localhost:8000'),
   
   // API 엔드포인트 경로들
   ENDPOINTS: {
