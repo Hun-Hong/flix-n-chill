@@ -30,7 +30,7 @@ SECRET_KEY = config('DJANGO_SECRET_KEY', default='django-insecure-^u3)hmt^il3*l2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DJANGO_DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0', cast=lambda v: [s.strip() for s in v.split(',')])
+ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,flix-n-chill.com,www.flix-n-chill.com', cast=lambda v: [s.strip() for s in v.split(',')])
 
 CHANNEL_LAYERS = {
     "default": {
@@ -212,3 +212,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # settings.py
 ACCOUNT_EMAIL_VERIFICATION = 'none'  # 이메일 인증 비활성화
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # 콘솔 출력
+
+# HTTPS settings for Cloudflare
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
+USE_TLS = config('USE_TLS', default=False, cast=bool)
