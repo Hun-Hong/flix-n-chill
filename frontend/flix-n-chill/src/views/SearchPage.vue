@@ -148,6 +148,7 @@ import { useMovieStore } from '@/stores/movie'
 import MovieDetailModal from '@/components/MovieDetailModal.vue'
 import MovieReviewModal from '@/components/MovieReviewModal.vue'
 import axios from 'axios'
+import { API_CONFIG, getApiUrl, getMediaUrl, API_URLS } from '@/config/api.js'
 
 // Router & Store
 const route = useRoute()
@@ -171,13 +172,12 @@ const showModal = ref(false)
 const showReviewModal = ref(false)
 const reviewMovie = ref(null)
 
-// API 설정 - 백엔드 URL (Django 주소)
-const API_BASE_URL = 'http://34.47.106.179/api/v1'
+// API 설정은 중앙화된 설정을 사용
 
 // 백엔드 API 호출 함수
 const searchMoviesFromAPI = async (query) => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/movies/search/`, {
+        const response = await axios.get(`${API_URLS.MOVIES_BASE}/search/`, {
             params: {
                 query: query  // 제목으로만 검색
             }

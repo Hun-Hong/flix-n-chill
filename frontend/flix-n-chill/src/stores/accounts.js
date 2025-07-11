@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
+import { API_CONFIG, getApiUrl } from '@/config/api.js'
 
 export const useUserStore = defineStore('user', () => {
   // 상태 관리
@@ -10,7 +11,7 @@ export const useUserStore = defineStore('user', () => {
   const isLoading = ref(false)
   const lastActivity = ref(Date.now())
 
-  const BE_API_PATH = "http://34.47.106.179"
+  const BE_API_PATH = API_CONFIG.BASE_URL
 
   // Computed - 로그인 상태 확인
   const isAuthenticated = computed(() => {

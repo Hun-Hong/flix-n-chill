@@ -377,6 +377,7 @@ import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/accounts'
 import axios from 'axios'
+import { API_CONFIG, getApiUrl, getMediaUrl, API_URLS } from '@/config/api.js'
 
 // 라우터와 스토어
 const router = useRouter()
@@ -598,7 +599,7 @@ const checkEmailDuplicate = async () => {
 	try {
 		const response = await axios({
 			method: 'get',
-			url: 'http://34.47.106.179/auth/email_check/',
+			url: API_URLS.EMAIL_CHECK,
 			params: {
 				email: formData.value.email  // 또는 원하는 이메일 변수
 			}
@@ -766,7 +767,7 @@ const handleSubmit = async () => {
 				birth: formData.value.birthdate,
 			}
 
-			const response = await fetch('http://34.47.106.179/accounts/registration/', {
+			const response = await fetch(API_URLS.REGISTRATION, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'

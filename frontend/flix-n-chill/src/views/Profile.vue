@@ -372,6 +372,7 @@ import EditProfileModal from '@/components/EditProfileModal.vue'
 import ReviewDetailModal from '@/components/ReviewDetailModal.vue'
 import FollowModal from '@/components/FollowModal.vue' // 🎯 FollowModal import
 import axios from 'axios'
+import { API_CONFIG, getApiUrl, getMediaUrl, API_URLS } from '@/config/api.js'
 
 // 모달 상태
 const showEditModal = ref(false)
@@ -413,7 +414,7 @@ const fetchRecommendedUsers = async () => {
     
     const response = await axios({
       method: 'get',
-      url: `http://34.47.106.179/api/v1/movies/user/similar-users/`,
+      url: API_URLS.SIMILAR_USERS,
       headers: {
         'Authorization': `Token ${userStore.token}`,
         'Content-Type': 'application/json'
@@ -450,7 +451,7 @@ const fetchUserData = async () => {
     console.log('유저 조회 요청 보냄')
     const response = await axios({
       method: 'get',
-      url: `http://34.47.106.179/auth/${route.params.userId}/detail/`,
+      url: API_URLS.USER_DETAIL(route.params.userId),
       headers: {
         'Content-Type': 'application/json'
       }
@@ -501,7 +502,7 @@ const fetchGenrePreferences = async () => {
 
     const response = await axios({
       method: 'get',
-      url: `http://34.47.106.179/api/v1/movies/user/genre-analysis/`,
+      url: API_URLS.GENRE_ANALYSIS,
       headers: {
         'Authorization': `Token ${userStore.token}`,
         'Content-Type': 'application/json'
@@ -961,7 +962,7 @@ const startChat = async () => {
     // 채팅방 생성 또는 조회 API 호출
     const response = await axios({
       method: 'get',
-      url: `http://34.47.106.179/api/chat/with/${userProfile.value.id}/`,
+      url: API_URLS.CHAT_WITH_USER(userProfile.value.id),
       headers: {
         'Authorization': `Token ${userStore.token}`,
         'Content-Type': 'application/json'

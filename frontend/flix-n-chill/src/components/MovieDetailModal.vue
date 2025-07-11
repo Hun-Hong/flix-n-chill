@@ -158,6 +158,7 @@ import { ref, watch, onBeforeUnmount } from 'vue'
 import axios from 'axios'
 import MovieReviewModal from './MovieReviewModal.vue'
 import { useUserStore } from '@/stores/accounts'
+import { API_CONFIG, getApiUrl, getMediaUrl, API_URLS } from '@/config/api.js'
 
 // Props
 const props = defineProps({
@@ -266,7 +267,7 @@ const fetchMovieDetail = async () => {
     }
     console.log(config)
     const response = await axios.get(
-      `http://34.47.106.179/api/v1/movies/${props.movieId}/`,
+      API_URLS.MOVIE_DETAIL(props.movieId),
       config)
 
     const genreList = {

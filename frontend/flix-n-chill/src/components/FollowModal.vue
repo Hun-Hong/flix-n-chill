@@ -136,6 +136,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/accounts'
 import axios from 'axios'
+import { API_CONFIG, getApiUrl, getMediaUrl, API_URLS } from '@/config/api.js'
 
 const router = useRouter()
 
@@ -258,13 +259,13 @@ const getUserAvatar = (user) => {
     
     // 상대 URL인 경우 베이스 URL 추가
     if (user.profile_image.startsWith('/')) {
-      const fullUrl = `http://34.47.106.179/${user.profile_image}`
+      const fullUrl = `${API_CONFIG.BASE_URL}${user.profile_image}`
       console.log('🔗 전체 URL 생성:', fullUrl)
       return fullUrl
     }
     
     // 경로가 media로 시작하지 않는 경우
-    const mediaUrl = `http://34.47.106.179/media/${user.profile_image}`
+    const mediaUrl = getMediaUrl(user.profile_image)
     console.log('📁 미디어 URL 생성:', mediaUrl)
     return mediaUrl
   }
@@ -314,7 +315,7 @@ const loadFollowData = async () => {
 
     const response = await axios({
       method: 'get',
-      url: `http://34.47.106.179/auth/${props.userId}/detail/`,
+      url: API_URLS.USER_DETAIL(props.userId),
       headers: {
         'Content-Type': 'application/json',
         ...(userStore.token && { 'Authorization': `Token ${userStore.token}` })

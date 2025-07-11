@@ -161,6 +161,7 @@ import { useUserStore } from '@/stores/accounts'
 import { storeToRefs } from 'pinia'
 import MovieDetailModal from '@/components/MovieDetailModal.vue'
 import axios from 'axios'
+import { API_CONFIG, getApiUrl, getMediaUrl, API_URLS } from '@/config/api.js'
 
 // 라우터
 const router = useRouter()
@@ -287,7 +288,7 @@ const checkMovieLikeStatus = async (movieId) => {
   try {
     console.log('🔍 API로 좋아요 상태 확인:', movieId)
     const response = await axios.get(
-      `http://34.47.106.179/api/v1/movies/${movieId}/`,
+      API_URLS.MOVIE_DETAIL(movieId),
       {
         headers: {
           'Authorization': `Token ${userStore.token}`,
@@ -330,7 +331,7 @@ const handleToggleLikeWithStatusCheck = async (movie) => {
     console.log('📊 현재 좋아요 상태:', isCurrentlyLiked)
     
     let response
-    const url = `http://34.47.106.179/api/v1/movies/${movie.id}/like/`
+    const url = API_URLS.MOVIE_LIKE(movie.id)
     const config = {
       headers: {
         'Authorization': `Token ${userStore.token}`,
@@ -416,7 +417,7 @@ const handleToggleLike = async (movie) => {
     const isCurrentlyLiked = movie.isLiked || false
     
     let response
-    const url = `http://34.47.106.179/api/v1/movies/${movie.id}/like/`
+    const url = API_URLS.MOVIE_LIKE(movie.id)
     const config = {
       headers: {
         'Authorization': `Token ${userStore.token}`,

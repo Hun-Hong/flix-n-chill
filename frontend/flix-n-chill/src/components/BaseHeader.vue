@@ -156,6 +156,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/accounts'
+import { API_CONFIG, getApiUrl, getMediaUrl, API_URLS } from '@/config/api.js'
 
 // 라우터와 스토어
 const router = useRouter()
@@ -180,14 +181,14 @@ const userProfileImage = computed(() => {
   if (userStore.currentUser?.profile_image) {
     // 상대 경로인 경우 절대 경로로 변환
     if (userStore.currentUser.profile_image.startsWith('/')) {
-      return `http://34.47.106.179/${userStore.currentUser.profile_image}`
+      return `${API_CONFIG.BASE_URL}${userStore.currentUser.profile_image}`
     }
     // 이미 절대 경로인 경우 그대로 사용
     if (userStore.currentUser.profile_image.startsWith('http')) {
       return userStore.currentUser.profile_image
     }
     // 상대 경로인 경우 미디어 URL과 결합
-    return `http://34.47.106.179/media/${userStore.currentUser.profile_image}`
+    return getMediaUrl(userStore.currentUser.profile_image)
   }
 
   return "/defaultProfileImg.png"

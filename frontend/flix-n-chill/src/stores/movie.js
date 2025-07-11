@@ -2,13 +2,14 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axios from 'axios'
 import { useUserStore } from './accounts'
+import { API_CONFIG, API_URLS } from '@/config/api.js'
 
 export const useMovieStore = defineStore('movie', () => {
   const moviesByGenre = ref({})  // { userKey: { cacheKey: { movies: [...], totalCount: 0, currentPage: 1 } } }
   const loading = ref(false)
   const error = ref(null)
 
-  const BE_API_PATH = "http://34.47.106.179"
+  const BE_API_PATH = API_CONFIG.BASE_URL
 
   const getUserKey = () => {
     const userStore = useUserStore()
@@ -350,7 +351,7 @@ async function toggleReviewLike(reviewId, currentlyLiked) {
     try {
       const response = await axios({
         method: 'post',
-        url: `http://34.47.106.179/api/v1/movies/review/${reviewId}/comment/`,
+        url: API_URLS.MOVIE_REVIEW_COMMENT(reviewId),
         data: { content },
         headers: {
           Authorization: `Token ${userStore.token}`,
@@ -375,7 +376,7 @@ async function toggleReviewLike(reviewId, currentlyLiked) {
     try {
       const response = await axios({
         method: 'post',
-        url: `http://34.47.106.179/api/v1/movies/comment/${commentId}/reply/`,
+        url: API_URLS.COMMENT_REPLY(commentId),
         data: { content },
         headers: {
           Authorization: `Token ${userStore.token}`,
@@ -423,7 +424,7 @@ async function toggleReviewLike(reviewId, currentlyLiked) {
     try {
       const response = await axios({
         method: 'delete',
-        url: `http://34.47.106.179/api/v1/movies/comment/${commentId}/delete/`,
+        url: API_URLS.COMMENT_DELETE(commentId),
         headers: {
           Authorization: `Token ${userStore.token}`,
         },
@@ -446,7 +447,7 @@ async function toggleReviewLike(reviewId, currentlyLiked) {
     try {
       const response = await axios({
         method: isCurrentlyLiked ? 'delete' : 'post',
-        url: `http://34.47.106.179/api/v1/movies/comment/${commentId}/like/`,
+        url: API_URLS.COMMENT_LIKE(commentId),
         headers: {
           Authorization: `Token ${userStore.token}`,
         },

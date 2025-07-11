@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
 import { useUserStore } from './accounts'
+import { API_CONFIG } from '@/config/api.js'
 
 const useRecommendationStore = defineStore('recommendation', () => {
   // State - 반응형 상태
@@ -15,7 +16,7 @@ const useRecommendationStore = defineStore('recommendation', () => {
 
 
   // API 설정
-  const API_BASE_URL = 'http://34.47.106.179/api/v1/movies'
+  const API_BASE_URL = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.MOVIES}`
 
 
   // Axios 설정
