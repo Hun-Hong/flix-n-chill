@@ -15,7 +15,7 @@ from decouple import config
 
 
 # environment
-TMDB_API_KEY = config('TMDB_API_KEY')
+TMDB_API_KEY = config('TMDB_API_KEY', default='test-key-for-development')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,7 +30,7 @@ SECRET_KEY = config('DJANGO_SECRET_KEY', default='django-insecure-^u3)hmt^il3*l2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DJANGO_DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=lambda v: [s.strip() for s in v.split(',')])
+ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0', cast=lambda v: [s.strip() for s in v.split(',')])
 
 CHANNEL_LAYERS = {
     "default": {
