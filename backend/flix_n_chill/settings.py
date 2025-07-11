@@ -30,7 +30,7 @@ SECRET_KEY = config('DJANGO_SECRET_KEY', default='django-insecure-^u3)hmt^il3*l2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DJANGO_DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='127.0.0.1,localhost,0.0.0.0,flix-n-chill.com,www.flix-n-chill.com', cast=lambda v: [s.strip() for s in v.split(',')])
+ALLOWED_HOSTS = ['flix-n-chill.com', 'www.flix-n-chill.com', '127.0.0.1', 'localhost', '0.0.0.0']
 
 CHANNEL_LAYERS = {
     "default": {
