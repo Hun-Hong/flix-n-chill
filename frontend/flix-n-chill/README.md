@@ -75,3 +75,6 @@ VITE_WS_BASE_URL=ws://your-server-domain
 - ⭐ 영화 평점 및 리뷰
 - 🤖 개인 맞춤 영화 추천
 - 📊 장르별 취향 분석
+
+## Contact Me
+email: adeliae.p1841@gmail.com
