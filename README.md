@@ -1,3 +1,4 @@
+![image.png](main.png)
 ## 🎯 **프로젝트 목표**
 
 ### 목표
@@ -106,7 +107,7 @@ TMDB API를 사용해 500+ 영화 데이터를 수집했습니다. 서비스를 
 
 ## 🌐Product Serving
 
-![image.png]()
+![image.png](image_1.png)
 
 ## 🚨 **문제 해결 사례**
 
